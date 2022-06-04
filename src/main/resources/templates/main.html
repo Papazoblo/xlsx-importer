@@ -16,8 +16,8 @@
 
 <main role="main" class="container">
     <div th:class="row">
-        <form method="POST" th:action="@{/import/xlsx}" enctype="multipart/form-data">
-            <input type="file" name="collage" multiple="multiple"/>
+        <form method="POST" th:action="@{/xlsx/upload}" enctype="multipart/form-data">
+            <input type="file" name="file" multiple="multiple"/>
             <input type="submit" value="upload"/>
         </form>
     </div>

@@ -8,8 +8,9 @@ spring:
     cache: false
 
 skorozvon:
-  url: https://app.skorozvon.ru/api/v2
+  url: https://app.skorozvon.ru
   application-key: 172f48c27f7eb1c2322526b8f92d5b25dcc9cbc8785f137a428795b3f4a4cb2a
   api-key: 4ba9211e35ec615a05e9ce04ebf78e837f72b03b236b98de8c6389358016df46
   application-id: 29055bf486467ffb99159edf3c21881d8ec4349ee1eb61c0b172364bbcc623b7
   login: wfactorysales@gmail.com
+  fixed-rate-update-token: 5400000

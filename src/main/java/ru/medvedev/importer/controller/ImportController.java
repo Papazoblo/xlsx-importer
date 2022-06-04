@@ -9,24 +9,28 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import ru.medvedev.importer.exception.BadRequestException;
+import ru.medvedev.importer.service.SkorozvonClientService;
 import ru.medvedev.importer.service.XlsxParserService;
+import ru.medvedev.importer.service.XlsxStorageService;
 
-import java.util.Arrays;
-import java.util.Collections;
+import java.io.IOException;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping()
+@RequestMapping
 @Log4j2
 public class ImportController {
 
     private final XlsxParserService xlsxParserService;
+    private final XlsxStorageService xlsxStorageService;
+    private final SkorozvonClientService clientService;
 
     @GetMapping
     public String importXlsx(Model model) {
         model.addAttribute("test", "Test");
         try {
+            //clientService.login();
             model.addAttribute("headers", xlsxParserService.readColumnHeaders());
         } catch (Exception ex) {
             log.info("Error read xlsx", ex);
@@ -34,12 +38,12 @@ public class ImportController {
         return "main";
     }
 
-    @PostMapping("/import/xlsx")
-    public String redirect(@RequestParam("collage") MultipartFile[] files,
-                           RedirectAttributes redirectAttr) {
-
-        Collections.shuffle(Arrays.asList(files));
-        redirectAttr.addFlashAttribute("pictures", files);
-        return "redirect:/";
+    @PostMapping("/xlsx/upload")
+    public void upload(@RequestParam("file") MultipartFile file) {
+        try {
+            xlsxStorageService.upload(file);
+        } catch (IOException io) {
+            throw new BadRequestException("Невозможно загрузить файл");
+        }
     }
 }

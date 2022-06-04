@@ -1,9 +1,13 @@
-package ru.medvedev.importer.dto;
+package ru.medvedev.importer.config;
 
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+@Scope("singleton")
 @Component
+@Data
 @ConfigurationProperties(prefix = "skorozvon")
 public class SkorozvonProperties {
 
@@ -11,4 +15,6 @@ public class SkorozvonProperties {
     private String apiKey;
     private String applicationId;
     private String login;
+    private String accessToken;
+    private String refreshToken;
 }
