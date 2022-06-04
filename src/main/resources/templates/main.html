@@ -1,0 +1,149 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Xlsx importer</title>
+
+    <link rel="stylesheet" th:href="@{webjars/bootstrap/4.6.0-1/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{webjars/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.css}"/>
+    <!--<link rel="stylesheet" th:href="@{/css/main.css}"/>-->
+
+</head>
+
+<body>
+
+<main role="main" class="container">
+    <div th:class="row">
+        <form method="POST" th:action="@{/import/xlsx}" enctype="multipart/form-data">
+            <input type="file" name="collage" multiple="multiple"/>
+            <input type="submit" value="upload"/>
+        </form>
+    </div>
+    <div th:class="row">
+        <div class="col-md-8 offset-md-2">
+            <table>
+                <tr>
+                    <th><span>Телефон</span></th>
+                    <th>
+                        <select multiple data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
+                                class="selectpicker w-100" id="selectpicker" th:field="*{headers}">
+                            <option th:each="item, i : ${headers}" th:value="${i.index}" th:text="${item}">
+                            </option>
+                        </select>
+                    </th>
+                </tr>
+                <tr>
+                    <th><span>Email</span></th>
+                    <th>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="email"
+                                    data-toggle="dropdown" aria-expanded="false">
+                                Dropdown button
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <a class="dropdown-item" href="#">Action</a>
+                                <a class="dropdown-item" href="#">Another action</a>
+                                <a class="dropdown-item" href="#">Something else here</a>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr>
+                    <th><span>Адрес</span></th>
+                    <th>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="address"
+                                    data-toggle="dropdown" aria-expanded="false">
+                                Dropdown button
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <a class="dropdown-item" href="#">Action</a>
+                                <a class="dropdown-item" href="#">Another action</a>
+                                <a class="dropdown-item" href="#">Something else here</a>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr>
+                    <th><span>ФИО</span></th>
+                    <th>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="fio"
+                                    data-toggle="dropdown" aria-expanded="false">
+                                Dropdown button
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <a class="dropdown-item" href="#">Action</a>
+                                <a class="dropdown-item" href="#">Another action</a>
+                                <a class="dropdown-item" href="#">Something else here</a>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr>
+                    <th><span>ИНН</span></th>
+                    <th>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="inn"
+                                    data-toggle="dropdown" aria-expanded="false">
+                                Dropdown button
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <a class="dropdown-item" href="#">Action</a>
+                                <a class="dropdown-item" href="#">Another action</a>
+                                <a class="dropdown-item" href="#">Something else here</a>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr>
+                    <th><span>Город</span></th>
+                    <th>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="city"
+                                    data-toggle="dropdown" aria-expanded="false">
+                                Dropdown button
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" th:field="*{headers}">
+                                <a class="dropdown-item" href="#">Action</a>
+                                <a class="dropdown-item" href="#">Another action</a>
+                                <a class="dropdown-item" href="#">Something else here</a>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr>
+                    <th><span>Юр. лицо</span></th>
+                    <th>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="juridical"
+                                    data-toggle="dropdown" aria-expanded="false">
+                                Dropdown button
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <a class="dropdown-item" href="#">Action</a>
+                                <a class="dropdown-item" href="#">Another action</a>
+                                <a class="dropdown-item" href="#">Something else here</a>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+            </table>
+        </div>
+    </div>
+</main>
+<!-- /.container -->
+
+<script type="text/javascript" th:src="@{webjars/jquery/3.5.1/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
+<script type="text/javascript" th:src="@{webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#selectpicker').multiselect();
+    });
+</script>
+</body>
+</html>
