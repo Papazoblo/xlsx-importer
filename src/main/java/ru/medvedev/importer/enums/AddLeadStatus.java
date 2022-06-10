@@ -1,0 +1,17 @@
+package ru.medvedev.importer.enums;
+
+public enum AddLeadStatus {
+
+    SUCCESS,
+    NO_LEADS,
+    INVALID_PHONE,
+    INVALID_PRODUCT,
+    INVALID_SERVICE_PACKAGE,
+    UNEXPECTED_ERROR,
+    LEAD_ALREADY_EXISTS,
+    INVALID_SOURCE_LEAD_ID,
+    NO_PERMISSIONS,
+    AUTHENTICATION_FAILED,
+    UNDEFINED,
+    CONSENT_DENIED
+}

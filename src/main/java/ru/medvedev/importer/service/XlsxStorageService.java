@@ -6,7 +6,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import ru.medvedev.importer.config.XlsxStorage;
+import ru.medvedev.importer.component.XlsxStorage;
 import ru.medvedev.importer.exception.BadRequestException;
 
 import java.io.File;
@@ -36,7 +36,7 @@ public class XlsxStorageService {
 
     private void writeToFile(MultipartFile file) throws IOException {
         FileUtils.writeByteArrayToFile(new File(file.getOriginalFilename()), file.getBytes());
-        storage.setFileName(file.getName());
+        storage.setFileName(file.getOriginalFilename());
     }
 
     public void deleteIfExist() {

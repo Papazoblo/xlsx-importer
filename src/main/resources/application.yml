@@ -14,3 +14,9 @@ skorozvon:
   application-id: 29055bf486467ffb99159edf3c21881d8ec4349ee1eb61c0b172364bbcc623b7
   login: wfactorysales@gmail.com
   fixed-rate-update-token: 5400000
+
+vtb:
+  url: https://epa.api.vtb.ru/openapi/smb/lecs/smb-leads/impers/v1
+  token-url: https://passport.api.vtb.ru/passport/oauth2/token
+  client-id: f3007ea97a8bc1f37d3366c9e4f2f836
+  client-secret: 916d1cf1d007d7dfb21f6a27cd99c5f1

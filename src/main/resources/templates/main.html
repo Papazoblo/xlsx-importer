@@ -8,7 +8,7 @@
 
     <link rel="stylesheet" th:href="@{webjars/bootstrap/4.6.0-1/css/bootstrap.min.css}"/>
     <link rel="stylesheet" th:href="@{webjars/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.css}"/>
-    <!--<link rel="stylesheet" th:href="@{/css/main.css}"/>-->
+    <link rel="stylesheet" th:href="@{/css/main.css}"/>
 
 </head>
 
@@ -16,14 +16,30 @@
 
 <main role="main" class="container">
     <div th:class="row">
-        <form method="POST" th:action="@{/xlsx/upload}" enctype="multipart/form-data">
-            <input type="file" name="file" multiple="multiple"/>
-            <input type="submit" value="upload"/>
-        </form>
+        <div class="col-md-8 offset-md-2">
+            <div class="row">
+                <form id="formSendFile" enctype="multipart/form-data">
+                    <input id="file" type="file" name="file"/>
+                    <input type="submit" value="Загрузить новый" id="btnSendFile"/>
+                </form>
+            </div>
+            <div th:class="row">
+                <label>
+                    <span>Файл в системе: </span>
+                    <span id="fileName" th:text="${fileName}"></span>
+                </label>
+            </div>
+        </div>
     </div>
     <div th:class="row">
         <div class="col-md-8 offset-md-2">
-            <table>
+            <table id="mainTable">
+                <tr>
+                    <th><label for="textProjectId">Идентификатор проекта*</label></th>
+                    <th>
+                        <input id="textProjectId" type="text"/>
+                    </th>
+                </tr>
                 <tr>
                     <th><span>Телефон</span></th>
                     <th>
@@ -140,6 +156,7 @@
 <script type="text/javascript" th:src="@{webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
 <script type="text/javascript" th:src="@{webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
+<script type="text/javascript" th:src="@{/js/main.js}"></script>
 <script type="text/javascript">
     $(document).ready(function () {
         $('#selectpicker').multiselect();

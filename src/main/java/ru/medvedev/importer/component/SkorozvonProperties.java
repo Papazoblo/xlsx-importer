@@ -1,4 +1,4 @@
-package ru.medvedev.importer.config;
+package ru.medvedev.importer.component;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
