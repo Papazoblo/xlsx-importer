@@ -11,9 +11,9 @@ import org.springframework.web.multipart.MultipartFile;
 import ru.medvedev.importer.component.XlsxStorage;
 import ru.medvedev.importer.dto.WebhookDto;
 import ru.medvedev.importer.dto.XlsxImportInfo;
+import ru.medvedev.importer.enums.SkorozvonField;
 import ru.medvedev.importer.exception.BadRequestException;
 import ru.medvedev.importer.service.LeadWorkerService;
-import ru.medvedev.importer.service.SkorozvonClientService;
 import ru.medvedev.importer.service.XlsxParserService;
 import ru.medvedev.importer.service.XlsxStorageService;
 
@@ -28,7 +28,6 @@ public class ImportController {
 
     private final XlsxParserService xlsxParserService;
     private final XlsxStorageService xlsxStorageService;
-    private final SkorozvonClientService clientService;
     private final XlsxStorage storage;
     private final LeadWorkerService leadWorkerService;
 
@@ -39,6 +38,7 @@ public class ImportController {
             model.addAttribute("fileName", storage.isExist() ? storage.getFileName() : "Не найден");
             model.addAttribute("headers", storage.isExist() ? xlsxParserService.readColumnHeaders()
                     : Collections.emptyList());
+            model.addAttribute("fields", SkorozvonField.values());
         } catch (Exception ex) {
             log.info("Error read xlsx", ex);
         }
@@ -46,11 +46,13 @@ public class ImportController {
     }
 
     @PostMapping("/xlsx/import")
+    @ResponseBody
     public void startImport(@RequestBody XlsxImportInfo importInfo) {
-
+        leadWorkerService.processXlsxRecords(importInfo);
     }
 
     @PostMapping(value = "/xlsx/upload", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
     public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file) {
         try {
             xlsxStorageService.upload(file);
@@ -61,8 +63,9 @@ public class ImportController {
     }
 
     @PostMapping("/webhook")
+    @ResponseBody
     public void takeWebhook(@RequestBody WebhookDto input) {
-
+        leadWorkerService.processWebhook(input);
     }
 
     @GetMapping("/ping")

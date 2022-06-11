@@ -6,8 +6,8 @@
 
     <title>Xlsx importer</title>
 
-    <link rel="stylesheet" th:href="@{webjars/bootstrap/4.6.0-1/css/bootstrap.min.css}"/>
-    <link rel="stylesheet" th:href="@{webjars/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/4.6.0-1/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.css}"/>
     <link rel="stylesheet" th:href="@{/css/main.css}"/>
 
 </head>
@@ -17,133 +17,63 @@
 <main role="main" class="container">
     <div th:class="row">
         <div class="col-md-8 offset-md-2">
-            <div class="row">
-                <form id="formSendFile" enctype="multipart/form-data">
-                    <input id="file" type="file" name="file"/>
-                    <input type="submit" value="Загрузить новый" id="btnSendFile"/>
-                </form>
-            </div>
+            <form id="formSendFile" enctype="multipart/form-data" class="row mt-4">
+                <div th:class="col-md-7">
+                    <div class="custom-file">
+                        <input type="file" class="custom-file-input" id="file" name="file">
+                        <label class="custom-file-label" for="file"></label>
+                    </div>
+                </div>
+                <div class="col-md-4 offset-md-8 btnSubmit">
+                    <button class="btn-2" type="submit" id="btnSendFile">
+                        Сохранить файл
+                    </button>
+                </div>
+            </form>
             <div th:class="row">
-                <label>
-                    <span>Файл в системе: </span>
-                    <span id="fileName" th:text="${fileName}"></span>
-                </label>
+                <div th:class="col-md-12">
+                    <label id="systemFile">
+                        Файл в системе:
+                        <span id="fileName" th:text="${fileName}"></span>
+                    </label>
+                </div>
             </div>
         </div>
     </div>
-    <div th:class="row">
+    <div th:class="'row mt-4 ' + (${fileExist} ? '' : 'hide-block')">
         <div class="col-md-8 offset-md-2">
             <table id="mainTable">
                 <tr>
                     <th><label for="textProjectId">Идентификатор проекта*</label></th>
                     <th>
-                        <input id="textProjectId" type="text"/>
+                        <input id="textProjectId" class="onlyNumbers" type="text" maxlength="15"/>
                     </th>
                 </tr>
-                <tr>
-                    <th><span>Телефон</span></th>
-                    <th>
+                <tr th:class="space-block">
+                    <th th:class="text-center"><label for="textProjectId">Поля контактов в скорозвоне</label></th>
+                    <th th:class="text-center"><label for="textProjectId">Поля excel</label></th>
+                </tr>
+                <tr th:each="field : ${fields}" th:class="select-hover">
+                    <th th:if="${field.getFieldType().name().equals('SPACE')}" class="text-center space-block">
+                        Поля организаций в скорозвоне
+                    </th>
+                    <th th:text="${field.description} + (${field.required} ? '*' : '')"><br/></th>
+                    <th th:if="${field.getFieldType().name().equals('SELECT')}">
                         <select multiple data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
-                                class="selectpicker w-100" id="selectpicker" th:field="*{headers}">
+                                th:class="'selectpicker w-100 ' + ${field.getFieldType().name()}"
+                                th:name="*{field.name()}">
                             <option th:each="item, i : ${headers}" th:value="${i.index}" th:text="${item}">
                             </option>
                         </select>
                     </th>
-                </tr>
-                <tr>
-                    <th><span>Email</span></th>
-                    <th>
-                        <div class="dropdown">
-                            <button class="btn btn-secondary dropdown-toggle" type="button" id="email"
-                                    data-toggle="dropdown" aria-expanded="false">
-                                Dropdown button
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                <a class="dropdown-item" href="#">Action</a>
-                                <a class="dropdown-item" href="#">Another action</a>
-                                <a class="dropdown-item" href="#">Something else here</a>
-                            </div>
-                        </div>
+                    <th th:if="${field.getFieldType().name().equals('INPUT')}">
+                        <input type="text" th:name="*{field.name()}" th:class="${field.getFieldType().name()}"/>
                     </th>
                 </tr>
                 <tr>
-                    <th><span>Адрес</span></th>
-                    <th>
-                        <div class="dropdown">
-                            <button class="btn btn-secondary dropdown-toggle" type="button" id="address"
-                                    data-toggle="dropdown" aria-expanded="false">
-                                Dropdown button
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                <a class="dropdown-item" href="#">Action</a>
-                                <a class="dropdown-item" href="#">Another action</a>
-                                <a class="dropdown-item" href="#">Something else here</a>
-                            </div>
-                        </div>
-                    </th>
-                </tr>
-                <tr>
-                    <th><span>ФИО</span></th>
-                    <th>
-                        <div class="dropdown">
-                            <button class="btn btn-secondary dropdown-toggle" type="button" id="fio"
-                                    data-toggle="dropdown" aria-expanded="false">
-                                Dropdown button
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                <a class="dropdown-item" href="#">Action</a>
-                                <a class="dropdown-item" href="#">Another action</a>
-                                <a class="dropdown-item" href="#">Something else here</a>
-                            </div>
-                        </div>
-                    </th>
-                </tr>
-                <tr>
-                    <th><span>ИНН</span></th>
-                    <th>
-                        <div class="dropdown">
-                            <button class="btn btn-secondary dropdown-toggle" type="button" id="inn"
-                                    data-toggle="dropdown" aria-expanded="false">
-                                Dropdown button
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                <a class="dropdown-item" href="#">Action</a>
-                                <a class="dropdown-item" href="#">Another action</a>
-                                <a class="dropdown-item" href="#">Something else here</a>
-                            </div>
-                        </div>
-                    </th>
-                </tr>
-                <tr>
-                    <th><span>Город</span></th>
-                    <th>
-                        <div class="dropdown">
-                            <button class="btn btn-secondary dropdown-toggle" type="button" id="city"
-                                    data-toggle="dropdown" aria-expanded="false">
-                                Dropdown button
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" th:field="*{headers}">
-                                <a class="dropdown-item" href="#">Action</a>
-                                <a class="dropdown-item" href="#">Another action</a>
-                                <a class="dropdown-item" href="#">Something else here</a>
-                            </div>
-                        </div>
-                    </th>
-                </tr>
-                <tr>
-                    <th><span>Юр. лицо</span></th>
-                    <th>
-                        <div class="dropdown">
-                            <button class="btn btn-secondary dropdown-toggle" type="button" id="juridical"
-                                    data-toggle="dropdown" aria-expanded="false">
-                                Dropdown button
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                <a class="dropdown-item" href="#">Action</a>
-                                <a class="dropdown-item" href="#">Another action</a>
-                                <a class="dropdown-item" href="#">Something else here</a>
-                            </div>
-                        </div>
+                    <th></th>
+                    <th style="text-align: right">
+                        <button id="parseXlsx" class="btn-2">Отправить</button>
                     </th>
                 </tr>
             </table>
@@ -152,14 +82,24 @@
 </main>
 <!-- /.container -->
 
-<script type="text/javascript" th:src="@{webjars/jquery/3.5.1/jquery.min.js}"></script>
-<script type="text/javascript" th:src="@{webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
-<script type="text/javascript" th:src="@{webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
-<script type="text/javascript" th:src="@{webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
 <script type="text/javascript" th:src="@{/js/main.js}"></script>
 <script type="text/javascript">
     $(document).ready(function () {
-        $('#selectpicker').multiselect();
+        $('.selectpicker').multiselect({
+            nonSelectedText: 'Не выбрано',
+            nSelectedText: 'выбран(о)',
+            allSelectedText: 'Все выбрано',
+            resetText: 'Сбросить'
+        });
+    });
+
+    $("#file").on("change", function () {
+        var fileName = $(this).val().split("\\").pop();
+        $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
     });
 </script>
 </body>

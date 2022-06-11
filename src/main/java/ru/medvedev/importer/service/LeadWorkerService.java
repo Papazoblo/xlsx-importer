@@ -13,7 +13,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toMap;
 import static org.apache.logging.log4j.util.Strings.isBlank;
 
 @Service
@@ -45,11 +44,11 @@ public class LeadWorkerService {
     public void processXlsxRecords(XlsxImportInfo importInfo) {
         Map<String, XlsxRecordDto> records;
         try {
-            boolean withOrganization = !importInfo.getFieldLinks().get(SkorozvonField.ORG_NAME).isEmpty();
-            records = xlsxParserService.readColumnBody(importInfo).stream()
+            boolean withOrganization = importInfo.getFieldLinks().get(SkorozvonField.ORG_NAME) != null;
+            /*records = xlsxParserService.readColumnBody(importInfo).stream()
                     .collect(toMap(XlsxRecordDto::getInn, item -> item));
             List<String> positiveInn = sendCheckDuplicates(new ArrayList<>(records.keySet()));
-            withOrganization(withOrganization, records, positiveInn, importInfo.getProjectCode());
+            withOrganization(withOrganization, records, positiveInn, importInfo.getProjectCode());*/
         } catch (Exception ex) {
             throw new BadRequestException("Ошибка парсинга экселя", ex);
         }
