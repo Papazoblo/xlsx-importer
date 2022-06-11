@@ -14,5 +14,5 @@ public class VtbProperties {
     private String accessToken;
     private String tokenUrl;
     private String clientId;
-    private String clientKey;
+    private String clientSecret;
 }

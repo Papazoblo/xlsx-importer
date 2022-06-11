@@ -28,8 +28,8 @@ public enum SkorozvonField {
     ORG_ACTIVITY("Сфера деятельности", false, FieldType.SELECT),
     ORG_INN("ИНН", false, FieldType.SELECT),
     ORG_KPP("КПП", false, FieldType.SELECT),
-    ORG_TAGS("Теги, разделитель ';'", false, FieldType.INPUT),
-    USD_DESCRIPTION("Описание", false, FieldType.SELECT);
+    USD_DESCRIPTION("Описание", false, FieldType.SELECT),
+    ORG_TAGS("Теги, разделитель ';'", false, FieldType.INPUT);
 
     @Getter
     private final String description;

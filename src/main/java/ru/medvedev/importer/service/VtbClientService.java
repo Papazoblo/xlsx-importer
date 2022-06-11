@@ -1,6 +1,7 @@
 package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.client.VtbClient;
 import ru.medvedev.importer.component.VtbProperties;
@@ -20,28 +21,39 @@ import static ru.medvedev.importer.enums.CheckLeadStatus.POSITIVE;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class VtbClientService {
+
+    private static final String BEARER = "Bearer ";
 
     private final VtbClient client;
     private final VtbProperties properties;
 
     public void login() {
         LoginRequest request = new LoginRequest();
-        request.setGrantType("client_credentials");
-        request.setApplicationId(properties.getClientId());
-        request.setApplicationKey(properties.getClientKey());
+        request.setGrant_type("client_credentials");
+        request.setClient_id(properties.getClientId());
+        request.setClient_secret(properties.getClientSecret());
 
         LoginResponse response = client.login(URI.create(properties.getTokenUrl()), request);
         properties.setAccessToken(response.getAccessToken());
     }
 
     public void createLead(LeadDto leadDto) {
+
+        log.debug("*** Create lead in VTB");
+
+        login();
+        leadDto.setConsentOnPersonalDataProcessing(true);
         LeadRequest request = new LeadRequest();
         request.setLeads(Collections.singletonList(leadDto));
-        client.addLead(request);
+        client.addLead(request, BEARER + properties.getAccessToken());
     }
 
     public List<LeadInfoResponse> checkLead(List<String> innList) {
+
+        log.debug("*** Check duplicate in VTB {}", innList.size());
+
         List<LeadDto> leads = innList.stream().map(inn -> {
             LeadDto lead = new LeadDto();
             lead.setInn(inn);
@@ -49,7 +61,7 @@ public class VtbClientService {
         }).collect(Collectors.toList());
         LeadRequest leadRequest = new LeadRequest();
         leadRequest.setLeads(leads);
-        CheckLeadResponse response = client.checkLeads(leadRequest);
+        CheckLeadResponse response = client.checkLeads(leadRequest, BEARER + properties.getAccessToken());
         return response.getLeads().stream().filter(item -> item.getResponseCode() == POSITIVE)
                 .collect(Collectors.toList());
     }

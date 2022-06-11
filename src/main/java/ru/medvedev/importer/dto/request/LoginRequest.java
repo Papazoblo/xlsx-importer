@@ -7,16 +7,16 @@ import lombok.Data;
 public class LoginRequest {
 
     @JsonProperty("grant_type")
-    private String grantType = "password";
+    private String grant_type = "password";
 
     private String username;
 
     @JsonProperty("client_id")
-    private String applicationId;
+    private String client_id;
 
     @JsonProperty("api_key")
     private String apiKey;
 
     @JsonProperty("client_secret")
-    private String applicationKey;
+    private String client_secret;
 }

@@ -16,7 +16,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
@@ -48,7 +47,6 @@ public class XlsxParserService {
                 }
             }
         }
-        Collections.sort(headers);
         wb.close();
         fis.close();
         return headers;
@@ -147,12 +145,28 @@ public class XlsxParserService {
     private static String cellValueToString(Row row, List<Integer> cells) {
         StringBuilder sb = new StringBuilder();
         for (Integer idx : cells) {
-            String value = row.getCell(idx).getStringCellValue();
+            String value = getValueFromCellByType(row.getCell(idx));
             if (isNotBlank(value)) {
                 sb.append(value);
                 sb.append(" ");
             }
         }
         return sb.toString().trim();
+    }
+
+    private static String getValueFromCellByType(Cell cell) {
+
+        if (cell == null) {
+            return "";
+        }
+
+        switch (cell.getCellType()) {
+            case NUMERIC:
+                return String.valueOf(cell.getNumericCellValue());
+            case STRING:
+                return cell.getStringCellValue();
+            default:
+                return cell.getStringCellValue();
+        }
     }
 }

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.medvedev.importer.component.XlsxStorage;
@@ -20,6 +21,11 @@ import static org.apache.logging.log4j.util.Strings.isBlank;
 public class XlsxStorageService {
 
     private final XlsxStorage storage;
+
+    @Scheduled(fixedRateString = "${cron.fixed-rate-check-xlsx-exists}")
+    public void scheduleCheckExistXlsx() {
+        checkIsExist();
+    }
 
     @EventListener(ApplicationReadyEvent.class)
     public void checkExistXlsx() {

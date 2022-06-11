@@ -3,6 +3,7 @@ package ru.medvedev.importer.client;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import ru.medvedev.importer.dto.request.LeadRequest;
 import ru.medvedev.importer.dto.request.LoginRequest;
 import ru.medvedev.importer.dto.response.AddLeadResponse;
@@ -14,12 +15,14 @@ import java.net.URI;
 @FeignClient(value = "vtb", url = "${vtb.url}")
 public interface VtbClient {
 
-    @PostMapping
+    @PostMapping(consumes = "application/x-www-form-urlencoded")
     LoginResponse login(URI baseUrl, @RequestBody LoginRequest request);
 
-    @PostMapping("/check_leads")
-    CheckLeadResponse checkLeads(@RequestBody LeadRequest request);
+    @PostMapping("/lead-impers/v1/check_leads")
+    CheckLeadResponse checkLeads(@RequestBody LeadRequest request,
+                                 @RequestHeader(name = "Authorization") String token);
 
-    @PostMapping("/leads_impersonal")
-    AddLeadResponse addLead(@RequestBody LeadRequest request);
+    @PostMapping("/lead-impers/v1/leads_impersonal")
+    AddLeadResponse addLead(@RequestBody LeadRequest request,
+                            @RequestHeader(name = "Authorization") String token);
 }

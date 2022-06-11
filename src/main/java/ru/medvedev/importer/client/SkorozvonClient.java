@@ -8,6 +8,7 @@ import ru.medvedev.importer.dto.request.CreateMultipleRequest;
 import ru.medvedev.importer.dto.request.ImportLeadRequest;
 import ru.medvedev.importer.dto.request.LoginRequest;
 import ru.medvedev.importer.dto.request.RefreshRequest;
+import ru.medvedev.importer.dto.response.ImportLeadResponse;
 import ru.medvedev.importer.dto.response.LoginResponse;
 
 @FeignClient(value = "skorozvon", url = "${skorozvon.url}")
@@ -21,8 +22,8 @@ public interface SkorozvonClient {
                           @RequestHeader(name = "Authorization") String token);
 
     @PostMapping("/api/v2/leads/import")
-    LoginResponse importLeads(@RequestBody ImportLeadRequest request,
-                              @RequestHeader(name = "Authorization") String token);
+    ImportLeadResponse importLeads(@RequestBody ImportLeadRequest request,
+                                   @RequestHeader(name = "Authorization") String token);
 
     @PostMapping("/api/v2/leads/create_multi")
     LoginResponse createMultipleLeads(@RequestBody CreateMultipleRequest request,

@@ -21,14 +21,18 @@ $(document).ready(function () {
             }
         }
 
-        elements = $('.INPUT');
-        for (var i = 0; i < elements.length; i++) {
-            var input = elements.get(i);
-            var name = input.getAttribute('name');
-            var value = input.value;
-            if (value.length > 0) {
-                result.set(name, value.split(';'));
-            }
+        var usrTags = $('input[name=USR_TAGS]').get(0);
+        if (usrTags.value.length > 0) {
+            usrTags = usrTags.value.split(';');
+        } else {
+            usrTags = undefined;
+        }
+
+        var orgTags = $('input[name=ORG_TAGS]').get(0);
+        if (orgTags.value.length > 0) {
+            orgTags = orgTags.value.split(';');
+        } else {
+            orgTags = undefined;
         }
 
         if (result.get('USR_FIO') === undefined || result.get('USR_INN') === undefined ||
@@ -39,7 +43,9 @@ $(document).ready(function () {
 
         var data = JSON.stringify({
             "projectCode": textProjectId,
-            "fieldLinks": Object.fromEntries(result)
+            "fieldLinks": Object.fromEntries(result),
+            "usrTags": usrTags,
+            "orgTags": orgTags
         });
 
         $("#parseXlsx").attr('disabled', 'disabled');

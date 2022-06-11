@@ -1,6 +1,7 @@
 package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
@@ -13,10 +14,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toMap;
 import static org.apache.logging.log4j.util.Strings.isBlank;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LeadWorkerService {
 
     private static final int BATCH_SIZE = 500;
@@ -32,47 +35,56 @@ public class LeadWorkerService {
     }
 
     /*
-     * 1. Разделить на контакты и контакты с организацией
-     * 2. Разделить на пачки
-     * 3. Пульнуть в скорозвон
-     * 4. Проверить
-     * 5. Нарисовать интерфес
-     * 6. Связать бэк и интерфес
+     * 1. Разделить на контакты и контакты с организацией +
+     * 2. Разделить на пачки +
+     * 3. Пульнуть в скорозвон +
+     * 5. Нарисовать интерфес +
+     * 6. Связать бэк и интерфес +
      * 7. Разобраться с тегами
+     * 8. Добавить работу с токенами +
+     * 9. Скедулер проверять наличие файла +
+     * 10. Подключить авторизацию
+     * 11. ССЛ
+     * 4. Проверить
      * */
 
     public void processXlsxRecords(XlsxImportInfo importInfo) {
         Map<String, XlsxRecordDto> records;
         try {
             boolean withOrganization = importInfo.getFieldLinks().get(SkorozvonField.ORG_NAME) != null;
-            /*records = xlsxParserService.readColumnBody(importInfo).stream()
+            records = xlsxParserService.readColumnBody(importInfo).stream()
                     .collect(toMap(XlsxRecordDto::getInn, item -> item));
             List<String> positiveInn = sendCheckDuplicates(new ArrayList<>(records.keySet()));
-            withOrganization(withOrganization, records, positiveInn, importInfo.getProjectCode());*/
+            splitToContactAndOrganization(withOrganization, records, positiveInn, importInfo);
         } catch (Exception ex) {
+            log.debug("*** Error excel parsing", ex);
             throw new BadRequestException("Ошибка парсинга экселя", ex);
         }
     }
 
-    private void withOrganization(boolean withOrganizations, Map<String, XlsxRecordDto> recordsMap,
-                                  List<String> inn, Long projectId) {
+    private void splitToContactAndOrganization(boolean withOrganizations, Map<String, XlsxRecordDto> recordsMap,
+                                               List<String> inn, XlsxImportInfo importInfo) {
         if (withOrganizations) {
-            List<CreateOrganizationDto> orgList = createOrganizationFromInn(recordsMap, inn);
+            List<CreateOrganizationDto> orgList = createOrganizationFromInn(recordsMap, inn, importInfo.getOrgTags(),
+                    importInfo.getUsrTags());
             List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn.stream()
                     .filter(item -> isBlank(recordsMap.get(item).getOrgName()))
-                    .collect(Collectors.toList()));
-            sendOrganizationToSkorozvon(projectId, Collections.emptyList(), orgList);
-            sendLeadToSkorozvon(projectId, Collections.emptyList(), leadList);
+                    .collect(Collectors.toList()), importInfo.getUsrTags());
+            sendOrganizationToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), orgList);
+            sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
         } else {
-            List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn);
-            sendLeadToSkorozvon(projectId, Collections.emptyList(), leadList);
+            List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn, importInfo.getUsrTags());
+            sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
         }
     }
 
     private void sendLeadToSkorozvon(Long projectId, List<String> tags, List<CreateLeadDto> leads) {
+        log.debug("*** Send leads to skorozvon {}", leads.size());
+
         if (leads.isEmpty()) {
             return;
         }
+
         for (int i = 0; i < leads.size(); i = i + BATCH_SIZE) {
             skorozvonClientService.importLeads(projectId, leads.subList(i, Math.min(i + BATCH_SIZE, leads.size())),
                     tags);
@@ -80,6 +92,9 @@ public class LeadWorkerService {
     }
 
     private void sendOrganizationToSkorozvon(Long projectId, List<String> tags, List<CreateOrganizationDto> leads) {
+
+        log.debug("*** Send organization to skorozvon {}", leads.size());
+
         if (leads.isEmpty()) {
             return;
         }
@@ -90,27 +105,30 @@ public class LeadWorkerService {
     }
 
     private List<CreateOrganizationDto> createOrganizationFromInn(Map<String, XlsxRecordDto> records,
-                                                                  List<String> innList) {
+                                                                  List<String> innList, List<String> orgTag,
+                                                                  List<String> contactTag) {
 
         Map<String, CreateOrganizationDto> organizationMap = new HashMap<>();
 
         innList.forEach(item -> {
             XlsxRecordDto record = records.get(item);
-            organizationMap.putIfAbsent(record.getOrgName(), xlsxRecordToOrganization(record));
-            organizationMap.get(record.getOrgName()).getLeads().add(xlsxRecordToLead(record));
+            organizationMap.putIfAbsent(record.getOrgName(), xlsxRecordToOrganization(record, orgTag));
+            organizationMap.get(record.getOrgName()).getLeads().add(xlsxRecordToLead(record, contactTag));
         });
         return new ArrayList<>(organizationMap.values());
     }
 
-    private List<CreateLeadDto> createLeadFromInn(Map<String, XlsxRecordDto> records, List<String> innList) {
+    private List<CreateLeadDto> createLeadFromInn(Map<String, XlsxRecordDto> records, List<String> innList,
+                                                  List<String> tags) {
         return innList.stream().filter(records::containsKey)
-                .map(inn -> xlsxRecordToLead(records.get(inn))).collect(Collectors.toList());
+                .map(inn -> xlsxRecordToLead(records.get(inn), tags)).collect(Collectors.toList());
     }
 
     private List<String> sendCheckDuplicates(List<String> innList) throws ExecutionException, InterruptedException {
         if (innList.isEmpty()) {
             throw new BadRequestException("Список ИНН пуст");
         }
+        vtbClientService.login();
 
         //Делим на пачки
         List<CompletableFuture<List<LeadInfoResponse>>> completableFutures = new ArrayList<>();
@@ -130,7 +148,7 @@ public class LeadWorkerService {
         return completableFuture.get();
     }
 
-    private static CreateLeadDto xlsxRecordToLead(XlsxRecordDto record) {
+    private static CreateLeadDto xlsxRecordToLead(XlsxRecordDto record, List<String> tags) {
         CreateLeadDto lead = new CreateLeadDto();
         lead.setName(record.getFio());
         lead.setPhones(Optional.ofNullable(record.getPhone()).map(Arrays::asList).orElse(null));
@@ -140,10 +158,11 @@ public class LeadWorkerService {
         lead.setRegion(record.getRegion());
         lead.setPost(record.getPosition());
         lead.setDescription(record.getDescription());
+        lead.setTags(tags);
         return lead;
     }
 
-    private static CreateOrganizationDto xlsxRecordToOrganization(XlsxRecordDto recordDto) {
+    private static CreateOrganizationDto xlsxRecordToOrganization(XlsxRecordDto recordDto, List<String> tags) {
         CreateOrganizationDto organization = new CreateOrganizationDto();
         organization.setFirmName(recordDto.getOrgName());
         organization.setPhones(Optional.ofNullable(recordDto.getPhone()).map(Arrays::asList).orElse(null));
@@ -156,6 +175,7 @@ public class LeadWorkerService {
         organization.setInn(recordDto.getInn());
         organization.setKpp(recordDto.getOrgKpp());
         organization.setDescription(recordDto.getOrgDescription());
+        organization.setTags(tags);
         return organization;
     }
 }
