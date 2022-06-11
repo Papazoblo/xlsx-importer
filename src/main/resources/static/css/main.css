@@ -6,7 +6,7 @@
     width: 50%;
 }
 
-input[type=text], .multiselect-native-select {
+input[type=text], .multiselect-native-select, #uploadTable {
     width: 100%;
 }
 
@@ -33,7 +33,11 @@ input[type=text] {
     display: none;
 }
 
-.btn-2 {
+.btn3 {
+    background-color: #cd050c !important;
+}
+
+.btn-2, .btn3 {
     display: inline-block;
     box-sizing: border-box;
     padding: 0 24px;
@@ -56,11 +60,11 @@ input[type=text] {
     transition: box-shadow .18s ease-out, background .18s ease-out, color .18s ease-out;
 }
 
-.btn-2:focus-visible {
+.btn-2:focus-visible, .btn3:focus-visible {
     box-shadow: 0 0 0 3px lightskyblue;
 }
 
-.btn-2:hover {
+.btn-2:hover, .btn-3:hover {
     box-shadow: 0 1px 1px 0 #cfcfcf, 0 2px 5px 0 #cfcfcf;
 }
 
@@ -68,8 +72,18 @@ input[type=text] {
     background-color: #058c38 !important;
 }
 
+.btn-3:active {
+    background-color: #6a0909 !important;
+}
+
 .btn-2:disabled {
     background-color: #aed2bc;
+    color: #444;
+    pointer-events: none;
+}
+
+.btn-3:disabled {
+    background-color: #d2aeae;
     color: #444;
     pointer-events: none;
 }

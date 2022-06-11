@@ -26,11 +26,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     public void configure(HttpSecurity http) throws Exception {
 
         http.csrf().disable().authorizeRequests()
-                .antMatchers("/", "/home").permitAll()
-                .antMatchers("/import/xlsx").hasRole("USER")
-                .anyRequest().permitAll()
+                .anyRequest().authenticated()
                 .and()
                 .formLogin()
+                .defaultSuccessUrl("/xlsx/import", true)
                 .permitAll()
                 .and()
                 .logout()

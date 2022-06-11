@@ -1,5 +1,12 @@
 $(document).ready(function () {
 
+    $('#btnLogout').on('click', function (e) {
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.open("GET", '/logout', false);
+        xmlHttp.send(null);
+        return xmlHttp.responseText;
+    });
+
     $("#parseXlsx").on('click', function (e) {
 
         var result = new Map();
