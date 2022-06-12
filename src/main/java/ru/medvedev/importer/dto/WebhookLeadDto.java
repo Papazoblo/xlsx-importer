@@ -5,11 +5,9 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class LeadDto {
+public class WebhookLeadDto {
 
-    private String phone;
+    private String phones;
     private String city;
     private String inn;
-    private Boolean consentOnPersonalDataProcessing;
-    private String productCode = "Payments";
 }

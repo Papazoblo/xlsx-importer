@@ -6,5 +6,5 @@ import lombok.Data;
 public class WebhookDto {
 
     private String type;
-    private LeadDto contact;
+    private WebhookLeadDto lead;
 }

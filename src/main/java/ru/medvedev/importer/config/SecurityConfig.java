@@ -30,6 +30,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests(authorize ->
                         authorize.anyRequest().permitAll())*/
                 .authorizeRequests()
+                .antMatchers("/webhook").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()

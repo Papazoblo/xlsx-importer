@@ -2,6 +2,7 @@ package ru.medvedev.importer.enums;
 
 public enum AddLeadStatus {
 
+    NEW,
     SUCCESS,
     NO_LEADS,
     INVALID_PHONE,

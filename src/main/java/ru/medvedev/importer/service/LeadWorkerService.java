@@ -22,7 +22,7 @@ import static org.apache.logging.log4j.util.Strings.isBlank;
 @Slf4j
 public class LeadWorkerService {
 
-    private static final int BATCH_SIZE = 500;
+    private static final int BATCH_SIZE = 255;
 
     private final XlsxParserService xlsxParserService;
     private final VtbClientService vtbClientService;
@@ -30,7 +30,7 @@ public class LeadWorkerService {
 
     public void processWebhook(WebhookDto webhookDto) {
         if (webhookDto.getType().equals("call_result")) {
-            vtbClientService.createLead(webhookDto.getContact());
+            vtbClientService.createLead(webhookDto.getLead());
         }
     }
 

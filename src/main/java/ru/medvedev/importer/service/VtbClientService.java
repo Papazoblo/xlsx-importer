@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.medvedev.importer.client.VtbClient;
 import ru.medvedev.importer.component.VtbProperties;
 import ru.medvedev.importer.dto.LeadDto;
+import ru.medvedev.importer.dto.WebhookLeadDto;
 import ru.medvedev.importer.dto.request.LeadRequest;
 import ru.medvedev.importer.dto.request.LoginRequest;
 import ru.medvedev.importer.dto.response.CheckLeadResponse;
@@ -39,15 +40,23 @@ public class VtbClientService {
         properties.setAccessToken(response.getAccessToken());
     }
 
-    public void createLead(LeadDto leadDto) {
+    public void createLead(WebhookLeadDto webhookLead) {
 
         log.debug("*** Create lead in VTB");
 
         login();
+        LeadDto leadDto = new LeadDto();
+        leadDto.setCity(webhookLead.getCity());
+        leadDto.setInn(webhookLead.getInn());
+        leadDto.setPhone(webhookLead.getPhones());
         leadDto.setConsentOnPersonalDataProcessing(true);
         LeadRequest request = new LeadRequest();
         request.setLeads(Collections.singletonList(leadDto));
-        client.addLead(request, BEARER + properties.getAccessToken());
+        try {
+            client.addLead(request, BEARER + properties.getAccessToken());
+        } catch (Exception ex) {
+            log.debug("*** ошибка добавления лида", ex);
+        }
     }
 
     public List<LeadInfoResponse> checkLead(List<String> innList) {
