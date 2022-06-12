@@ -1,10 +1,11 @@
 $(document).ready(function () {
 
     $('#btnLogout').on('click', function (e) {
+        e.preventDefault();
         var xmlHttp = new XMLHttpRequest();
         xmlHttp.open("GET", '/logout', false);
         xmlHttp.send(null);
-        return xmlHttp.responseText;
+        window.location.replace("/login");
     });
 
     $("#parseXlsx").on('click', function (e) {
@@ -28,12 +29,12 @@ $(document).ready(function () {
             }
         }
 
-        var usrTags = $('input[name=USR_TAGS]').get(0);
+        /*var usrTags = $('input[name=USR_TAGS]').get(0);
         if (usrTags.value.length > 0) {
             usrTags = usrTags.value.split(';');
         } else {
             usrTags = undefined;
-        }
+        }*/
 
         var orgTags = $('input[name=ORG_TAGS]').get(0);
         if (orgTags.value.length > 0) {
@@ -42,16 +43,16 @@ $(document).ready(function () {
             orgTags = undefined;
         }
 
-        if (result.get('USR_FIO') === undefined || result.get('USR_INN') === undefined ||
-            result.get('USR_PHONE') === undefined || textProjectId.length <= 0) {
+        if (result.get('USR_FIO') === undefined || result.get('ORG_INN') === undefined ||
+            result.get('USR_PHONE') === undefined || result.get('ORG_PHONE') === undefined || textProjectId.length <= 0) {
             alert("Необходимо заполнить обязательные поля");
             return;
         }
 
         var data = JSON.stringify({
             "projectCode": textProjectId,
-            "fieldLinks": Object.fromEntries(result),
-            "usrTags": usrTags,
+            "fieldLinks": Object.fromEntries(result),/*
+            "usrTags": usrTags,*/
             "orgTags": orgTags
         });
 
@@ -70,7 +71,11 @@ $(document).ready(function () {
             },
             error: function (e) {
                 $("#parseXlsx").removeAttr('disabled');
-                alert("Невозможно импортировать контакты");
+                if (e.status === 200) {
+                    alert("Контакты успешно импортированы");
+                } else {
+                    alert("Невозможно импортировать контакты");
+                }
             }
         });
     });

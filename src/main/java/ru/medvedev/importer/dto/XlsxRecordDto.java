@@ -9,12 +9,12 @@ public class XlsxRecordDto {
     private String phone;
     private String email;
     private String city;
-    private String inn;
+    private String address;
     private String region;
     private String position;
     private String description;
     private String[] tags;
-    private String orgName;
+    private String orgName = "Наименование не указано";
     private String orgPhone;
     private String orgEmail;
     private String orgHost;

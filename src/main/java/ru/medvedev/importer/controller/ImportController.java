@@ -1,7 +1,7 @@
 package ru.medvedev.importer.controller;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -23,7 +23,7 @@ import java.util.Collections;
 @Controller
 @RequiredArgsConstructor
 @RequestMapping
-@Log4j2
+@Slf4j
 public class ImportController {
 
     private final XlsxParserService xlsxParserService;
@@ -65,6 +65,7 @@ public class ImportController {
     @PostMapping("/webhook")
     @ResponseBody
     public void takeWebhook(@RequestBody WebhookDto input) {
+        log.debug("*** Take a webhook {}", input);
         leadWorkerService.processWebhook(input);
     }
 

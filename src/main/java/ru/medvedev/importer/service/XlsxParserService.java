@@ -15,6 +15,7 @@ import ru.medvedev.importer.exception.BadRequestException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,7 +71,7 @@ public class XlsxParserService {
             info.getFieldLinks().keySet().stream()
                     .filter(key -> !info.getFieldLinks().get(key).isEmpty())
                     .forEach(item -> addFieldValue(record, row, item, info.getFieldLinks().get(item)));
-            if (isNotBlank(record.getInn())) {
+            if (isNotBlank(record.getOrgInn())) {
                 list.add(record);
             }
         }
@@ -94,9 +95,12 @@ public class XlsxParserService {
             case USR_CITY:
                 record.setCity(cellValueToString(row, cells));
                 break;
-            case USR_INN:
-                record.setInn(cellValueToString(row, cells));
+            case USR_ADDRESS:
+                record.setAddress(cellValueToString(row, cells));
                 break;
+            /*case USR_INN:
+                record.setInn(cellValueToString(row, cells));
+                break;*/
             case USR_REGION:
                 record.setRegion(cellValueToString(row, cells));
                 break;
@@ -162,7 +166,7 @@ public class XlsxParserService {
 
         switch (cell.getCellType()) {
             case NUMERIC:
-                return String.valueOf(cell.getNumericCellValue());
+                return String.valueOf(new BigDecimal(cell.getNumericCellValue()));
             case STRING:
                 return cell.getStringCellValue();
             default:

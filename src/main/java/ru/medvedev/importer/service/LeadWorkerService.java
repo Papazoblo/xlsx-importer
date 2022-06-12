@@ -53,7 +53,7 @@ public class LeadWorkerService {
         try {
             boolean withOrganization = importInfo.getFieldLinks().get(SkorozvonField.ORG_NAME) != null;
             records = xlsxParserService.readColumnBody(importInfo).stream()
-                    .collect(toMap(XlsxRecordDto::getInn, item -> item));
+                    .collect(toMap(XlsxRecordDto::getOrgInn, item -> item));
             List<String> positiveInn = sendCheckDuplicates(new ArrayList<>(records.keySet()));
             splitToContactAndOrganization(withOrganization, records, positiveInn, importInfo);
         } catch (Exception ex) {
@@ -64,18 +64,18 @@ public class LeadWorkerService {
 
     private void splitToContactAndOrganization(boolean withOrganizations, Map<String, XlsxRecordDto> recordsMap,
                                                List<String> inn, XlsxImportInfo importInfo) {
-        if (withOrganizations) {
-            List<CreateOrganizationDto> orgList = createOrganizationFromInn(recordsMap, inn, importInfo.getOrgTags(),
-                    importInfo.getUsrTags());
-            List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn.stream()
-                    .filter(item -> isBlank(recordsMap.get(item).getOrgName()))
-                    .collect(Collectors.toList()), importInfo.getUsrTags());
-            sendOrganizationToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), orgList);
-            sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
-        } else {
+        //if (withOrganizations) {
+        List<CreateOrganizationDto> orgList = createOrganizationFromInn(recordsMap, inn, importInfo.getOrgTags(),
+                importInfo.getUsrTags());
+        List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn.stream()
+                .filter(item -> isBlank(recordsMap.get(item).getOrgName()))
+                .collect(Collectors.toList()), importInfo.getUsrTags());
+        sendOrganizationToSkorozvon(importInfo.getProjectCode(), importInfo.getOrgTags(), orgList);
+        sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
+        /*} else {
             List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn, importInfo.getUsrTags());
             sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
-        }
+        }*/
     }
 
     private void sendLeadToSkorozvon(Long projectId, List<String> tags, List<CreateLeadDto> leads) {
@@ -112,8 +112,10 @@ public class LeadWorkerService {
 
         innList.forEach(item -> {
             XlsxRecordDto record = records.get(item);
-            organizationMap.putIfAbsent(record.getOrgName(), xlsxRecordToOrganization(record, orgTag));
-            organizationMap.get(record.getOrgName()).getLeads().add(xlsxRecordToLead(record, contactTag));
+            organizationMap.putIfAbsent(record.getOrgName() + " " + record.getOrgInn(),
+                    xlsxRecordToOrganization(record, orgTag));
+            organizationMap.get(record.getOrgName() + " " + record.getOrgInn()).getLeads()
+                    .add(xlsxRecordToLead(record, contactTag));
         });
         return new ArrayList<>(organizationMap.values());
     }
@@ -154,17 +156,17 @@ public class LeadWorkerService {
         lead.setPhones(Optional.ofNullable(record.getPhone()).map(Arrays::asList).orElse(null));
         lead.setEmails(Optional.ofNullable(record.getEmail()).map(Arrays::asList).orElse(null));
         lead.setCity(record.getCity());
-        lead.setInn(record.getInn());
+        lead.setAddress(record.getAddress());
         lead.setRegion(record.getRegion());
         lead.setPost(record.getPosition());
-        lead.setDescription(record.getDescription());
-        lead.setTags(tags);
+        lead.setComment(record.getDescription());
+        //lead.setTags(tags);
         return lead;
     }
 
     private static CreateOrganizationDto xlsxRecordToOrganization(XlsxRecordDto recordDto, List<String> tags) {
         CreateOrganizationDto organization = new CreateOrganizationDto();
-        organization.setFirmName(recordDto.getOrgName());
+        organization.setName(recordDto.getOrgName());
         organization.setPhones(Optional.ofNullable(recordDto.getPhone()).map(Arrays::asList).orElse(null));
         organization.setEmails(Optional.ofNullable(recordDto.getEmail()).map(Arrays::asList).orElse(null));
         organization.setHomepage(recordDto.getOrgHost());
@@ -172,10 +174,10 @@ public class LeadWorkerService {
         organization.setAddress(recordDto.getOrgAddress());
         organization.setRegion(recordDto.getOrgRegion());
         organization.setBusiness(recordDto.getOrgActivity());
-        organization.setInn(recordDto.getInn());
+        organization.setInn(recordDto.getOrgInn());
         organization.setKpp(recordDto.getOrgKpp());
-        organization.setDescription(recordDto.getOrgDescription());
-        organization.setTags(tags);
+        organization.setComment(recordDto.getOrgDescription());
+        //organization.setTags(tags);
         return organization;
     }
 }
