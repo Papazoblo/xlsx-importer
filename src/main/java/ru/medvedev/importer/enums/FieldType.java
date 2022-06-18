@@ -4,5 +4,6 @@ public enum FieldType {
 
     SELECT,
     INPUT,
+    MULTIPLE,
     SPACE
 }

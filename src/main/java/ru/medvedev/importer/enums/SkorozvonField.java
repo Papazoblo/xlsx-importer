@@ -30,7 +30,7 @@ public enum SkorozvonField {
     ORG_INN("ИНН", true, FieldType.SELECT),
     ORG_KPP("КПП", false, FieldType.SELECT),
     USD_DESCRIPTION("Описание", false, FieldType.SELECT),
-    ORG_TAGS("Теги, разделитель ';'", false, FieldType.INPUT);
+    ORG_TAGS("Теги, разделитель ';'", false, FieldType.MULTIPLE);
 
     @Getter
     private final String description;

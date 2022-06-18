@@ -63,21 +63,25 @@
                     <th th:class="text-center"><label for="textProjectId">Поля контактов в скорозвоне</label></th>
                     <th th:class="text-center"><label for="textProjectId">Поля excel</label></th>
                 </tr>
-                <tr th:each="field : ${fields}" th:class="select-hover">
+                <tr th:each="field : ${fields}" th:class="'select-hover ' +
+                            ${field.getFieldType().name().equals('MULTIPLE') ? 'space-height' : ''}">
                     <th th:if="${field.getFieldType().name().equals('SPACE')}" class="text-center space-block">
                         Поля организаций в скорозвоне
                     </th>
                     <th th:text="${field.description} + (${field.required} ? '*' : '')"><br/></th>
-                    <th th:if="${field.getFieldType().name().equals('SELECT')}">
-                        <select multiple data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
+                    <th>
+                        <select th:if="${field.getFieldType().name().equals('SELECT') ||
+                                            field.getFieldType().name().equals('MULTIPLE')}"
+                                multiple data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
                                 th:class="'selectpicker w-100 ' + ${field.getFieldType().name()}"
                                 th:name="*{field.name()}">
                             <option th:each="item, i : ${headers}" th:value="${i.index}" th:text="${item}">
                             </option>
                         </select>
-                    </th>
-                    <th th:if="${field.getFieldType().name().equals('INPUT')}">
-                        <input type="text" th:name="*{field.name()}" th:class="${field.getFieldType().name()}"/>
+                        <input th:if="${field.getFieldType().name().equals('INPUT') ||
+                                        field.getFieldType().name().equals('MULTIPLE')}"
+                               type="text" th:name="*{field.name()}" th:class="${field.getFieldType().name()}"
+                               placeholder="Введите значение"/>
                     </th>
                 </tr>
                 <tr>

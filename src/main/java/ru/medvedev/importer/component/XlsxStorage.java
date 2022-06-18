@@ -12,6 +12,7 @@ import static org.apache.logging.log4j.util.Strings.isNotBlank;
 public class XlsxStorage {
 
     private String fileName;
+    private Long projectId;
 
     public boolean isExist() {
         return isNotBlank(fileName);

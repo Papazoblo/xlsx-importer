@@ -11,7 +11,7 @@ $(document).ready(function () {
     $("#parseXlsx").on('click', function (e) {
 
         var result = new Map();
-        var elements = $('.SELECT');
+        var elements = $('select[name=ORG_TAGS], .SELECT');
         var textProjectId = $('#textProjectId').val();
 
         for (var i = 0; i < elements.length; i++) {
@@ -36,11 +36,11 @@ $(document).ready(function () {
             usrTags = undefined;
         }*/
 
-        var orgTags = $('input[name=ORG_TAGS]').get(0);
-        if (orgTags.value.length > 0) {
-            orgTags = orgTags.value.split(';');
+        var orgTagsInput = $('input[name=ORG_TAGS]').get(0);
+        if (orgTagsInput.value.length > 0) {
+            orgTagsInput = orgTagsInput.value.split(';');
         } else {
-            orgTags = undefined;
+            orgTagsInput = undefined;
         }
 
         if (result.get('USR_FIO') === undefined || result.get('ORG_INN') === undefined ||
@@ -51,9 +51,8 @@ $(document).ready(function () {
 
         var data = JSON.stringify({
             "projectCode": textProjectId,
-            "fieldLinks": Object.fromEntries(result),/*
-            "usrTags": usrTags,*/
-            "orgTags": orgTags
+            "fieldLinks": Object.fromEntries(result),
+            "orgTags": orgTagsInput
         });
 
         $("#parseXlsx").attr('disabled', 'disabled');

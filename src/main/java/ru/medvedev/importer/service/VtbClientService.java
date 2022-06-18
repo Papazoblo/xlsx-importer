@@ -70,8 +70,13 @@ public class VtbClientService {
         }).collect(Collectors.toList());
         LeadRequest leadRequest = new LeadRequest();
         leadRequest.setLeads(leads);
-        CheckLeadResponse response = client.checkLeads(leadRequest, BEARER + properties.getAccessToken());
-        return response.getLeads().stream().filter(item -> item.getResponseCode() == POSITIVE)
-                .collect(Collectors.toList());
+        try {
+            CheckLeadResponse response = client.checkLeads(leadRequest, BEARER + properties.getAccessToken());
+            return response.getLeads().stream().filter(item -> item.getResponseCode() == POSITIVE)
+                    .collect(Collectors.toList());
+        } catch (Exception ex) {
+            log.debug("*** Error check duplicate", ex);
+            return Collections.emptyList();
+        }
     }
 }

@@ -14,6 +14,5 @@ public class XlsxImportInfo {
     private Long projectCode;
     //енам скорозвона => список идентификаторов колонок экселя
     private Map<SkorozvonField, List<Integer>> fieldLinks = new LinkedHashMap<>();
-    private List<String> usrTags = new ArrayList<>();
     private List<String> orgTags = new ArrayList<>();
 }

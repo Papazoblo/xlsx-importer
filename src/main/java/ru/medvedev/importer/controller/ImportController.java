@@ -19,6 +19,7 @@ import ru.medvedev.importer.service.XlsxStorageService;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Optional;
 
 @Controller
 @RequiredArgsConstructor
@@ -34,6 +35,9 @@ public class ImportController {
     @GetMapping("/xlsx/import")
     public String importXlsx(Model model) {
         try {
+            model.addAttribute("callProjectId", Optional.ofNullable(storage.getProjectId())
+                    .map(String::valueOf)
+                    .orElse(""));
             model.addAttribute("fileExist", storage.isExist());
             model.addAttribute("fileName", storage.isExist() ? storage.getFileName() : "Не найден");
             model.addAttribute("headers", storage.isExist() ? xlsxParserService.readColumnHeaders()
@@ -48,6 +52,7 @@ public class ImportController {
     @PostMapping("/xlsx/import")
     @ResponseBody
     public void startImport(@RequestBody XlsxImportInfo importInfo) {
+        storage.setProjectId(importInfo.getProjectCode());
         leadWorkerService.processXlsxRecords(importInfo);
     }
 
