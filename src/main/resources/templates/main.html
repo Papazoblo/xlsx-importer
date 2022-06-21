@@ -69,9 +69,9 @@
                         Поля организаций в скорозвоне
                     </th>
                     <th th:text="${field.description} + (${field.required} ? '*' : '')"><br/></th>
-                    <th>
-                        <select th:if="${field.getFieldType().name().equals('SELECT') ||
-                                            field.getFieldType().name().equals('MULTIPLE')}"
+                    <th><!--||
+                                            field.getFieldType().name().equals('MULTIPLE')-->
+                        <select th:if="${field.getFieldType().name().equals('SELECT') }"
                                 multiple data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
                                 th:class="'selectpicker w-100 ' + ${field.getFieldType().name()}"
                                 th:name="*{field.name()}">

@@ -5,15 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
-import ru.medvedev.importer.enums.SkorozvonField;
 import ru.medvedev.importer.exception.BadRequestException;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toMap;
-import static org.apache.logging.log4j.util.Strings.isBlank;
+import static java.util.stream.Collectors.groupingBy;
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
 
 @Service
@@ -53,11 +51,11 @@ public class LeadWorkerService {
      * */
 
     public void processXlsxRecords(XlsxImportInfo importInfo) {
-        Map<String, XlsxRecordDto> records;
+        Map<String, List<XlsxRecordDto>> records;
         try {
-            boolean withOrganization = importInfo.getFieldLinks().get(SkorozvonField.ORG_NAME) != null;
+            //boolean withOrganization = importInfo.getFieldLinks().get(SkorozvonField.ORG_NAME) != null;
             records = xlsxParserService.readColumnBody(importInfo).stream()
-                    .collect(toMap(XlsxRecordDto::getOrgInn, item -> item));
+                    .collect(groupingBy(XlsxRecordDto::getOrgInn));
             List<String> positiveInn = sendCheckDuplicates(new ArrayList<>(records.keySet()));
             splitToContactAndOrganization(records, positiveInn, importInfo);
         } catch (Exception ex) {
@@ -66,15 +64,15 @@ public class LeadWorkerService {
         }
     }
 
-    private void splitToContactAndOrganization(Map<String, XlsxRecordDto> recordsMap,
+    private void splitToContactAndOrganization(Map<String, List<XlsxRecordDto>> recordsMap,
                                                List<String> inn, XlsxImportInfo importInfo) {
         //if (withOrganizations) {
         List<CreateOrganizationDto> orgList = createOrganizationFromInn(recordsMap, inn);
-        List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn.stream()
-                .filter(item -> isBlank(recordsMap.get(item).getOrgName()))
-                .collect(Collectors.toList()));
+        /*List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn.stream()
+                .filter(item -> isBlank(recordsMap.get(item).get(0).getOrgName()))
+                .collect(Collectors.toList()));*/
         sendOrganizationToSkorozvon(importInfo.getProjectCode(), importInfo.getOrgTags(), orgList);
-        sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
+        //sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
         /*} else {
             List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn, importInfo.getUsrTags());
             sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
@@ -107,18 +105,34 @@ public class LeadWorkerService {
         }
     }
 
-    private List<CreateOrganizationDto> createOrganizationFromInn(Map<String, XlsxRecordDto> records,
+    private List<CreateOrganizationDto> createOrganizationFromInn(Map<String, List<XlsxRecordDto>> records,
                                                                   List<String> innList) {
 
         Map<String, CreateOrganizationDto> organizationMap = new HashMap<>();
 
-        innList.forEach(item -> {
-            XlsxRecordDto record = records.get(item);
-            organizationMap.putIfAbsent(record.getOrgName() + " " + record.getOrgInn(),
+        innList.forEach(item -> records.get(item).forEach(record -> {
+            organizationMap.putIfAbsent(record.getOrgInn(),
                     xlsxRecordToOrganization(record));
-            organizationMap.get(record.getOrgName() + " " + record.getOrgInn()).getLeads()
-                    .add(xlsxRecordToLead(record));
-        });
+            List<CreateLeadDto> leads = organizationMap.get(record.getOrgInn()).getLeads();
+            if (leads.isEmpty()) {
+                leads.add(xlsxRecordToLead(record));
+            } else {
+                boolean isFind = false;
+                for (int i = 0; i < leads.size(); i++) {
+                    if (leads.get(i).getName().equals(record.getFio())) {
+                        List<String> phones = new ArrayList<>(leads.get(i).getPhones());
+                        phones.add(record.getPhone());
+                        leads.get(i).setPhones(phones);
+                        isFind = true;
+                        break;
+                    }
+                }
+                if (!isFind) {
+                    leads.add(xlsxRecordToLead(record));
+                }
+            }
+            organizationMap.get(record.getOrgInn()).setLeads(leads);
+        }));
         return new ArrayList<>(organizationMap.values());
     }
 
