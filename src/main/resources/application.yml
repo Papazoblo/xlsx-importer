@@ -20,14 +20,27 @@ logging:
     ru.medvedev.importer: DEBUG
 
 spring:
+  datasource:
+    username: postgres
+    password: 2x8c63tk
+    jdbc-url: jdbc:postgresql://127.0.0.1:5432/xlsx_collector
+    driver-class-name: org.postgresql.Driver
   main:
     allow-bean-definition-overriding: true
   thymeleaf:
     cache: false
 
+directory:
+  upload-dir: /opt/xlsx-importer/storage
+
 cron:
   fixed-rate-update-token: 5400000
   fixed-rate-check-xlsx-exists: 900000
+
+telegram:
+  token: 5532430343:AAGc7aigR7QcWjprSB5grbfeFDEaTd0KDlw
+  botName: Xlsx collector
+  reconnectTimer: 10000
 
 skorozvon:
   url: https://app.skorozvon.ru

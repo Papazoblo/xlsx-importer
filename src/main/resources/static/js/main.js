@@ -103,5 +103,16 @@ $(document).ready(function () {
             this.value = this.value.replace(/\D/g, '');
         }
     });
-})
-;
+
+    $("#files .btn-delete").on('click', function (e) {
+        var id = $(this).attr("id");
+        var isDelete = confirm("Удалить файл с id = " + id + "?");
+
+        if (isDelete) {
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open("DELETE", '/file-storage/' + id, false);
+            xmlHttp.send(null);
+            window.location.reload();
+        }
+    });
+});

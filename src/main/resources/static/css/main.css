@@ -105,3 +105,31 @@ input[type=text] {
     position: absolute;
     top: 10px;
 }
+
+.deleted {
+    background: darkgray;
+}
+
+#files {
+    margin-top: 1.5rem;
+}
+
+#files th, #files td {
+    text-align: center;
+}
+
+.paging {
+    float: right;
+}
+
+#files td {
+    line-height: 40px;
+}
+
+button.btn i.fa-trash-can {
+    color: #af0c0c;
+}
+
+.action-td {
+    width: 80px;
+}
