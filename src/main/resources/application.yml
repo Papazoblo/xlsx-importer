@@ -21,9 +21,9 @@ logging:
 
 spring:
   datasource:
-    username: postgres
+    username: xlsx_importer_user
     password: 2x8c63tk
-    jdbc-url: jdbc:postgresql://127.0.0.1:5432/xlsx_collector
+    jdbc-url: jdbc:postgresql://127.0.0.1:5432/xlsx_importer_db
     driver-class-name: org.postgresql.Driver
   main:
     allow-bean-definition-overriding: true
@@ -34,7 +34,7 @@ directory:
   upload-dir: /opt/xlsx-importer/storage
 
 cron:
-  fixed-rate-update-token: 5400000
+  fixed-rate-update-token: 1200000
   fixed-rate-check-xlsx-exists: 900000
 
 telegram:

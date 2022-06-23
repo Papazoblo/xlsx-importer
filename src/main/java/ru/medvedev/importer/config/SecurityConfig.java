@@ -31,7 +31,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         authorize.anyRequest().permitAll())*/
                 .authorizeRequests()
                 .antMatchers("/webhook").permitAll()
-                .anyRequest().permitAll()
+                .anyRequest().authenticated()
                 .and()
                 .formLogin()
                 .defaultSuccessUrl("/xlsx/import", true)

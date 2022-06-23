@@ -13,6 +13,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.medvedev.importer.component.TelegramProperty;
 import ru.medvedev.importer.entity.FileInfoEntity;
@@ -116,7 +117,8 @@ public class TelegramPollingService extends TelegramLongPollingBot {
 
     private void setCommandList() {
         SetMyCommands.SetMyCommandsBuilder commandsBuilder = SetMyCommands.builder();
-        commandsBuilder.commands(Collections.emptyList());
+        commandsBuilder.commands(Collections.singletonList(BotCommand.builder().command("/start")
+                .description("/start").build()));
         executeCommand(commandsBuilder.build());
     }
 

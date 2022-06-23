@@ -75,7 +75,7 @@ public class VtbClientService {
             return response.getLeads().stream().filter(item -> item.getResponseCode() == POSITIVE)
                     .collect(Collectors.toList());
         } catch (Exception ex) {
-            log.debug("*** Error check duplicate", ex);
+            log.debug("*** Error check duplicate: {}", ex.getMessage(), ex);
             return Collections.emptyList();
         }
     }

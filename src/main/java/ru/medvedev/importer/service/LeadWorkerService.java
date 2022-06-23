@@ -66,18 +66,25 @@ public class LeadWorkerService {
 
     private void splitToContactAndOrganization(Map<String, List<XlsxRecordDto>> recordsMap,
                                                List<String> inn, XlsxImportInfo importInfo) {
-        //if (withOrganizations) {
         List<CreateOrganizationDto> orgList = createOrganizationFromInn(recordsMap, inn);
-        /*List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn.stream()
-                .filter(item -> isBlank(recordsMap.get(item).get(0).getOrgName()))
-                .collect(Collectors.toList()));*/
         sendOrganizationToSkorozvon(importInfo.getProjectCode(), importInfo.getOrgTags(), orgList);
-        //sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
-        /*} else {
+    }
+
+
+    /*private void splitToContactAndOrganization(Map<String, XlsxRecordDto> recordsMap,
+                                               List<String> inn, XlsxImportInfo importInfo) {
+        if (withOrganizations) {
+        List<CreateOrganizationDto> orgList = createOrganizationFromInn(recordsMap, inn);
+        List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn.stream()
+                .filter(item -> isBlank(recordsMap.get(item).get(0).getOrgName()))
+                .collect(Collectors.toList()));
+        sendOrganizationToSkorozvon(importInfo.getProjectCode(), importInfo.getOrgTags(), orgList);
+        sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
+        } else {
             List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn, importInfo.getUsrTags());
             sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
-        }*/
-    }
+        }
+    }*/
 
     private void sendLeadToSkorozvon(Long projectId, List<String> tags, List<CreateLeadDto> leads) {
         log.debug("*** Send leads to skorozvon {}", leads.size());
@@ -99,6 +106,7 @@ public class LeadWorkerService {
         if (leads.isEmpty()) {
             return;
         }
+        skorozvonClientService.refreshToken();
         for (int i = 0; i < leads.size(); i = i + BATCH_SIZE) {
             skorozvonClientService.createMultiple(projectId, leads.subList(i, Math.min(i + BATCH_SIZE, leads.size())),
                     tags);
@@ -148,22 +156,12 @@ public class LeadWorkerService {
         vtbClientService.login();
 
         //Делим на пачки
-        //List<CompletableFuture<List<LeadInfoResponse>>> completableFutures = new ArrayList<>();
         Set<String> result = new HashSet<>();
         for (int i = 0; i < innList.size(); i = i + BATCH_SIZE) {
             List<String> innSublist = innList.subList(i, Math.min(i + BATCH_SIZE, innList.size()));
             result.addAll(vtbClientService.checkLead(innSublist).stream().map(LeadInfoResponse::getInn)
                     .collect(Collectors.toSet()));
-            //completableFutures.add(CompletableFuture.supplyAsync(() -> vtbClientService.checkLead(innSublist)));
         }
-/*
-        CompletableFuture<Void> allFutures = CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]));
-        CompletableFuture<List<List<LeadInfoResponse>>> allCompletableFuture = allFutures.thenApply(future ->
-                completableFutures.stream().map(CompletableFuture::join).collect(Collectors.toList()));
-
-        CompletableFuture<List<String>> completableFuture = allCompletableFuture.thenApply(result ->
-                result.stream().flatMap(List::stream).map(LeadInfoResponse::getInn).collect(Collectors.toList()));
-        return completableFuture.get();*/
         return new ArrayList<>(result);
     }
 

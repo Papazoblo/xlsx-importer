@@ -56,7 +56,8 @@ public class SkorozvonClientService {
         properties.setRefreshToken(response.getRefreshToken());
     }
 
-    private void refreshToken() {
+    public void refreshToken() {
+        log.debug("*** refreshing token");
         RefreshRequest request = new RefreshRequest();
         request.setApplicationId(properties.getApplicationId());
         request.setApplicationKey(properties.getApplicationKey());
@@ -71,7 +72,7 @@ public class SkorozvonClientService {
         login();
     }
 
-    @Scheduled(fixedRateString = "${cron.fixed-rate-update-token}", initialDelay = 3600000)
+    @Scheduled(fixedRateString = "${cron.fixed-rate-update-token}", initialDelay = 10000)
     public void updateTokenScheduler() {
         refreshToken();
     }
