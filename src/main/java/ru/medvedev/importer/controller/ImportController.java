@@ -73,10 +73,4 @@ public class ImportController {
         log.debug("*** Take a webhook {}", input);
         leadWorkerService.processWebhook(input);
     }
-
-    @GetMapping("/ping")
-    @ResponseBody
-    public String ping() {
-        return "pong";
-    }
 }

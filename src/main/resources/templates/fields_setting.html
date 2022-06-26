@@ -1,0 +1,109 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Xlsx importer</title>
+
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/4.6.0-1/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/fontawesome.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/solid.min.css}"/>
+    <link rel="stylesheet" th:href="@{/css/main.css}"/>
+
+</head>
+
+<body>
+
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
+    <div class="container">
+        <a class="navbar-brand" href="/">Importer service</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive"
+                aria-controls="navbarResponsive"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/xlsx/import">Загрузка
+                    </a>
+                </li>
+                <li class="nav-item ">
+                    <a class="nav-link" href="/file-storage">Хранилище
+                    </a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="/settings/fields">Настройки
+                        <span class="sr-only">(current)</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout">Выйти
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                        <li><a class="dropdown-item" href="#">Action</a></li>
+                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+<main role="main" class="container">
+    <div th:class="row">
+        <div class="col-md-10 offset-md-1">
+            <table class="table table-bordered table-responsive-sm variantTable">
+                <thead>
+                <tr>
+                    <th>Поле</th>
+                    <th>Варианты названий</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="field : ${fields}">
+                    <td th:text="${field.description}" class="fieldName"
+                        th:name="${field.name()}">field
+                    </td>
+                    <td>
+                        <input type="text" class="settingInput"/>
+                        <button th:class="${field.name()} + ' btnAdd btn-2'">
+                            Добавить
+                        </button>
+                        <table class="settingNameTable">
+                            <tbody>
+                            <tr th:each="name : ${fieldsMap.get(field)}">
+                                <td th:text="${name}" class="fieldNameValue"></td>
+                                <td class="deleteFieldNameValue">
+                                    <button class="btn btn-delete" title="Удалить">
+                                        <i class="fa-solid fa-circle-minus"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<button class="btn-2" id="btnSave" disabled="disabled">
+    Сохранить
+</button>
+<!-- /.container -->
+
+<script type="text/javascript" th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
+<script type="text/javascript" th:src="@{/js/fields_setting.js}"></script>
+</body>
+</html>
