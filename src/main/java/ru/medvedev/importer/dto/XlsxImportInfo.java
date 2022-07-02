@@ -11,6 +11,7 @@ import java.util.Map;
 @Data
 public class XlsxImportInfo {
 
+    private boolean enableWhatsAppLink;
     private Long projectCode;
     //енам скорозвона => список идентификаторов колонок экселя
     private Map<SkorozvonField, List<Integer>> fieldLinks = new LinkedHashMap<>();

@@ -36,6 +36,7 @@ directory:
 cron:
   fixed-rate-update-token: 1200000
   fixed-rate-check-xlsx-exists: 900000
+  launch-file-processing: '0 * * * * *'
 
 telegram:
   token: 5532430343:AAGc7aigR7QcWjprSB5grbfeFDEaTd0KDlw

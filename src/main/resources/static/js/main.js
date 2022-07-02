@@ -29,13 +29,6 @@ $(document).ready(function () {
             }
         }
 
-        /*var usrTags = $('input[name=USR_TAGS]').get(0);
-        if (usrTags.value.length > 0) {
-            usrTags = usrTags.value.split(';');
-        } else {
-            usrTags = undefined;
-        }*/
-
         var orgTagsInput = $('input[name=ORG_TAGS]').get(0);
         if (orgTagsInput.value.length > 0) {
             orgTagsInput = orgTagsInput.value.split(';');
@@ -52,7 +45,8 @@ $(document).ready(function () {
         var data = JSON.stringify({
             "projectCode": textProjectId,
             "fieldLinks": Object.fromEntries(result),
-            "orgTags": orgTagsInput
+            "orgTags": orgTagsInput,
+            "enableWhatsAppLink": $('#enableWhatsAppLink').is(":checked")
         });
 
         $("#parseXlsx").attr('disabled', 'disabled');
@@ -98,7 +92,7 @@ $(document).ready(function () {
         });
     });
 
-    $(".onlyNumbers").keyup(function (e) {
+    $(".onlyNumbers").keyup(function () {
         if (/\D/g.test(this.value)) {
             this.value = this.value.replace(/\D/g, '');
         }
@@ -113,6 +107,14 @@ $(document).ready(function () {
             xmlHttp.open("DELETE", '/file-storage/' + id, false);
             xmlHttp.send(null);
             window.location.reload();
+        }
+    });
+
+    $('label[for="enableWhatsAppLink"]').on('click', function () {
+        if ($('#enableWhatsAppLink').is(":checked")) {
+            $('select[name="ORG_HOST"]').multiselect('disable');
+        } else {
+            $('select[name="ORG_HOST"]').multiselect('enable');
         }
     });
 });

@@ -18,8 +18,10 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
+import static org.hibernate.internal.util.StringHelper.isBlank;
 
 @Service
 @RequiredArgsConstructor
@@ -77,6 +79,12 @@ public class XlsxParserService {
         }
         wb.close();
         fis.close();
+
+        if (info.isEnableWhatsAppLink()) {
+            list = list.stream().peek(recordDto ->
+                    recordDto.setOrgHost(String.format("https://api.whatsapp.com/send?phone=%s", isBlank(recordDto.getPhone()) ?
+                            recordDto.getPhone() : recordDto.getOrgPhone()))).collect(Collectors.toList());
+        }
 
         return list;
     }

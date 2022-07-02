@@ -8,7 +8,7 @@ public enum XlsxRequireField {
 
     NAME("Имя"),
     SURNAME("Фамилия"),
-    PATRONYMIC("Отчество"),
+    MIDDLE_NAME("Отчество"),
     ORG_NAME("Наименование ЮЛ"),
     PHONE("Телефон"),
     INN("ИНН"),

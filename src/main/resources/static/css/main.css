@@ -2,7 +2,7 @@
     width: 100%;
 }
 
-#mainTable th {
+#mainTable th, #btn-add-project {
     width: 50%;
 }
 
@@ -86,12 +86,23 @@ input[type=text] {
     pointer-events: none;
 }
 
+input {
+    padding-left: 12px;
+}
+
 .btn-3:disabled {
     background-color: #d2aeae;
     color: #444;
     pointer-events: none;
 }
 
+label[for='enableWhatsAppLink'] {
+    cursor: pointer;
+}
+
+#btnSendFile.btn-2, #parseXlsx.btn-2 {
+    width: 55% !important;
+}
 
 .custom-file-label::after {
     content: "Выбрать файл" !important;

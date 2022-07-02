@@ -11,9 +11,7 @@ import ru.medvedev.importer.dto.request.LeadRequest;
 import ru.medvedev.importer.dto.request.LoginRequest;
 import ru.medvedev.importer.dto.response.CheckLeadResponse;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
-import ru.medvedev.importer.dto.response.LoginResponse;
 
-import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,8 +34,8 @@ public class VtbClientService {
         request.setClient_id(properties.getClientId());
         request.setClient_secret(properties.getClientSecret());
 
-        LoginResponse response = client.login(URI.create(properties.getTokenUrl()), request);
-        properties.setAccessToken(response.getAccessToken());
+        /*LoginResponse response = client.login(URI.create(properties.getTokenUrl()), request);
+        properties.setAccessToken(response.getAccessToken());*/
     }
 
     public void createLead(WebhookLeadDto webhookLead) {
@@ -59,7 +57,12 @@ public class VtbClientService {
         }
     }
 
-    public List<LeadInfoResponse> checkLead(List<String> innList) {
+    public List<LeadInfoResponse> getPositiveFromCheckLead(List<String> innList) {
+        return getAllFromCheckLead(innList).stream().filter(item -> item.getResponseCode() == POSITIVE)
+                .collect(Collectors.toList());
+    }
+
+    public List<LeadInfoResponse> getAllFromCheckLead(List<String> innList) {
 
         log.debug("*** Check duplicate in VTB {}", innList.size());
 
@@ -72,8 +75,7 @@ public class VtbClientService {
         leadRequest.setLeads(leads);
         try {
             CheckLeadResponse response = client.checkLeads(leadRequest, BEARER + properties.getAccessToken());
-            return response.getLeads().stream().filter(item -> item.getResponseCode() == POSITIVE)
-                    .collect(Collectors.toList());
+            return response.getLeads();
         } catch (Exception ex) {
             log.debug("*** Error check duplicate: {}", ex.getMessage(), ex);
             return Collections.emptyList();

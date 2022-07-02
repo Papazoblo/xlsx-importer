@@ -36,20 +36,6 @@ public class LeadWorkerService {
         }
     }
 
-    /*
-     * 1. Разделить на контакты и контакты с организацией +
-     * 2. Разделить на пачки +
-     * 3. Пульнуть в скорозвон +
-     * 5. Нарисовать интерфес +
-     * 6. Связать бэк и интерфес +
-     * 7. Разобраться с тегами
-     * 8. Добавить работу с токенами +
-     * 9. Скедулер проверять наличие файла +
-     * 10. Подключить авторизацию
-     * 11. ССЛ
-     * 4. Проверить
-     * */
-
     public void processXlsxRecords(XlsxImportInfo importInfo) {
         Map<String, List<XlsxRecordDto>> records;
         try {
@@ -70,7 +56,6 @@ public class LeadWorkerService {
         sendOrganizationToSkorozvon(importInfo.getProjectCode(), importInfo.getOrgTags(), orgList);
     }
 
-
     /*private void splitToContactAndOrganization(Map<String, XlsxRecordDto> recordsMap,
                                                List<String> inn, XlsxImportInfo importInfo) {
         if (withOrganizations) {
@@ -84,9 +69,9 @@ public class LeadWorkerService {
             List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn, importInfo.getUsrTags());
             sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
         }
-    }*/
+    }
 
-    private void sendLeadToSkorozvon(Long projectId, List<String> tags, List<CreateLeadDto> leads) {
+     private void sendLeadToSkorozvon(Long projectId, List<String> tags, List<CreateLeadDto> leads) {
         log.debug("*** Send leads to skorozvon {}", leads.size());
 
         if (leads.isEmpty()) {
@@ -97,7 +82,7 @@ public class LeadWorkerService {
             skorozvonClientService.importLeads(projectId, leads.subList(i, Math.min(i + BATCH_SIZE, leads.size())),
                     tags);
         }
-    }
+    }*/
 
     private void sendOrganizationToSkorozvon(Long projectId, List<String> tags, List<CreateOrganizationDto> leads) {
 
@@ -159,7 +144,7 @@ public class LeadWorkerService {
         Set<String> result = new HashSet<>();
         for (int i = 0; i < innList.size(); i = i + BATCH_SIZE) {
             List<String> innSublist = innList.subList(i, Math.min(i + BATCH_SIZE, innList.size()));
-            result.addAll(vtbClientService.checkLead(innSublist).stream().map(LeadInfoResponse::getInn)
+            result.addAll(vtbClientService.getPositiveFromCheckLead(innSublist).stream().map(LeadInfoResponse::getInn)
                     .collect(Collectors.toSet()));
         }
         return new ArrayList<>(result);

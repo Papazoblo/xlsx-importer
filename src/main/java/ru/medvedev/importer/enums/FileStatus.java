@@ -8,7 +8,8 @@ public enum FileStatus {
 
     DOWNLOADED("Загружен"),
     IN_PROCESS("В обработке"),
-    PROCESSED("Обработан");
+    ERROR("Ошибка обработки"),
+    SUCCESS("Успешно обработан");
 
     @Getter
     private final String description;

@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
+@Getter
 public enum SkorozvonField {
 
     USR_FIO("ФИО", true, FieldType.SELECT),
@@ -32,10 +33,7 @@ public enum SkorozvonField {
     USD_DESCRIPTION("Описание", false, FieldType.SELECT),
     ORG_TAGS("Теги, разделитель ';'", false, FieldType.MULTIPLE);
 
-    @Getter
     private final String description;
-    @Getter
     private final boolean required;
-    @Getter
     private final FieldType fieldType;
 }

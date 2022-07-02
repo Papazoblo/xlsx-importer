@@ -25,12 +25,23 @@
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item active">
                     <a class="nav-link" href="/xlsx/import">Загрузка
+                        <span class="sr-only">(current)</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/file-storage">Хранилище
-                        <span class="sr-only">(current)</span>
                     </a>
+                </li>
+                <li class="nav-item">
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Настройки
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+                            <a class="dropdown-item" href="/settings/fields">Названия столбцов</a>
+                        </div>
+                    </div>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/logout">Выйти
@@ -59,12 +70,7 @@
                             <button class="btn-2" type="submit" id="btnSendFile">
                                 Сохранить файл
                             </button>
-                        </th><!--
-                        <th style="text-align: right">
-                            <button class="btn3" id="btnLogout">
-                                Выйти
-                            </button>
-                        </th>-->
+                        </th>
                     </tr>
                 </table>
 
@@ -98,8 +104,7 @@
                         Поля организаций в скорозвоне
                     </th>
                     <th th:text="${field.description} + (${field.required} ? '*' : '')"><br/></th>
-                    <th><!--||
-                                            field.getFieldType().name().equals('MULTIPLE')-->
+                    <th>
                         <select th:if="${field.getFieldType().name().equals('SELECT') }"
                                 multiple data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
                                 th:class="'selectpicker w-100 ' + ${field.getFieldType().name()}"
@@ -107,6 +112,12 @@
                             <option th:each="item, i : ${headers}" th:value="${i.index}" th:text="${item}">
                             </option>
                         </select>
+                        <label for="enableWhatsAppLink" th:if="${field.name().equals('ORG_HOST')}">
+                            Ссылка на WhatsApp
+                            <input type="checkbox" th:name="*{field.name()}"
+                                   title="Ссылка на WhatsApp"
+                                   id="enableWhatsAppLink"/>
+                        </label>
                         <input th:if="${field.getFieldType().name().equals('INPUT') ||
                                         field.getFieldType().name().equals('MULTIPLE')}"
                                type="text" th:name="*{field.name()}" th:class="${field.getFieldType().name()}"

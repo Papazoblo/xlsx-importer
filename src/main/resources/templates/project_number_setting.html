@@ -7,14 +7,12 @@
     <title>Xlsx importer</title>
 
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/4.6.0-1/css/bootstrap.min.css}"/>
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/fontawesome.min.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/solid.min.css}"/>
     <link rel="stylesheet" th:href="@{/css/main.css}"/>
 
 </head>
-
-<body>
 
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
@@ -27,13 +25,13 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarResponsive">
             <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
+                <li class="nav-item active">
                     <a class="nav-link" href="/xlsx/import">Загрузка
+                        <span class="sr-only">(current)</span>
                     </a>
                 </li>
-                <li class="nav-item active">
+                <li class="nav-item">
                     <a class="nav-link" href="/file-storage">Хранилище
-                        <span class="sr-only">(current)</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -56,36 +54,61 @@
     </div>
 </nav>
 
+<body>
 
 <main role="main" class="container">
+    <div class="row mt-4">
+        <div class="col-md-8 offset-md-2">
+            <table id="mainTable">
+                <tr>
+                    <th><label for="textProjectId">Идентификатор проекта</label></th>
+                    <th>
+                        <input id="textProjectId" class="onlyNumbers" type="text" maxlength="15"/>
+                    </th>
+                </tr>
+                <tr>
+                    <th><label for="date">Дата загрузки</label></th>
+                    <th>
+                        <div class="input-group date" id="datepicker">
+                            <input id="date" type="text" class="form-control"/>
+                            <span class="input-group-append">
+                                <span class="input-group-text bg-white">
+                                    <i class="fa-solid fa-calendar"></i>
+                                </span>
+                            </span>
+                        </div>
+                    </th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th style="text-align: right">
+                        <button id="btn-add-project" class="btn-2">Добавить</button>
+                    </th>
+                </tr>
+            </table>
+        </div>
+    </div>
+
     <div th:class="row">
         <div class="col-md-10 offset-md-1">
             <table id="files" class="table table-bordered table-responsive-sm">
                 <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Название</th>
-                    <th>Размер</th>
-                    <th>Дата загрузки</th>
-                    <th>Статус</th>
+                    <th>Дата</th>
+                    <th>№ проекта</th>
                     <th class="action-td"></th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="file : ${files}" th:class="${file.isDeleted()} ? deleted : ''">
-                    <td th:text="${file.getId()}">id</td>
-                    <td th:text="${file.getName()}">name</td>
-                    <td th:text="${file.getSize()}">size</td>
-                    <td th:text="${file.getDate()}">date</td>
-                    <td th:text="${file.getStatus()}">status</td>
+                <tr th:each="project : ${projectNumbers}">
+                    <td th:text="${project.getId()}">id</td>
+                    <td th:text="${project.getDate()}">date</td>
+                    <td th:text="${project.getNumber()}">projectNumber</td>
                     <td>
-                        <button th:if="${!file.isDeleted()}" class="btn btn-download" title="Скачать">
-                            <a th:href="'/file-storage/download/' + ${file.getId()}"><i
-                                    class="fa-solid fa-download"></i></a>
-                        </button>
-                        <!--<button th:if="${!file.isDeleted()}" class="btn btn-delete" title="Удалить" th:id="${file.getId()}">
+                        <button class="btn btn-delete" title="Удалить" th:id="${project.getId()}">
                             <i class="fa-solid fa-trash-can"></i>
-                        </button>-->
+                        </button>
                     </td>
                 </tr>
                 </tbody>
@@ -93,8 +116,9 @@
         </div>
     </div>
 
+
     <nav aria-label="Page navigation" class="paging">
-        <ul class="pagination" th:if="${files.totalPages > 1}">
+        <ul class="pagination" th:if="${projectNumbers.totalPages > 1}">
             <li class="page-item" th:classappend="${!paging.isPrevEnabled()? 'disabled' : ''}">
                 <a class="page-link" th:href="@{'/file-storage?page=' + ${paging.pageNumber - 1}}"
                    tabindex="-1">Previous</a>
@@ -120,21 +144,17 @@
 <script type="text/javascript" th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
-<script type="text/javascript" th:src="@{/js/main.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.js}"></script>
+<script type="text/javascript"
+        th:src="@{/webjars/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.ru.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/project_number_setting.js}"></script>
 <script type="text/javascript">
     $(document).ready(function () {
-        $('.selectpicker').multiselect({
-            nonSelectedText: 'Не выбрано',
-            nSelectedText: 'выбран(о)',
-            allSelectedText: 'Все выбрано',
-            resetText: 'Сбросить'
+        $('#datepicker').datepicker({
+            format: 'dd.mm.yyyy',
+            language: 'ru',
+            startDate: '-0d'
         });
-    });
-
-    $("#file").on("change", function () {
-        var fileName = $(this).val().split("\\").pop();
-        $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
     });
 </script>
 </body>

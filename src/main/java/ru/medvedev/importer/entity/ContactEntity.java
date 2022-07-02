@@ -18,8 +18,14 @@ public class ContactEntity {
     @Column(name = "org_name")
     private String orgName;
 
-    @Column(name = "fio")
-    private String fio;
+    @Column(name = "name")
+    private String name;
+
+    @Column(name = "surname")
+    private String surname;
+
+    @Column(name = "middle_name")
+    private String middleName;
 
     @Column(name = "phone")
     private String phone;

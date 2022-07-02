@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Document;
 import ru.medvedev.importer.dto.FileInfoDto;
 import ru.medvedev.importer.entity.FileInfoEntity;
+import ru.medvedev.importer.enums.FileStatus;
 import ru.medvedev.importer.repository.FileInfoRepository;
 
 import javax.persistence.EntityNotFoundException;
@@ -17,6 +18,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
@@ -38,7 +40,7 @@ public class FileInfoService {
     public boolean create(Document document, File file) {
 
         String hash = hashFile(file.toPath());
-        if (!repository.existsByHashAndDeletedIsFalse(hash)) {
+        if (!repository.existsByHashAndStatus(hash, FileStatus.SUCCESS)) {
             FileInfoEntity entity = new FileInfoEntity();
             entity.setName(document.getFileName());
             entity.setSize(Long.valueOf(document.getFileSize()));
@@ -66,6 +68,20 @@ public class FileInfoService {
 
     public FileInfoEntity getById(Long id) {
         return repository.findById(id).orElseThrow(EntityNotFoundException::new);
+    }
+
+    public boolean isExistsInProcess() {
+        return repository.existsByStatus(FileStatus.IN_PROCESS);
+    }
+
+    public Optional<FileInfoEntity> getDownloadedFile() {
+        return repository.findFirstByStatusOrderByCreateAt(FileStatus.DOWNLOADED);
+    }
+
+    public FileInfoEntity changeStatus(FileInfoEntity entity, FileStatus status) {
+        repository.changeStatus(entity.getId(), status);
+        entity.setStatus(status);
+        return entity;
     }
 
     @SneakyThrows
