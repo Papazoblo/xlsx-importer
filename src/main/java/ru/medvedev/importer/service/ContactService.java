@@ -1,10 +1,13 @@
 package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.ContactEntity;
 import ru.medvedev.importer.enums.ContactStatus;
+import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.repository.ContactRepository;
 
 import java.util.ArrayList;
@@ -22,6 +25,7 @@ public class ContactService {
 
     private final ContactRepository repository;
     private final ContactFileInfoService contactFileInfoService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<ContactEntity> filteredContacts(List<ContactEntity> contacts, Long fileId) {
         List<String> contactInn = contacts.stream()
@@ -54,6 +58,8 @@ public class ContactService {
             List<Long> contactIds = repository.findContactIdByInn(fileId, innList);
             repository.changeContactStatusById(ContactStatus.REJECTED, contactIds);
         }
-        //todo забракованные контакты
+
+        eventPublisher.publishEvent(new ImportEvent(this,
+                String.format("Количество неразрешенных контактов %d", leads.size()), EventType.NOTIFICATION, fileId));
     }
 }

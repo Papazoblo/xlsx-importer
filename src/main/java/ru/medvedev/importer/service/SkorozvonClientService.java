@@ -15,6 +15,7 @@ import ru.medvedev.importer.dto.request.ImportLeadRequest;
 import ru.medvedev.importer.dto.request.LoginRequest;
 import ru.medvedev.importer.dto.request.RefreshRequest;
 import ru.medvedev.importer.dto.response.ImportLeadResponse;
+import ru.medvedev.importer.dto.response.LoginResponse;
 
 import java.util.List;
 
@@ -50,9 +51,9 @@ public class SkorozvonClientService {
         request.setClient_id(properties.getApplicationId());
         request.setClient_secret(properties.getApplicationKey());
         request.setUsername(properties.getLogin());
-        /*LoginResponse response = client.login(request);
+        LoginResponse response = client.login(request);
         properties.setAccessToken(response.getAccessToken());
-        properties.setRefreshToken(response.getRefreshToken());*/
+        properties.setRefreshToken(response.getRefreshToken());
     }
 
     public void refreshToken() {
@@ -61,9 +62,9 @@ public class SkorozvonClientService {
         request.setApplicationId(properties.getApplicationId());
         request.setApplicationKey(properties.getApplicationKey());
         request.setRefreshToken(properties.getRefreshToken());
-        /*LoginResponse response = client.refresh(request, BEARER + properties.getAccessToken());
+        LoginResponse response = client.refresh(request, BEARER + properties.getAccessToken());
         properties.setAccessToken(response.getAccessToken());
-        properties.setRefreshToken(response.getRefreshToken());*/
+        properties.setRefreshToken(response.getRefreshToken());
     }
 
     @EventListener(ApplicationReadyEvent.class)

@@ -30,7 +30,8 @@ public class LeadWorkerService {
             String resultName = webhookDto.getCallResult().getResultName();
             if (isNotBlank(resultName) && (resultName.equals("ВТБ: Счет открыт") ||
                     resultName.equals("ВТБ: Заявка \"Горячий\"") ||
-                    resultName.equals("ВТБ: Заявка \"Теплый\""))) {
+                    resultName.equals("ВТБ: Заявка \"Теплый\"") ||
+                    resultName.equals("ВТБ: Заявка \"Вотсап\""))) {
                 vtbClientService.createLead(webhookDto.getLead());
             }
         }

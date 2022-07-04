@@ -11,7 +11,9 @@ import ru.medvedev.importer.dto.request.LeadRequest;
 import ru.medvedev.importer.dto.request.LoginRequest;
 import ru.medvedev.importer.dto.response.CheckLeadResponse;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
+import ru.medvedev.importer.dto.response.LoginResponse;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,8 +36,8 @@ public class VtbClientService {
         request.setClient_id(properties.getClientId());
         request.setClient_secret(properties.getClientSecret());
 
-        /*LoginResponse response = client.login(URI.create(properties.getTokenUrl()), request);
-        properties.setAccessToken(response.getAccessToken());*/
+        LoginResponse response = client.login(URI.create(properties.getTokenUrl()), request);
+        properties.setAccessToken(response.getAccessToken());
     }
 
     public void createLead(WebhookLeadDto webhookLead) {
@@ -53,7 +55,7 @@ public class VtbClientService {
         try {
             client.addLead(request, BEARER + properties.getAccessToken());
         } catch (Exception ex) {
-            log.debug("*** ошибка добавления лида", ex);
+            log.debug("*** ошибка добавления лида " + ex.getMessage(), ex);
         }
     }
 
@@ -64,7 +66,7 @@ public class VtbClientService {
 
     public List<LeadInfoResponse> getAllFromCheckLead(List<String> innList) {
 
-        log.debug("*** Check duplicate in VTB {}", innList.size());
+        log.debug("*** Check duplicate in VTB");
 
         List<LeadDto> leads = innList.stream().map(inn -> {
             LeadDto lead = new LeadDto();

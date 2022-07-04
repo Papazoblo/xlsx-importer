@@ -37,7 +37,11 @@ public class FileInfoService {
                 page.getPageable(), page.getTotalElements());
     }
 
-    public boolean create(Document document, File file) {
+    public Long getChatIdByFile(Long fileId) {
+        return repository.findById(fileId).map(FileInfoEntity::getChatId).orElse(null);
+    }
+
+    public boolean create(Document document, Long chatId, File file) {
 
         String hash = hashFile(file.toPath());
         if (!repository.existsByHashAndStatus(hash, FileStatus.SUCCESS)) {
@@ -50,6 +54,7 @@ public class FileInfoService {
             entity.setHash(hash);
             entity.setPath(file.getPath());
             entity.setDeleted(false);
+            entity.setChatId(chatId);
             repository.save(entity);
             log.debug("*** create file with hash {}", hash);
             return true;

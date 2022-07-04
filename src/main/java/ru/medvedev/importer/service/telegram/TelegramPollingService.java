@@ -66,12 +66,14 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                 message = update.getChannelPost();
             }
             if (message != null) {
-                Optional.ofNullable(message.getDocument()).ifPresent(this::downloadFile);
+                Long chatId = message.getChatId();
+                Optional.ofNullable(message.getDocument()).ifPresent(document ->
+                        downloadFile(document, chatId));
             }
         });
     }
 
-    private void downloadFile(Document document) {
+    private void downloadFile(Document document, Long chatId) {
         if (document.getFileName().toLowerCase().endsWith(".xlsx") ||
                 document.getFileName().toLowerCase().endsWith(".xls")) {
             String uploadedFileId = document.getFileId();
@@ -81,7 +83,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                 org.telegram.telegrambots.meta.api.objects.File file = execute(uploadedFile);
                 File newFile = new File(uploadDir + "/" + System.currentTimeMillis() + "_" + document.getFileName());
                 downloadFile(file, newFile);
-                if (!fileInfoService.create(document, newFile)) {
+                if (!fileInfoService.create(document, chatId, newFile)) {
                     newFile.delete();
                 }
             } catch (TelegramApiException e) {
@@ -105,7 +107,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
         return fileInfo;
     }
 
-    private void sendMessage(String message, Long idChat) {
+    public void sendMessage(String message, Long idChat) {
         SendMessage method = SendMessage.builder()
                 .chatId(String.valueOf(idChat))
                 .parseMode(ParseMode.MARKDOWN)

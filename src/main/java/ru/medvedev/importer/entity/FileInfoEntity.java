@@ -41,6 +41,9 @@ public class FileInfoEntity {
     @Enumerated(EnumType.STRING)
     private FileStatus status;
 
+    @Column(name = "chat_id")
+    private Long chatId;
+
     @Column(name = "create_at")
     private LocalDateTime createAt;
 
