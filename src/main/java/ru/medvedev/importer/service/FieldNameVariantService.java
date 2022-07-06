@@ -47,7 +47,7 @@ public class FieldNameVariantService {
                         .map(name -> {
                             FieldNameVariantEntity entity = new FieldNameVariantEntity();
                             entity.setField(field.getField());
-                            entity.setName(name);
+                            entity.setName(name.replace("\t", ""));
                             return entity;
                         }).collect(Collectors.toList()).stream()
                 ).collect(Collectors.toList());

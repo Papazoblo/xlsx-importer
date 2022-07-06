@@ -4,34 +4,34 @@ create sequence if not exists field_name_variants_seq_id;
 
 CREATE TABLE file_info
 (
-    id          bigint       NOT NULL,
-    name        varchar(20)  NOT NULL,
-    surname     varchar(20)  NOT NULL,
-    middle_name varchar(20)  NOT NULL,
-    size        bigint,
-    type        varchar(100),
-    unique_id   varchar(100) NOT NULL,
-    tg_file_id  varchar(100) NOT NULL,
-    hash        varchar(100) not null,
-    status      varchar(20)  NOT NULL,
-    path        varchar(200) not null,
-    deleted     boolean default false,
-    create_at   timestamp    not null,
+    id         bigint       NOT NULL,
+    name       varchar(100) NOT NULL,
+    size       bigint,
+    type       varchar(100),
+    unique_id  varchar(100) NOT NULL,
+    tg_file_id varchar(100) NOT NULL,
+    hash       varchar(100) not null,
+    status     varchar(50)  NOT NULL,
+    path       varchar(200) not null,
+    deleted    boolean default false,
+    create_at  timestamp    not null,
     primary key (id)
 );
 
 create table if not exists contact
 (
-    id        bigint       not null,
-    org_name  varchar(300) not null,
-    fio       varchar(300) not null,
-    phone     varchar(20)  not null,
-    inn       varchar(20)  not null,
-    ogrn      varchar(20),
-    region    varchar(20)  not null,
-    address   varchar(300),
-    status    varchar(20)  not null,
-    create_at timestamp    not null,
+    id          bigint       not null,
+    org_name    varchar(300) not null,
+    name        varchar(100) not null,
+    surname     varchar(100) not null,
+    middle_name varchar(100),
+    phone       varchar(20)  not null,
+    inn         varchar(20)  not null,
+    ogrn        varchar(20),
+    region      varchar(100) not null,
+    address     varchar(300),
+    status      varchar(20)  not null,
+    create_at   timestamp    not null,
     primary key (id)
 );
 

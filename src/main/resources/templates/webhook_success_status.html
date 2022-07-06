@@ -7,14 +7,12 @@
     <title>Xlsx importer</title>
 
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/4.6.0-1/css/bootstrap.min.css}"/>
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/fontawesome.min.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/solid.min.css}"/>
     <link rel="stylesheet" th:href="@{/css/main.css}"/>
 
 </head>
-
-<body>
 
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
@@ -29,9 +27,10 @@
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item">
                     <a class="nav-link" href="/xlsx/import">Загрузка
+                        <span class="sr-only">(current)</span>
                     </a>
                 </li>
-                <li class="nav-item ">
+                <li class="nav-item">
                     <a class="nav-link" href="/file-storage">Хранилище
                     </a>
                 </li>
@@ -62,56 +61,84 @@
     </div>
 </nav>
 
+<body>
 
 <main role="main" class="container">
+    <div class="row mt-4">
+        <div class="col-md-8 offset-md-2">
+            <table id="mainTable">
+                <tr>
+                    <th><label for="statusName">Название статуса</label></th>
+                    <th>
+                        <input id="statusName" type="text" maxlength="50"/>
+                    </th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th style="text-align: right">
+                        <button id="btn-add-project" class="btn-2">Добавить</button>
+                    </th>
+                </tr>
+            </table>
+        </div>
+    </div>
+
     <div th:class="row">
         <div class="col-md-10 offset-md-1">
-            <table class="table table-bordered table-responsive-sm variantTable">
+            <table id="files" class="table table-bordered table-responsive-sm">
                 <thead>
                 <tr>
-                    <th>Поле</th>
-                    <th>Варианты названий</th>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th class="action-td"></th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="field : ${fields}">
-                    <td th:text="${field.description}" class="fieldName"
-                        th:name="${field.name()}">field
-                    </td>
+                <tr th:each="item : ${data}">
+                    <td th:text="${item.getId()}">id</td>
+                    <td th:text="${item.getName()}">date</td>
                     <td>
-                        <input type="text" class="settingInput"/>
-                        <button th:class="${field.name()} + ' btnAdd btn-2'">
-                            Добавить
+                        <button class="btn btn-delete" title="Удалить" th:id="${item.getId()}">
+                            <i class="fa-solid fa-trash-can"></i>
                         </button>
-                        <table class="settingNameTable">
-                            <tbody>
-                            <tr th:each="name : ${fieldsMap.get(field)}">
-                                <td th:text="${name}" class="fieldNameValue"></td>
-                                <td class="deleteFieldNameValue">
-                                    <button class="btn btn-delete" title="Удалить">
-                                        <i class="fa-solid fa-circle-minus"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
                     </td>
                 </tr>
                 </tbody>
             </table>
         </div>
     </div>
-</main>
 
-<button class="btn-2" id="btnSave" disabled="disabled">
-    Сохранить
-</button>
+
+    <nav aria-label="Page navigation" class="paging">
+        <ul class="pagination" th:if="${data.totalPages > 1}">
+            <li class="page-item" th:classappend="${!paging.isPrevEnabled()? 'disabled' : ''}">
+                <a class="page-link" th:href="@{'/file-storage?page=' + ${paging.pageNumber - 1}}"
+                   tabindex="-1">Previous</a>
+            </li>
+            <th:block th:each="item : ${paging.getItems()}">
+                <li class="page-item" th:classappend="${item.index == paging.pageNumber? 'active' : ''}"
+                    th:if="${item.pageItemType.name() == 'PAGE'}">
+                    <a class="page-link" th:href="@{'/file-storage?page=' + ${item.index}}"
+                       th:text="${item.index}"></a>
+                </li>
+                <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}">
+                    <a class="page-link" href="#">...</a>
+                </li>
+            </th:block>
+            <li class="page-item" th:classappend="${!paging.isNextEnabled()? 'disabled' : ''}">
+                <a class="page-link" th:href="@{'/file-storage?page=' + ${paging.pageNumber + 1}}">Next</a>
+            </li>
+        </ul>
+    </nav>
+</main>
 <!-- /.container -->
 
 <script type="text/javascript" th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
-<script type="text/javascript" th:src="@{/js/fields_setting.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.js}"></script>
+<script type="text/javascript"
+        th:src="@{/webjars/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.ru.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/webhook_success_status.js}"></script>
 </body>
 </html>

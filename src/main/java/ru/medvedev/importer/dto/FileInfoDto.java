@@ -22,7 +22,7 @@ public class FileInfoDto {
         dto.setId(entity.getId());
         dto.setName(entity.getName());
         dto.setStatus(entity.getStatus().getDescription());
-        dto.setSize(new BigDecimal(entity.getSize()).divide(new BigDecimal(1048576), 2, RoundingMode.FLOOR).toString() + " mb");
+        dto.setSize(new BigDecimal(String.valueOf(entity.getSize())).divide(new BigDecimal(1048576), 2, RoundingMode.FLOOR).toString() + " mb");
         dto.setDate(entity.getCreateAt().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")));
         dto.setDeleted(entity.isDeleted());
         return dto;

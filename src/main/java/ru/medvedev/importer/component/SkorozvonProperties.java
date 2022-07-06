@@ -17,4 +17,8 @@ public class SkorozvonProperties {
     private String login;
     private String accessToken;
     private String refreshToken;
+
+    public void clearToken() {
+        this.accessToken = null;
+    }
 }

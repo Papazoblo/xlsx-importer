@@ -8,7 +8,6 @@ import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.exception.BadRequestException;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -23,15 +22,14 @@ public class LeadWorkerService {
 
     private final XlsxParserService xlsxParserService;
     private final VtbClientService vtbClientService;
+    private final SkorozvonAuthClientService skorozvonAuthClientService;
     private final SkorozvonClientService skorozvonClientService;
+    private final WebhookSuccessStatusService webhookSuccessStatusService;
 
     public void processWebhook(WebhookDto webhookDto) {
         if (webhookDto.getType().equals("call_result")) {
             String resultName = webhookDto.getCallResult().getResultName();
-            if (isNotBlank(resultName) && (resultName.equals("ВТБ: Счет открыт") ||
-                    resultName.equals("ВТБ: Заявка \"Горячий\"") ||
-                    resultName.equals("ВТБ: Заявка \"Теплый\"") ||
-                    resultName.equals("ВТБ: Заявка \"Вотсап\""))) {
+            if (isNotBlank(resultName) && webhookSuccessStatusService.existByName(resultName)) {
                 vtbClientService.createLead(webhookDto.getLead());
             }
         }
@@ -42,6 +40,7 @@ public class LeadWorkerService {
         try {
             //boolean withOrganization = importInfo.getFieldLinks().get(SkorozvonField.ORG_NAME) != null;
             records = xlsxParserService.readColumnBody(importInfo).stream()
+                    .filter(item -> item.getOrgInn().length() == 10 || item.getOrgInn().length() == 12)
                     .collect(groupingBy(XlsxRecordDto::getOrgInn));
             List<String> positiveInn = sendCheckDuplicates(new ArrayList<>(records.keySet()));
             splitToContactAndOrganization(records, positiveInn, importInfo);
@@ -92,7 +91,7 @@ public class LeadWorkerService {
         if (leads.isEmpty()) {
             return;
         }
-        skorozvonClientService.refreshToken();
+        skorozvonAuthClientService.refreshToken();
         for (int i = 0; i < leads.size(); i = i + BATCH_SIZE) {
             skorozvonClientService.createMultiple(projectId, leads.subList(i, Math.min(i + BATCH_SIZE, leads.size())),
                     tags);
@@ -135,7 +134,7 @@ public class LeadWorkerService {
                 .map(inn -> xlsxRecordToLead(records.get(inn))).collect(Collectors.toList());
     }
 
-    private List<String> sendCheckDuplicates(List<String> innList) throws ExecutionException, InterruptedException {
+    private List<String> sendCheckDuplicates(List<String> innList) {
         if (innList.isEmpty()) {
             throw new BadRequestException("Список ИНН пуст");
         }

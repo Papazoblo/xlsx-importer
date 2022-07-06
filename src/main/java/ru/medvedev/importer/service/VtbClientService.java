@@ -1,17 +1,23 @@
 package ru.medvedev.importer.service;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.client.VtbClient;
 import ru.medvedev.importer.component.VtbProperties;
+import ru.medvedev.importer.component.XlsxStorage;
 import ru.medvedev.importer.dto.LeadDto;
 import ru.medvedev.importer.dto.WebhookLeadDto;
+import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.request.LeadRequest;
 import ru.medvedev.importer.dto.request.LoginRequest;
 import ru.medvedev.importer.dto.response.CheckLeadResponse;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.dto.response.LoginResponse;
+import ru.medvedev.importer.enums.EventType;
 
 import java.net.URI;
 import java.util.Collections;
@@ -29,6 +35,8 @@ public class VtbClientService {
 
     private final VtbClient client;
     private final VtbProperties properties;
+    private final XlsxStorage xlsxStorage;
+    private final ApplicationEventPublisher eventPublisher;
 
     public void login() {
         LoginRequest request = new LoginRequest();
@@ -76,10 +84,14 @@ public class VtbClientService {
         LeadRequest leadRequest = new LeadRequest();
         leadRequest.setLeads(leads);
         try {
-            CheckLeadResponse response = client.checkLeads(leadRequest, BEARER + properties.getAccessToken());
-            return response.getLeads();
-        } catch (Exception ex) {
+            ResponseEntity<CheckLeadResponse> response = client.checkLeads(leadRequest,
+                    BEARER + properties.getAccessToken());
+            return response.getBody().getLeads();
+        } catch (FeignException.FeignClientException ex) {
             log.debug("*** Error check duplicate: {}", ex.getMessage(), ex);
+            eventPublisher.publishEvent(new ImportEvent(this, "Ошибка проверки дубликатов ВТБ. Http статус " +
+                    ex.status(),
+                    EventType.LOG, xlsxStorage.getFileId()));
             return Collections.emptyList();
         }
     }

@@ -13,6 +13,7 @@ public class XlsxStorage {
 
     private String fileName;
     private Long projectId;
+    private Long fileId;
 
     public boolean isExist() {
         return isNotBlank(fileName);

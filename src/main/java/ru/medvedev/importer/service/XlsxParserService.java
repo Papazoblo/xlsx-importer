@@ -143,7 +143,8 @@ public class XlsxParserService {
                 record.setOrgActivity(cellValueToString(row, cells));
                 break;
             case ORG_INN:
-                record.setOrgInn(cellValueToString(row, cells));
+                String inn = cellValueToString(row, cells);
+                record.setOrgInn(inn.length() == 9 || inn.length() == 11 ? "0" + inn : inn);
                 break;
             case ORG_KPP:
                 record.setOrgKpp(cellValueToString(row, cells));
@@ -174,7 +175,7 @@ public class XlsxParserService {
 
         switch (cell.getCellType()) {
             case NUMERIC:
-                return String.valueOf(new BigDecimal(cell.getNumericCellValue()));
+                return String.valueOf(new BigDecimal(String.valueOf(cell.getNumericCellValue())));
             case STRING:
                 return cell.getStringCellValue();
             default:

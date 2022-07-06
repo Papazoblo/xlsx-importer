@@ -4,6 +4,7 @@ import lombok.Data;
 import ru.medvedev.importer.enums.ContactStatus;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "contact")
@@ -47,5 +48,10 @@ public class ContactEntity {
     private ContactStatus status;
 
     @Column(name = "create_at")
-    private String createAt;
+    private LocalDateTime createAt;
+
+    @PrePersist
+    public void prePersist() {
+        createAt = LocalDateTime.now();
+    }
 }

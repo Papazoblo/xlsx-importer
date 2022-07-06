@@ -10,6 +10,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import ru.medvedev.importer.component.XlsxStorage;
 import ru.medvedev.importer.dto.CreateLeadDto;
 import ru.medvedev.importer.dto.CreateOrganizationDto;
 import ru.medvedev.importer.dto.events.ImportEvent;
@@ -17,15 +18,13 @@ import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.ContactEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.entity.InnRegionEntity;
-import ru.medvedev.importer.enums.CheckLeadStatus;
-import ru.medvedev.importer.enums.EventType;
-import ru.medvedev.importer.enums.FileStatus;
-import ru.medvedev.importer.enums.XlsxRequireField;
-import ru.medvedev.importer.exception.BadRequestException;
+import ru.medvedev.importer.enums.*;
+import ru.medvedev.importer.exception.*;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -33,6 +32,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
+import static org.apache.logging.log4j.util.Strings.isBlank;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +50,9 @@ public class FileProcessingService {
     private final SkorozvonClientService skorozvonClientService;
     private final ApplicationEventPublisher eventPublisher;
     private final InnRegionService innRegionService;
+    private final XlsxStorage xlsxStorage;
+
+    private Set<String> regionCodes = new HashSet<>();
 
     @Scheduled(cron = "${cron.launch-file-processing}")
     public void launchProcessFile() {
@@ -60,21 +63,31 @@ public class FileProcessingService {
         fileInfoService.getDownloadedFile().ifPresent(entity -> {
             log.debug("*** launch file processing [{}, id = {}]", entity.getName(), entity.getId());
             entity = fileInfoService.changeStatus(entity, FileStatus.IN_PROCESS);
-            processFile(entity);
+            xlsxStorage.setFileId(entity.getId());
+            try {
+                processFile(entity);
+            } catch (FileProcessingException ex) {
+                log.debug("Error processing file: {}", ex.getMessage());
+                eventPublisher.publishEvent(new ImportEvent(this, ex.getMessage(), EventType.ERROR,
+                        ex.getFileId()));
+            } catch (Exception ex) {
+                log.debug("Error processing file: {}", ex.getMessage());
+                eventPublisher.publishEvent(new ImportEvent(this, Optional.ofNullable(ex.getMessage())
+                        .orElse("Непредвиденная ошибка"), EventType.ERROR,
+                        entity.getId()));
+            }
+            xlsxStorage.setFileId(null);
+            new File(entity.getPath()).delete();
         });
     }
 
     private void processFile(FileInfoEntity entity) {
         Map<XlsxRequireField, List<String>> namesMap = fieldNameVariantService.getAll();
         if (namesMap.keySet().stream().anyMatch(key -> namesMap.get(key).isEmpty())) {
-            eventPublisher.publishEvent(new ImportEvent(this, "Не установлены варианты названий полей",
-                    EventType.ERROR, entity.getId()));
-            fileInfoService.changeStatus(entity, FileStatus.ERROR);
-            throw new BadRequestException("asd");
+            throw new ColumnNamesNotFoundException("Не указаны варианты названий полей", entity.getId());
+        } else {
+            readFile(entity, namesMap);
         }
-
-        readFile(entity, namesMap);
-        new File(entity.getPath()).delete();
     }
 
     private void readFile(FileInputStream fis, Map<XlsxRequireField, List<String>> namesMap, Long fileId)
@@ -87,6 +100,7 @@ public class FileProcessingService {
         List<ContactEntity> contactBatch = new ArrayList<>();
         List<ContactEntity> resultContactList = new ArrayList<>();
         Map<String, InnRegionEntity> innRegionMap = innRegionService.getAllMap();
+        regionCodes.clear();
         for (Row row : sheet) {
             if (row.getRowNum() == 0) {
                 try {
@@ -106,6 +120,8 @@ public class FileProcessingService {
             resultContactList.addAll(contactService.filteredContacts(contactBatch, fileId));
             contactBatch.clear();
         }
+        regionCodes.forEach(code -> eventPublisher.publishEvent(new ImportEvent(this,
+                String.format("Регион с кодом %s не найден в справочнике", code), EventType.LOG, fileId)));
         wb.close();
         prepareContactToSkorozvon(resultContactList, fileId);
     }
@@ -115,11 +131,10 @@ public class FileProcessingService {
             FileInputStream fis = new FileInputStream(new File(entity.getPath()));
             readFile(fis, namesMap, entity.getId());
             fis.close();
-            fileInfoService.changeStatus(entity, FileStatus.SUCCESS);
-        } catch (Exception ex) {
-            eventPublisher.publishEvent(new ImportEvent(this, "Невозможно открыть файл", EventType.ERROR,
-                    entity.getId()));
-            fileInfoService.changeStatus(entity, FileStatus.ERROR);
+            eventPublisher.publishEvent(new ImportEvent(this, "Файл обработан",
+                    EventType.SUCCESS, entity.getId()));
+        } catch (IOException e) {
+            throw new FileProcessingException("Невозможно открыть файл", entity.getId());
         }
     }
 
@@ -127,24 +142,22 @@ public class FileProcessingService {
         Map<XlsxRequireField, Integer> positionField = new HashMap<>();
         namesMap.keySet().forEach(key -> {
             for (Cell cell : row) {
-
-                if (cell.getCellType() != CellType.STRING) {
-                    eventPublisher.publishEvent(new ImportEvent(this, "В файле отсутствует шапка таблицы",
-                            EventType.ERROR, fileId));
-                    return;
+                if (cell.getCellType() == CellType.BLANK) {
+                    continue;
                 }
-
+                if (cell.getCellType() != CellType.STRING) {
+                    throw new HeaderNotFoundException("В файле отсутствует шапка таблицы", fileId);
+                }
                 if (namesMap.get(key).stream()
-                        .anyMatch(name -> name.toLowerCase().equals(cell.getStringCellValue()))) {
+                        .anyMatch(name -> name.toLowerCase().equals(cell.getStringCellValue().toLowerCase()))) {
                     positionField.put(key, cell.getColumnIndex());
                     break;
                 }
             }
 
             if (!positionField.containsKey(key)) {
-                eventPublisher.publishEvent(new ImportEvent(this, String.format("Столбец %s не найден в файле",
-                        key.getDescription()), EventType.ERROR, fileId));
-                throw new BadRequestException("Column not found");
+                throw new ColumnNotFoundException(String.format("Столбец %s не найден в файле", key.getDescription()),
+                        fileId);
             }
         });
         return positionField;
@@ -171,15 +184,18 @@ public class FileProcessingService {
                     getCellValue(cell, contact::setOrgName, position, fileId);
                     break;
                 case PHONE:
-                    getCellValue(cell, val -> contact.setPhone(replaceSpecialCharacters(val)), position, fileId);
+                    getCellValue(cell, val -> contact.setPhone(new BigDecimal(replaceSpecialCharacters(val))
+                            .toString()), position, fileId);
+
                     break;
                 case INN:
-                    getCellValue(cell, contact::setInn, position, fileId);
+                    getCellValue(cell, val -> {
+                        String inn = new BigDecimal(val).toString();
+                        contact.setInn(inn.length() == 9 || inn.length() == 11 ? "0" + inn : inn);
+                    }, position, fileId);
                     contact.setRegion(Optional.ofNullable(innRegionMap.get(contact.getInn().substring(0, 2)))
                             .map(InnRegionEntity::getName).orElseGet(() -> {
-                                eventPublisher.publishEvent(new ImportEvent(this, String.format("В справочнике отсутствует " +
-                                        "регион с кодом '%s'", contact.getInn().substring(0, 2)), EventType.NOTIFICATION,
-                                        fileId));
+                                regionCodes.add(contact.getInn().substring(0, 2));
                                 return "";
                             }));
                     break;
@@ -191,21 +207,29 @@ public class FileProcessingService {
                     break;
             }
         });
+        if (isBlank(contact.getOrgName())) {
+            contact.setOrgName(String.format("%s %s %s", contact.getSurname(),
+                    contact.getName(), contact.getMiddleName()));
+        }
         return contact;
     }
 
     private void getCellValue(Cell cell, Consumer<String> contactFieldSetter, int cellIndex, long fileId) {
+        if (cell == null) {
+            contactFieldSetter.accept("");
+            return;
+        }
         switch (cell.getCellType()) {
             case STRING:
                 contactFieldSetter.accept(Optional.ofNullable(cell.getStringCellValue()).orElse(""));
                 break;
             case NUMERIC:
-                contactFieldSetter.accept(Optional.ofNullable(cell.getStringCellValue())
+                contactFieldSetter.accept(Optional.of(cell.getNumericCellValue())
                         .map(String::valueOf).orElse(""));
                 break;
             default:
-                eventPublisher.publishEvent(new ImportEvent(this, String.format("Неверный тип поля Строка [%d], " +
-                        "Столбец [%s]", cell.getRowIndex() + 1, cellIndex + 1), EventType.NOTIFICATION, fileId));
+                throw new IllegalCellTypeException(String.format("Неверный тип поля Строка [%d], " +
+                        "Столбец [%s]", cell.getRowIndex() + 1, cellIndex + 1), fileId);
         }
     }
 
@@ -213,16 +237,20 @@ public class FileProcessingService {
         vtbClientService.login();
         List<LeadInfoResponse> positiveLead = new ArrayList<>();
         List<LeadInfoResponse> negativeLead = new ArrayList<>();
-        vtbClientService.getAllFromCheckLead(contacts.stream()
-                .map(ContactEntity::getInn)
-                .collect(Collectors.toList())).forEach(lead -> {
-            if (lead.getResponseCode() == CheckLeadStatus.POSITIVE) {
-                positiveLead.add(lead);
-            } else {
-                negativeLead.add(lead);
-            }
-        });
-        contactService.rejectingContact(negativeLead, fileId);
+
+        for (int i = 0; i < contacts.size(); i = i + REQUEST_BATCH_SIZE) {
+            List<ContactEntity> contactSublist = contacts.subList(i, Math.min(i + REQUEST_BATCH_SIZE, contacts.size()));
+            vtbClientService.getAllFromCheckLead(contactSublist.stream()
+                    .map(ContactEntity::getInn)
+                    .collect(Collectors.toList())).forEach(lead -> {
+                if (lead.getResponseCode() == CheckLeadStatus.POSITIVE) {
+                    positiveLead.add(lead);
+                } else {
+                    negativeLead.add(lead);
+                }
+            });
+        }
+        contactService.changeContactStatus(negativeLead, fileId, ContactStatus.REJECTED);
         sendContactToSkorozvon(contacts, positiveLead, fileId);
     }
 
@@ -231,9 +259,8 @@ public class FileProcessingService {
         String fileName = fileInfoService.getById(fileId).getName();
         Long projectNumber = projectNumberService.getNumberByDate(LocalDate.now());
         if (projectNumber == null) {
-            eventPublisher.publishEvent(new ImportEvent(this, String.format("Для даты %s не указан номер проекта",
-                    LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))), EventType.ERROR, fileId));
-            return;
+            throw new NumberProjectNotFoundException(String.format("Для даты %s не указан номер проекта",
+                    LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))), fileId);
         }
 
         List<CreateOrganizationDto> orgList = contacts.stream()
@@ -251,8 +278,7 @@ public class FileProcessingService {
                     orgList.subList(i, Math.min(i + REQUEST_BATCH_SIZE, orgList.size())),
                     Collections.singletonList(fileName));
         }
-        eventPublisher.publishEvent(new ImportEvent(this, String.format("Количество импортированных контактов %d",
-                orgList.size()), EventType.NOTIFICATION, fileId));
+        contactService.changeContactStatus(leads, fileId, ContactStatus.DOWNLOADED);
     }
 
     private static CreateLeadDto xlsxRecordToLead(ContactEntity contact) {
@@ -277,6 +303,6 @@ public class FileProcessingService {
     }
 
     private static String replaceSpecialCharacters(String val) {
-        return val.replaceAll("[+*_()#\\-\"'$№%^&?]+", val);
+        return val.replaceAll("[+*_()#\\-\"'$№%^&? ,]+", "");
     }
 }

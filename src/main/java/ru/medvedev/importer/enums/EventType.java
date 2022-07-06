@@ -7,9 +7,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum EventType {
 
-    ACTION("Событие"),
+    LOG("Лог события"),
     ERROR("Ошибка"),
-    NOTIFICATION("Уведомление");
+    SUCCESS("Успешная обработка");
 
     private final String description;
 }

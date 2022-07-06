@@ -1,13 +1,11 @@
 package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import ru.medvedev.importer.dto.events.ImportEvent;
+import ru.medvedev.importer.dto.ContactStatistic;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.ContactEntity;
 import ru.medvedev.importer.enums.ContactStatus;
-import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.repository.ContactRepository;
 
 import java.util.ArrayList;
@@ -16,6 +14,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toMap;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +24,6 @@ public class ContactService {
 
     private final ContactRepository repository;
     private final ContactFileInfoService contactFileInfoService;
-    private final ApplicationEventPublisher eventPublisher;
 
     public List<ContactEntity> filteredContacts(List<ContactEntity> contacts, Long fileId) {
         List<String> contactInn = contacts.stream()
@@ -45,21 +43,26 @@ public class ContactService {
                 duplicatedContact.add(contact);
             }
         });
-        contactFileInfoService.create(originalContact, fileId, true);
-        contactFileInfoService.create(duplicatedContact, fileId, false);
+
+        List<ContactEntity> savedOriginal = repository.saveAll(originalContact);
+        List<ContactEntity> savedDuplicate = repository.saveAll(duplicatedContact);
+
+        contactFileInfoService.create(savedOriginal, fileId, true);
+        contactFileInfoService.create(savedDuplicate, fileId, false);
         return originalContact;
     }
 
-    public void rejectingContact(List<LeadInfoResponse> leads, Long fileId) {
-
+    public void changeContactStatus(List<LeadInfoResponse> leads, Long fileId, ContactStatus status) {
         for (int i = 0; i < leads.size(); i += BATCH_SIZE) {
-            List<String> innList = leads.subList(i, Math.min(BATCH_SIZE, leads.size() - 1)).stream()
+            List<String> innList = leads.subList(i, Math.min(i + BATCH_SIZE, leads.size())).stream()
                     .map(LeadInfoResponse::getInn).collect(Collectors.toList());
             List<Long> contactIds = repository.findContactIdByInn(fileId, innList);
-            repository.changeContactStatusById(ContactStatus.REJECTED, contactIds);
+            repository.changeContactStatusById(status, contactIds);
         }
+    }
 
-        eventPublisher.publishEvent(new ImportEvent(this,
-                String.format("Количество неразрешенных контактов %d", leads.size()), EventType.NOTIFICATION, fileId));
+    public Map<ContactStatus, Long> getContactStatisticByFileId(Long fileId) {
+        return repository.getContactStatisticByFileId(fileId).stream()
+                .collect(toMap(ContactStatistic::getStatus, ContactStatistic::getCount));
     }
 }

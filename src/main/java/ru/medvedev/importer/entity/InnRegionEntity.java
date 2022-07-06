@@ -5,12 +5,12 @@ import lombok.Data;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "inn_region")
+@Table(name = "region")
 @Data
 public class InnRegionEntity {
 
     @Id
-    @SequenceGenerator(name = "inn_region_id_gen", sequenceName = "inn_region_seq_id", allocationSize = 1)
+    @SequenceGenerator(name = "inn_region_id_gen", sequenceName = "region_seq_id", allocationSize = 1)
     @GeneratedValue(generator = "inn_region_id_gen", strategy = GenerationType.SEQUENCE)
     private Long id;
 
