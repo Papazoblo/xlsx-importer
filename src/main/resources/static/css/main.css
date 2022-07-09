@@ -133,8 +133,9 @@ label[for='enableWhatsAppLink'] {
     float: right;
 }
 
-#files td {
-    line-height: 40px;
+#files td, #events td, #contacts td {
+    line-height: 18px;
+    font-size: 12px;
 }
 
 button.btn i.fa-trash-can {

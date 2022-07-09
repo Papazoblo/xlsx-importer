@@ -62,6 +62,8 @@ public class FileProcessingService {
 
         fileInfoService.getDownloadedFile().ifPresent(entity -> {
             log.debug("*** launch file processing [{}, id = {}]", entity.getName(), entity.getId());
+            eventPublisher.publishEvent(new ImportEvent(this, "Файл взят в обработку",
+                    EventType.LOG_TG, entity.getId()));
             entity = fileInfoService.changeStatus(entity, FileStatus.IN_PROCESS);
             xlsxStorage.setFileId(entity.getId());
             try {

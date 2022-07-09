@@ -36,6 +36,9 @@
                         <span class="sr-only">(current)</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/contacts">Контакты</a>
+                </li>
                 <li class="nav-item active">
                     <a class="nav-link" href="/events">События
                         <span class="sr-only">(current)</span>
@@ -68,7 +71,7 @@
 <main role="main" class="container">
     <div th:class="row">
         <div class="col-md-10 offset-md-1">
-            <table id="files" class="table table-bordered table-responsive-sm">
+            <table id="events" class="table table-bordered table-responsive-sm">
                 <thead>
                 <tr>
                     <th>ID</th>
@@ -94,13 +97,13 @@
     <nav aria-label="Page navigation" class="paging">
         <ul class="pagination" th:if="${events.totalPages > 1}">
             <li class="page-item" th:classappend="${!paging.isPrevEnabled()? 'disabled' : ''}">
-                <a class="page-link" th:href="@{'/file-storage?page=' + ${paging.pageNumber - 1}}"
+                <a class="page-link" th:href="@{'/events?page=' + ${paging.pageNumber - 1}}"
                    tabindex="-1">Previous</a>
             </li>
             <th:block th:each="item : ${paging.getItems()}">
                 <li class="page-item" th:classappend="${item.index == paging.pageNumber? 'active' : ''}"
                     th:if="${item.pageItemType.name() == 'PAGE'}">
-                    <a class="page-link" th:href="@{'/file-storage?page=' + ${item.index}}"
+                    <a class="page-link" th:href="@{'/events?page=' + ${item.index}}"
                        th:text="${item.index}"></a>
                 </li>
                 <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}">
@@ -108,7 +111,7 @@
                 </li>
             </th:block>
             <li class="page-item" th:classappend="${!paging.isNextEnabled()? 'disabled' : ''}">
-                <a class="page-link" th:href="@{'/file-storage?page=' + ${paging.pageNumber + 1}}">Next</a>
+                <a class="page-link" th:href="@{'/events?page=' + ${paging.pageNumber + 1}}">Next</a>
             </li>
         </ul>
     </nav>

@@ -1,7 +1,11 @@
 package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import ru.medvedev.importer.dto.ContactDto;
 import ru.medvedev.importer.dto.ContactStatistic;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.ContactEntity;
@@ -24,6 +28,15 @@ public class ContactService {
 
     private final ContactRepository repository;
     private final ContactFileInfoService contactFileInfoService;
+
+    public Page<ContactDto> getPage(Pageable pageable) {
+        Page<ContactEntity> page = repository.findAll(pageable);
+        Map<Long, Boolean> contactOriginalMap = contactFileInfoService.getOriginalsMap(page.getContent().stream()
+                .map(ContactEntity::getId).collect(Collectors.toSet()));
+        return new PageImpl<>(page.getContent().stream()
+                .map(item -> ContactDto.of(item, contactOriginalMap.get(item.getId()))).collect(Collectors.toList()),
+                page.getPageable(), page.getTotalElements());
+    }
 
     public List<ContactEntity> filteredContacts(List<ContactEntity> contacts, Long fileId) {
         List<String> contactInn = contacts.stream()

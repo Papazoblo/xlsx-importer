@@ -8,7 +8,12 @@ import ru.medvedev.importer.entity.ContactFileInfoId;
 import ru.medvedev.importer.repository.ContactFileInfoRepository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toMap;
+
 
 @Service
 @RequiredArgsConstructor
@@ -23,5 +28,11 @@ public class ContactFileInfoService {
             entity.setId(ContactFileInfoId.of(fileId, contact.getId()));
             return entity;
         }).collect(Collectors.toList()));
+    }
+
+    public Map<Long, Boolean> getOriginalsMap(Set<Long> contactIds) {
+        return repository.findByContactId(contactIds).stream()
+                .collect(toMap(item -> item.getId().getContactId(),
+                        ContactFileInfoEntity::isOriginal));
     }
 }
