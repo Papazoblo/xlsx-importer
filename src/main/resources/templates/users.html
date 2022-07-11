@@ -25,6 +25,7 @@
                 aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
+
         <div class="collapse navbar-collapse" id="navbarResponsive">
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
@@ -39,12 +40,12 @@
                     <a class="nav-link" href="/contacts">Контакты
                     </a>
                 </li>
-                <li class="nav-item active" th:if="*{authority.contains('EVENTS')}">
+                <li class="nav-item" th:if="*{authority.contains('EVENTS')}">
                     <a class="nav-link" href="/events">События</a>
                 </li>
                 <li class="nav-item">
                     <div class="dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button"
+                        <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown2" role="button"
                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             Настройки
                         </a>
@@ -74,23 +75,46 @@
 <main role="main" class="container">
     <div th:class="row">
         <div class="col-md-10 offset-md-1">
-            <table id="events" class="table table-bordered table-responsive-sm">
+            <table id="users" class="table table-bordered table-responsive-sm">
                 <thead>
                 <tr>
+                    <th style="text-align: right" colspan="6">
+                        <a href="/users/update">
+                            <button id="createUser" class="btn-2">Создать пользователя</button>
+                        </a>
+                    </th>
+                </tr>
+                <tr>
                     <th>ID</th>
-                    <th>Тип события</th>
-                    <th>Описание</th>
-                    <th>Файл</th>
+                    <th>Логин</th>
+                    <th>ФИО</th>
+                    <th>Разрешения</th>
                     <th>Дата</th>
+                    <th>Действие</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="event : ${events}">
-                    <td th:text="${event.getId()}">id</td>
-                    <td th:text="${event.getType()}">type</td>
-                    <td th:text="${event.getDescription()}">description</td>
-                    <td th:text="${event.getFileName()}">fileName</td>
-                    <td th:text="${event.getCreateAt()}">date</td>
+                <tr th:each="user : ${users}">
+                    <td th:text="${user.getId()}">id</td>
+                    <td th:text="${user.getLogin()}">login</td>
+                    <td th:text="${user.getFio()}">fio</td>
+                    <td th:text="${user.getPermissions()}" class="permission">permission</td>
+                    <td th:text="${user.getCreateAt()}" class="double-action-td">createDate</td>
+                    <td class="double-action-td">
+                        <button th:if="${user.isActive()}" class="btn btn-lock" title="Заблокировать"
+                                th:name="${user.id}">
+                            <a th:href="'/users/' + ${user.id} + '/lock/' + ${paging.getPageNumber()}">
+                                <i style="color:green" class="fa-solid fa-lock-open"></i></a>
+                        </button>
+                        <button th:if="${!user.isActive()}" class="btn btn-unlock" title="Разблокировать"
+                                th:name="${user.id}">
+                            <a th:href="'/users/' + ${user.id} + '/unlock/' + ${paging.getPageNumber()}">
+                                <i style="color:red" class="fa-solid fa-lock"></i></a>
+                        </button>
+                        <button class="btn btn-edit" title="Редактировать">
+                            <a th:href="'/users/update?id=' + ${user.id}"><i class="fa-solid fa-pen-to-square"></i></a>
+                        </button>
+                    </td>
                 </tr>
                 </tbody>
             </table>
@@ -98,15 +122,15 @@
     </div>
 
     <nav aria-label="Page navigation" class="paging">
-        <ul class="pagination" th:if="${events.totalPages > 1}">
+        <ul class="pagination" th:if="${users.totalPages > 1}">
             <li class="page-item" th:classappend="${!paging.isPrevEnabled()? 'disabled' : ''}">
-                <a class="page-link" th:href="@{'/events?page=' + ${paging.pageNumber - 1}}"
+                <a class="page-link" th:href="@{'/users?page=' + ${paging.pageNumber - 1}}"
                    tabindex="-1">Previous</a>
             </li>
             <th:block th:each="item : ${paging.getItems()}">
                 <li class="page-item" th:classappend="${item.index == paging.pageNumber? 'active' : ''}"
                     th:if="${item.pageItemType.name() == 'PAGE'}">
-                    <a class="page-link" th:href="@{'/events?page=' + ${item.index}}"
+                    <a class="page-link" th:href="@{'/users?page=' + ${item.index}}"
                        th:text="${item.index}"></a>
                 </li>
                 <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}">
@@ -114,7 +138,7 @@
                 </li>
             </th:block>
             <li class="page-item" th:classappend="${!paging.isNextEnabled()? 'disabled' : ''}">
-                <a class="page-link" th:href="@{'/events?page=' + ${paging.pageNumber + 1}}">Next</a>
+                <a class="page-link" th:href="@{'/users?page=' + ${paging.pageNumber + 1}}">Next</a>
             </li>
         </ul>
     </nav>
@@ -125,5 +149,6 @@
 <script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
+<script type="text/javascript" th:src="@{/js/user.js}"></script>
 </body>
 </html>

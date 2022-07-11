@@ -14,6 +14,8 @@ import ru.medvedev.importer.dto.EventDto;
 import ru.medvedev.importer.dto.PagingDto;
 import ru.medvedev.importer.service.EventService;
 
+import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
+
 @Controller
 @RequestMapping("/events")
 @RequiredArgsConstructor
@@ -30,6 +32,7 @@ public class EventController {
 
         Page<EventDto> resultPage = service.getPage(pageable);
         model.addAttribute("events", resultPage);
+        model.addAttribute("authority", getAuthorityList());
         model.addAttribute("paging", PagingDto.of(resultPage.getTotalPages(), page, size));
         return "events";
     }

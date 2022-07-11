@@ -39,7 +39,7 @@
                     <a class="nav-link" href="/contacts">Контакты
                     </a>
                 </li>
-                <li class="nav-item active" th:if="*{authority.contains('EVENTS')}">
+                <li class="nav-item" th:if="*{authority.contains('EVENTS')}">
                     <a class="nav-link" href="/events">События</a>
                 </li>
                 <li class="nav-item">
@@ -73,57 +73,54 @@
 
 <main role="main" class="container">
     <div th:class="row">
-        <div class="col-md-10 offset-md-1">
-            <table id="events" class="table table-bordered table-responsive-sm">
-                <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Тип события</th>
-                    <th>Описание</th>
-                    <th>Файл</th>
-                    <th>Дата</th>
-                </tr>
-                </thead>
+        <div class="col-md-12">
+            <label th:text="${user == null ? 'Добавление пользователя' : 'Редактирование пользователя'}"></label>
+            <table id="users" class="table table-bordered table-responsive-sm">
                 <tbody>
-                <tr th:each="event : ${events}">
-                    <td th:text="${event.getId()}">id</td>
-                    <td th:text="${event.getType()}">type</td>
-                    <td th:text="${event.getDescription()}">description</td>
-                    <td th:text="${event.getFileName()}">fileName</td>
-                    <td th:text="${event.getCreateAt()}">date</td>
+                <tr>
+                    <th><label for="login">Логин</label></th>
+                    <th>
+                        <input id="login" type="text" maxlength="20" th:value="${user == null ? '' : user.login}"/>
+                    </th>
+                </tr>
+                <tr>
+                    <th><label for="password">Пароль</label></th>
+                    <th>
+                        <input id="password" type="password" maxlength="50"/>
+                    </th>
+                </tr>
+                <tr>
+                    <th><label for="fio">ФИО</label></th>
+                    <th>
+                        <input id="fio" type="text" maxlength="300" th:value="${user == null ? '' : user.fio}"/>
+                    </th>
+                </tr>
+                <tr>
+                    <th><label>Права доступа</label></th>
+                    <th>
+                        <p th:each="permission : ${permissions}">
+                            <input type="checkbox" th:id="${permission.code}"
+                                   th:checked="${user == null ? false : user.isHavePermission(permission.description)}"/>
+                            <label th:for="${permission.code}" th:text="${permission.description}"></label>
+                        </p>
+                    </th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th style="text-align: right">
+                        <button id="saveUser" th:name="${user == null ? '' : user.id}" class="btn-2">Сохранить</button>
+                    </th>
                 </tr>
                 </tbody>
             </table>
         </div>
     </div>
-
-    <nav aria-label="Page navigation" class="paging">
-        <ul class="pagination" th:if="${events.totalPages > 1}">
-            <li class="page-item" th:classappend="${!paging.isPrevEnabled()? 'disabled' : ''}">
-                <a class="page-link" th:href="@{'/events?page=' + ${paging.pageNumber - 1}}"
-                   tabindex="-1">Previous</a>
-            </li>
-            <th:block th:each="item : ${paging.getItems()}">
-                <li class="page-item" th:classappend="${item.index == paging.pageNumber? 'active' : ''}"
-                    th:if="${item.pageItemType.name() == 'PAGE'}">
-                    <a class="page-link" th:href="@{'/events?page=' + ${item.index}}"
-                       th:text="${item.index}"></a>
-                </li>
-                <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}">
-                    <a class="page-link" href="#">...</a>
-                </li>
-            </th:block>
-            <li class="page-item" th:classappend="${!paging.isNextEnabled()? 'disabled' : ''}">
-                <a class="page-link" th:href="@{'/events?page=' + ${paging.pageNumber + 1}}">Next</a>
-            </li>
-        </ul>
-    </nav>
 </main>
 <!-- /.container -->
 
 <script type="text/javascript" th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
+<script type="text/javascript" th:src="@{/js/add_user.js}"></script>
 </body>
 </html>

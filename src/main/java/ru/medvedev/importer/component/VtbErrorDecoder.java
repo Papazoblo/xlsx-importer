@@ -11,9 +11,14 @@ import lombok.extern.slf4j.Slf4j;
 public class VtbErrorDecoder implements ErrorDecoder {
 
     private final ErrorDecoder errorDecoder = new Default();
+    private final VtbProperties properties;
 
     @Override
     public Exception decode(String s, Response response) {
+
+        if (response.status() == 401) {
+            properties.clearToken();
+        }
 
         if (response.status() > 300) {
             log.debug("*** vtb error {}", response.status());

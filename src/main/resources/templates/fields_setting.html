@@ -27,31 +27,36 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarResponsive">
             <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
+                <li class="nav-item" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
                     <a class="nav-link" href="/xlsx/import">Загрузка
                     </a>
                 </li>
-                <li class="nav-item ">
+                <li class="nav-item" th:if="*{authority.contains('FILE_STORAGE')}">
                     <a class="nav-link" href="/file-storage">Хранилище
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/contacts">Контакты</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/events">События
+                <li class="nav-item" th:if="*{authority.contains('CONTACTS')}">
+                    <a class="nav-link" href="/contacts">Контакты
                     </a>
                 </li>
-                <li class="nav-item active">
+                <li class="nav-item" th:if="*{authority.contains('EVENTS')}">
+                    <a class="nav-link" href="/events">События</a>
+                </li>
+                <li class="nav-item">
                     <div class="dropdown">
-                        <a class="nav-link active dropdown-toggle" href="#" id="navbarDropdown2" role="button"
+                        <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown2" role="button"
                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             Настройки
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
-                            <a class="dropdown-item" href="/settings/fields">Названия столбцов</a>
-                            <a class="dropdown-item" href="/settings/projects">Проекты для загрузки</a>
-                            <a class="dropdown-item" href="/settings/webhook-success-statuses">Статусы для отправки
+                            <a class="dropdown-item" href="/settings/fields"
+                               th:if="*{authority.contains('COLUMN_NAME')}">Названия столбцов</a>
+                            <a class="dropdown-item" href="/users" th:if="*{authority.contains('USERS')}">Пользователи
+                                системы</a>
+                            <a class="dropdown-item" href="/settings/projects"
+                               th:if="*{authority.contains('DOWNLOADS_PROJECT')}">Проекты для загрузки</a>
+                            <a class="dropdown-item" href="/settings/webhook-success-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Статусы для отправки
                                 заявок</a>
                         </div>
                     </div>
@@ -69,10 +74,12 @@
 <main role="main" class="container">
     <div th:class="row">
         <div class="col-md-10 offset-md-1">
-            <table class="table table-bordered table-responsive-sm variantTable">
+            <table class="table table-bordered table-responsive-sm variantTable"
+                   style="font-size: 14px; margin: 4px">
                 <thead>
                 <tr>
-                    <th>Поле</th>
+                    <th style="width: 10px">Поле</th>
+                    <th style="width: 10px">Обязательное</th>
                     <th>Варианты названий</th>
                 </tr>
                 </thead>
@@ -82,13 +89,17 @@
                         th:name="${field.name()}">field
                     </td>
                     <td>
+                        <input type="checkbox" th:checked="${fieldsMap.get(field).isRequired()}"
+                               th:name="${field.name()}"/>
+                    </td>
+                    <td>
                         <input type="text" class="settingInput"/>
                         <button th:class="${field.name()} + ' btnAdd btn-2'">
                             Добавить
                         </button>
                         <table class="settingNameTable">
                             <tbody>
-                            <tr th:each="name : ${fieldsMap.get(field)}">
+                            <tr th:each="name : ${fieldsMap.get(field).getNames()}">
                                 <td th:text="${name}" class="fieldNameValue"></td>
                                 <td class="deleteFieldNameValue">
                                     <button class="btn btn-delete" title="Удалить">

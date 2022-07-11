@@ -6,20 +6,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import ru.medvedev.importer.client.VtbClient;
+import ru.medvedev.importer.client.VtbApiClient;
 import ru.medvedev.importer.component.VtbProperties;
 import ru.medvedev.importer.component.XlsxStorage;
 import ru.medvedev.importer.dto.LeadDto;
 import ru.medvedev.importer.dto.WebhookLeadDto;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.request.LeadRequest;
-import ru.medvedev.importer.dto.request.LoginRequest;
 import ru.medvedev.importer.dto.response.CheckLeadResponse;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
-import ru.medvedev.importer.dto.response.LoginResponse;
 import ru.medvedev.importer.enums.EventType;
 
-import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,26 +30,16 @@ public class VtbClientService {
 
     private static final String BEARER = "Bearer ";
 
-    private final VtbClient client;
+    private final VtbApiClient client;
     private final VtbProperties properties;
     private final XlsxStorage xlsxStorage;
     private final ApplicationEventPublisher eventPublisher;
 
-    public void login() {
-        LoginRequest request = new LoginRequest();
-        request.setGrant_type("client_credentials");
-        request.setClient_id(properties.getClientId());
-        request.setClient_secret(properties.getClientSecret());
-
-        LoginResponse response = client.login(URI.create(properties.getTokenUrl()), request);
-        properties.setAccessToken(response.getAccessToken());
-    }
 
     public void createLead(WebhookLeadDto webhookLead) {
 
         log.debug("*** Create lead in VTB");
 
-        login();
         LeadDto leadDto = new LeadDto();
         leadDto.setCity(webhookLead.getCity());
         leadDto.setInn(webhookLead.getInn());

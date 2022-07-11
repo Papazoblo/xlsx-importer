@@ -1,9 +1,11 @@
 package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.component.XlsxStorage;
@@ -36,8 +38,13 @@ public class XlsxParserService {
         }
 
         FileInputStream fis = new FileInputStream(new File(storage.getFileName()));
-        XSSFWorkbook wb = new XSSFWorkbook(fis);
-        XSSFSheet sheet = wb.getSheetAt(0);
+        Workbook wb;
+        if (storage.getFileName().endsWith("xlsx")) {
+            wb = new XSSFWorkbook(fis);
+        } else {
+            wb = new HSSFWorkbook(fis);
+        }
+        Sheet sheet = wb.getSheetAt(0);
         List<String> headers = new ArrayList<>();
         for (Row row : sheet) {
             if (row.getRowNum() > 0) {
@@ -62,8 +69,13 @@ public class XlsxParserService {
         }
 
         FileInputStream fis = new FileInputStream(new File(storage.getFileName()));
-        XSSFWorkbook wb = new XSSFWorkbook(fis);
-        XSSFSheet sheet = wb.getSheetAt(0);
+        Workbook wb;
+        if (storage.getFileName().endsWith("xlsx")) {
+            wb = new XSSFWorkbook(fis);
+        } else {
+            wb = new HSSFWorkbook(fis);
+        }
+        Sheet sheet = wb.getSheetAt(0);
         List<XlsxRecordDto> list = new ArrayList<>();
         for (Row row : sheet) {
             if (row.getRowNum() == 0) {
@@ -92,7 +104,7 @@ public class XlsxParserService {
     private static void addFieldValue(XlsxRecordDto record, Row row, SkorozvonField field, List<Integer> cells) {
         switch (field) {
             case USR_FIO:
-                record.setFio(cellValueToString(row, cells));
+                record.setFio(replaceSpecialCharacters(cellValueToString(row, cells)));
                 break;
             case USR_PHONE:
                 record.setPhone(cellValueToString(row, cells));
@@ -122,7 +134,7 @@ public class XlsxParserService {
                 record.setOrgName(cellValueToString(row, cells));
                 break;
             case ORG_PHONE:
-                record.setOrgPhone(cellValueToString(row, cells));
+                record.setOrgPhone(replaceSpecialCharacters(cellValueToString(row, cells)));
                 break;
             case ORG_EMAIL:
                 record.setOrgEmail(cellValueToString(row, cells));
@@ -175,11 +187,15 @@ public class XlsxParserService {
 
         switch (cell.getCellType()) {
             case NUMERIC:
-                return String.valueOf(new BigDecimal(String.valueOf(cell.getNumericCellValue())));
+                return String.valueOf(new BigDecimal(cell.getNumericCellValue()));
             case STRING:
                 return cell.getStringCellValue();
             default:
                 return cell.getStringCellValue();
         }
+    }
+
+    private static String replaceSpecialCharacters(String val) {
+        return val.replaceAll("[+*_()#\\-\"'$№%^&? ,]+", "");
     }
 }

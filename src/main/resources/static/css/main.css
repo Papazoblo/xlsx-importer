@@ -6,7 +6,7 @@
     width: 50%;
 }
 
-input[type=text], .multiselect-native-select, #uploadTable {
+input[type=text], input[type=password], .multiselect-native-select, #uploadTable {
     width: 100%;
 }
 
@@ -14,7 +14,7 @@ input[type=text], .multiselect-native-select, #uploadTable {
     display: grid;
 }
 
-input[type=text] {
+input[type=text], input[type=password] {
     height: calc(1.5em + 0.75rem + 2px);
     border-radius: 0.25rem;
     border: 1px solid #ced4da;
@@ -121,7 +121,7 @@ label[for='enableWhatsAppLink'] {
     background: darkgray;
 }
 
-#files {
+#files, #events, #contacts, #users {
     margin-top: 1.5rem;
 }
 
@@ -133,9 +133,15 @@ label[for='enableWhatsAppLink'] {
     float: right;
 }
 
-#files td, #events td, #contacts td {
+#files td, #events td, #contacts td, #users td {
     line-height: 18px;
     font-size: 12px;
+    vertical-align: baseline;
+}
+
+#users td.permission {
+    white-space: break-spaces;
+    width: 300px;
 }
 
 button.btn i.fa-trash-can {
@@ -144,6 +150,10 @@ button.btn i.fa-trash-can {
 
 .action-td {
     width: 80px;
+}
+
+.double-action-td {
+    width: 115px;
 }
 
 .settingInput {
@@ -160,7 +170,7 @@ button.btn i.fa-trash-can {
 
 .settingNameTable td {
     padding: 6px;
-    line-height: 34px;
+    line-height: 25px;
 }
 
 .settingNameTable td.fieldNameValue {
@@ -173,6 +183,7 @@ button.btn i.fa-trash-can {
 
 .settingNameTable td.deleteFieldNameValue button {
     width: 100%;
+    padding: 0px;
     color: #cd0000;
 }
 

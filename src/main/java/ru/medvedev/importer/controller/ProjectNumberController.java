@@ -12,6 +12,8 @@ import ru.medvedev.importer.dto.PagingDto;
 import ru.medvedev.importer.dto.ProjectNumberDto;
 import ru.medvedev.importer.service.ProjectNumberService;
 
+import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
+
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/settings/projects")
@@ -27,6 +29,7 @@ public class ProjectNumberController {
 
         Page<ProjectNumberDto> resultPage = projectNumberService.getPage(pageable);
         model.addAttribute("projectNumbers", resultPage);
+        model.addAttribute("authority", getAuthorityList());
         model.addAttribute("paging", PagingDto.of(resultPage.getTotalPages(), page, size));
         return "project_number_setting";
     }

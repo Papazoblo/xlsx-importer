@@ -10,5 +10,6 @@ import java.util.Set;
 public class FieldNameVariantDto {
 
     private XlsxRequireField field;
+    private boolean required;
     private Set<String> names = new HashSet<>();
 }

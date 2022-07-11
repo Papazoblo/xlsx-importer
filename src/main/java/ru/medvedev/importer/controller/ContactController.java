@@ -14,6 +14,8 @@ import ru.medvedev.importer.dto.ContactDto;
 import ru.medvedev.importer.dto.PagingDto;
 import ru.medvedev.importer.service.ContactService;
 
+import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
+
 @Controller
 @RequestMapping("/contacts")
 @RequiredArgsConstructor
@@ -30,6 +32,7 @@ public class ContactController {
 
         Page<ContactDto> resultPage = service.getPage(pageable);
         model.addAttribute("contacts", resultPage);
+        model.addAttribute("authority", getAuthorityList());
         model.addAttribute("paging", PagingDto.of(resultPage.getTotalPages(), page, size));
         return "contacts";
     }

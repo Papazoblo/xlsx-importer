@@ -12,6 +12,8 @@ import ru.medvedev.importer.dto.PagingDto;
 import ru.medvedev.importer.dto.WebhookSuccessStatusDto;
 import ru.medvedev.importer.service.WebhookSuccessStatusService;
 
+import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
+
 @RequiredArgsConstructor
 @Controller
 @RequestMapping("/settings/webhook-success-statuses")
@@ -27,6 +29,7 @@ public class WebhookSuccessStatusController {
 
         Page<WebhookSuccessStatusDto> resultPage = service.getPage(pageable);
         model.addAttribute("data", resultPage);
+        model.addAttribute("authority", getAuthorityList());
         model.addAttribute("paging", PagingDto.of(resultPage.getTotalPages(), page, size));
         return "webhook_success_status";
     }

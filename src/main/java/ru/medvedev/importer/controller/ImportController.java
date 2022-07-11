@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
 
+import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
+
 @Controller
 @RequiredArgsConstructor
 @RequestMapping
@@ -39,6 +41,7 @@ public class ImportController {
                     .map(String::valueOf)
                     .orElse(""));
             model.addAttribute("fileExist", storage.isExist());
+            model.addAttribute("authority", getAuthorityList());
             model.addAttribute("fileName", storage.isExist() ? storage.getFileName() : "Не найден");
             model.addAttribute("headers", storage.isExist() ? xlsxParserService.readColumnHeaders()
                     : Collections.emptyList());

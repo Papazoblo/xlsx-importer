@@ -15,4 +15,8 @@ public class VtbProperties {
     private String tokenUrl;
     private String clientId;
     private String clientSecret;
+
+    public void clearToken() {
+        this.accessToken = null;
+    }
 }

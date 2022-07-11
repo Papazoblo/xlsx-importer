@@ -2,10 +2,8 @@ package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,6 +11,8 @@ import org.springframework.stereotype.Service;
 import ru.medvedev.importer.component.XlsxStorage;
 import ru.medvedev.importer.dto.CreateLeadDto;
 import ru.medvedev.importer.dto.CreateOrganizationDto;
+import ru.medvedev.importer.dto.FieldNameVariantDto;
+import ru.medvedev.importer.dto.FieldPositionDto;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.ContactEntity;
@@ -84,20 +84,27 @@ public class FileProcessingService {
     }
 
     private void processFile(FileInfoEntity entity) {
-        Map<XlsxRequireField, List<String>> namesMap = fieldNameVariantService.getAll();
-        if (namesMap.keySet().stream().anyMatch(key -> namesMap.get(key).isEmpty())) {
+        Map<XlsxRequireField, FieldNameVariantDto> namesMap = fieldNameVariantService.getAll();
+        if (namesMap.keySet().stream().anyMatch(key -> namesMap.get(key).getNames().isEmpty() &&
+                namesMap.get(key).isRequired())) {
             throw new ColumnNamesNotFoundException("Не указаны варианты названий полей", entity.getId());
         } else {
             readFile(entity, namesMap);
         }
     }
 
-    private void readFile(FileInputStream fis, Map<XlsxRequireField, List<String>> namesMap, Long fileId)
+    private void readFile(String fileName, FileInputStream fis, Map<XlsxRequireField, FieldNameVariantDto> namesMap,
+                          Long fileId)
             throws IOException {
 
-        XSSFWorkbook wb = new XSSFWorkbook(fis);
-        XSSFSheet sheet = wb.getSheetAt(0);
-        Map<XlsxRequireField, Integer> fieldPositionMap = new HashMap<>();
+        Workbook wb;
+        if (fileName.endsWith("xlsx")) {
+            wb = new XSSFWorkbook(fis);
+        } else {
+            wb = new HSSFWorkbook(fis);
+        }
+        Sheet sheet = wb.getSheetAt(0);
+        Map<XlsxRequireField, FieldPositionDto> fieldPositionMap = new HashMap<>();
 
         List<ContactEntity> contactBatch = new ArrayList<>();
         List<ContactEntity> resultContactList = new ArrayList<>();
@@ -128,10 +135,10 @@ public class FileProcessingService {
         prepareContactToSkorozvon(resultContactList, fileId);
     }
 
-    private void readFile(FileInfoEntity entity, Map<XlsxRequireField, List<String>> namesMap) {
+    private void readFile(FileInfoEntity entity, Map<XlsxRequireField, FieldNameVariantDto> namesMap) {
         try {
             FileInputStream fis = new FileInputStream(new File(entity.getPath()));
-            readFile(fis, namesMap, entity.getId());
+            readFile(entity.getName(), fis, namesMap, entity.getId());
             fis.close();
             eventPublisher.publishEvent(new ImportEvent(this, "Файл обработан",
                     EventType.SUCCESS, entity.getId()));
@@ -140,9 +147,15 @@ public class FileProcessingService {
         }
     }
 
-    private Map<XlsxRequireField, Integer> readHeader(Row row, Map<XlsxRequireField, List<String>> namesMap, Long fileId) {
-        Map<XlsxRequireField, Integer> positionField = new HashMap<>();
+    private Map<XlsxRequireField, FieldPositionDto> readHeader(Row row, Map<XlsxRequireField,
+            FieldNameVariantDto> namesMap, Long fileId) {
+        Map<XlsxRequireField, FieldPositionDto> positionField = new HashMap<>();
         namesMap.keySet().forEach(key -> {
+
+            FieldPositionDto dto = new FieldPositionDto();
+            FieldNameVariantDto fieldNameVariantDto = namesMap.get(key);
+            dto.setRequired(fieldNameVariantDto.isRequired());
+
             for (Cell cell : row) {
                 if (cell.getCellType() == CellType.BLANK) {
                     continue;
@@ -150,51 +163,58 @@ public class FileProcessingService {
                 if (cell.getCellType() != CellType.STRING) {
                     throw new HeaderNotFoundException("В файле отсутствует шапка таблицы", fileId);
                 }
-                if (namesMap.get(key).stream()
+
+                if (fieldNameVariantDto.getNames().stream()
                         .anyMatch(name -> name.toLowerCase().equals(cell.getStringCellValue().toLowerCase()))) {
-                    positionField.put(key, cell.getColumnIndex());
+                    dto.setPosition(cell.getColumnIndex());
                     break;
                 }
             }
 
-            if (!positionField.containsKey(key)) {
+            if (dto.isRequired() && dto.getPosition() == null) {
                 throw new ColumnNotFoundException(String.format("Столбец %s не найден в файле", key.getDescription()),
                         fileId);
             }
+            positionField.put(key, dto);
         });
         return positionField;
     }
 
-    private ContactEntity parseContact(Row row, Map<XlsxRequireField, Integer> cellPositionMap, Long fileId,
+    private ContactEntity parseContact(Row row, Map<XlsxRequireField, FieldPositionDto> cellPositionMap, Long fileId,
                                        Map<String, InnRegionEntity> innRegionMap) {
 
         ContactEntity contact = new ContactEntity();
         cellPositionMap.keySet().forEach(field -> {
-            Integer position = cellPositionMap.get(field);
-            Cell cell = row.getCell(position);
+            FieldPositionDto positionInfo = cellPositionMap.get(field);
+            if (positionInfo.getPosition() == null) {
+                return;
+            }
+
+            Cell cell = row.getCell(positionInfo.getPosition());
             switch (field) {
                 case NAME:
-                    getCellValue(cell, contact::setName, position, fileId);
+                    getCellValue(cell, contact::setName, positionInfo, fileId);
                     break;
                 case SURNAME:
-                    getCellValue(cell, contact::setSurname, position, fileId);
+                    getCellValue(cell, contact::setSurname, positionInfo, fileId);
                     break;
                 case MIDDLE_NAME:
-                    getCellValue(cell, contact::setMiddleName, position, fileId);
+                    getCellValue(cell, contact::setMiddleName, positionInfo, fileId);
                     break;
                 case ORG_NAME:
-                    getCellValue(cell, contact::setOrgName, position, fileId);
+                    try {
+                        getCellValue(cell, contact::setOrgName, positionInfo, fileId);
+                    } catch (IllegalCellTypeException ex) {
+                        log.debug("*** OrgName is empty");
+                    }
                     break;
                 case PHONE:
                     getCellValue(cell, val -> contact.setPhone(new BigDecimal(replaceSpecialCharacters(val))
-                            .toString()), position, fileId);
+                            .toString()), positionInfo, fileId);
 
                     break;
                 case INN:
-                    getCellValue(cell, val -> {
-                        String inn = new BigDecimal(val).toString();
-                        contact.setInn(inn.length() == 9 || inn.length() == 11 ? "0" + inn : inn);
-                    }, position, fileId);
+                    getCellValue(cell, val -> contact.setInn(val.length() == 9 || val.length() == 11 ? "0" + val : val), positionInfo, fileId);
                     contact.setRegion(Optional.ofNullable(innRegionMap.get(contact.getInn().substring(0, 2)))
                             .map(InnRegionEntity::getName).orElseGet(() -> {
                                 regionCodes.add(contact.getInn().substring(0, 2));
@@ -202,21 +222,22 @@ public class FileProcessingService {
                             }));
                     break;
                 case OGRN:
-                    getCellValue(cell, contact::setOgrn, position, fileId);
+                    getCellValue(cell, contact::setOgrn, positionInfo, fileId);
                     break;
                 case ADDRESS:
-                    getCellValue(cell, contact::setAddress, position, fileId);
+                    getCellValue(cell, contact::setAddress, positionInfo, fileId);
                     break;
             }
         });
         if (isBlank(contact.getOrgName())) {
-            contact.setOrgName(String.format("%s %s %s", contact.getSurname(),
-                    contact.getName(), contact.getMiddleName()));
+            contact.setOrgName(String.format("%s %s %s", Optional.ofNullable(contact.getSurname()).orElse(""),
+                    Optional.ofNullable(contact.getName()).orElse(""),
+                    Optional.ofNullable(contact.getMiddleName()).orElse("")).trim());
         }
         return contact;
     }
 
-    private void getCellValue(Cell cell, Consumer<String> contactFieldSetter, int cellIndex, long fileId) {
+    private void getCellValue(Cell cell, Consumer<String> contactFieldSetter, FieldPositionDto fieldInfo, long fileId) {
         if (cell == null) {
             contactFieldSetter.accept("");
             return;
@@ -227,16 +248,15 @@ public class FileProcessingService {
                 break;
             case NUMERIC:
                 contactFieldSetter.accept(Optional.of(cell.getNumericCellValue())
-                        .map(String::valueOf).orElse(""));
+                        .map(val -> new BigDecimal(val).toString()).orElse(""));
                 break;
             default:
                 throw new IllegalCellTypeException(String.format("Неверный тип поля Строка [%d], " +
-                        "Столбец [%s]", cell.getRowIndex() + 1, cellIndex + 1), fileId);
+                        "Столбец [%s]", cell.getRowIndex() + 1, fieldInfo.getPosition() + 1), fileId);
         }
     }
 
     private void prepareContactToSkorozvon(List<ContactEntity> contacts, Long fileId) {
-        vtbClientService.login();
         List<LeadInfoResponse> positiveLead = new ArrayList<>();
         List<LeadInfoResponse> negativeLead = new ArrayList<>();
 
@@ -285,7 +305,9 @@ public class FileProcessingService {
 
     private static CreateLeadDto xlsxRecordToLead(ContactEntity contact) {
         CreateLeadDto lead = new CreateLeadDto();
-        lead.setName(String.format("%s %s %s", contact.getSurname(), contact.getName(), contact.getMiddleName()));
+        lead.setName(String.format("%s %s %s", Optional.ofNullable(contact.getSurname()).orElse(""),
+                Optional.ofNullable(contact.getName()).orElse(""),
+                Optional.ofNullable(contact.getMiddleName()).orElse("")).trim());
         lead.setPhones(Collections.singletonList(contact.getPhone()));
         lead.setAddress(contact.getAddress());
         lead.setRegion(contact.getRegion());

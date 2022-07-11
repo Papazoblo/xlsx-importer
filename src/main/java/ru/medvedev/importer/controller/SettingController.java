@@ -11,6 +11,8 @@ import ru.medvedev.importer.service.FieldNameVariantService;
 
 import java.util.List;
 
+import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
+
 @Controller
 @RequestMapping("/settings/fields")
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class SettingController {
     public String getPageField(Model model) {
         model.addAttribute("fieldsMap", fieldNameVariantService.getAll());
         model.addAttribute("fields", XlsxRequireField.values());
+        model.addAttribute("authority", getAuthorityList());
         return "fields_setting";
     }
 

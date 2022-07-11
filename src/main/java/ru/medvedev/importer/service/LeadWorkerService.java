@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
+import ru.medvedev.importer.enums.CheckLeadStatus;
 import ru.medvedev.importer.exception.BadRequestException;
 
 import java.util.*;
@@ -30,7 +31,20 @@ public class LeadWorkerService {
         if (webhookDto.getType().equals("call_result")) {
             String resultName = webhookDto.getCallResult().getResultName();
             if (isNotBlank(resultName) && webhookSuccessStatusService.existByName(resultName)) {
-                vtbClientService.createLead(webhookDto.getLead());
+                String inn = webhookDto.getLead().getInn();
+                List<LeadInfoResponse> response = vtbClientService.getPositiveFromCheckLead(
+                        Collections.singletonList(inn));
+                if (!response.isEmpty()) {
+                    log.debug("*** have a positive lead inn {} ", response.get(0).getInn());
+                    vtbClientService.createLead(webhookDto.getLead());
+                    response = vtbClientService.getPositiveFromCheckLead(
+                            Collections.singletonList(webhookDto.getLead().getInn()));
+                    if (response.stream().anyMatch(item ->
+                            item.getInn().equals(inn) && item.getResponseCode() != CheckLeadStatus.POSITIVE)) {
+                        //todo
+                        log.debug("*** lead loaded in VTB {} ", response.get(0).getInn());
+                    }
+                }
             }
         }
     }
@@ -138,7 +152,6 @@ public class LeadWorkerService {
         if (innList.isEmpty()) {
             throw new BadRequestException("Список ИНН пуст");
         }
-        vtbClientService.login();
 
         //Делим на пачки
         Set<String> result = new HashSet<>();

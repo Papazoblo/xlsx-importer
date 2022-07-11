@@ -21,4 +21,7 @@ public class FieldNameVariantEntity {
 
     @Column(name = "name")
     private String name;
+
+    @Column(name = "required")
+    private boolean required;
 }

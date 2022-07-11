@@ -14,6 +14,10 @@ $(document).ready(function () {
         addToTable($($(this)[0].nextElementSibling)[0], value);
     });
 
+    $('input[type=checkbox]').on('click', function () {
+        $("#btnSave").removeAttr('disabled');
+    });
+
     function addToTable(table, value) {
 
         if (value.length === 0) {
@@ -46,9 +50,12 @@ $(document).ready(function () {
                 nameArray.push(tdNameList[j].innerText);
             }
 
+            var checkBoxes = $('input[type=checkbox][name=' + fieldName + ']');
+
             requestBody.push({
                 'field': fieldName,
-                'names': nameArray
+                'names': nameArray,
+                'required': $(checkBoxes[0]).is(":checked")
             });
         }
 

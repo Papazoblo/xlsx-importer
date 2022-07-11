@@ -27,21 +27,20 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarResponsive">
             <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
+                <li class="nav-item" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
                     <a class="nav-link" href="/xlsx/import">Загрузка
                     </a>
                 </li>
-                <li class="nav-item active">
+                <li class="nav-item active" th:if="*{authority.contains('FILE_STORAGE')}">
                     <a class="nav-link" href="/file-storage">Хранилище
-                        <span class="sr-only">(current)</span>
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/contacts">Контакты</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/events">События
+                <li class="nav-item" th:if="*{authority.contains('CONTACTS')}">
+                    <a class="nav-link" href="/contacts">Контакты
                     </a>
+                </li>
+                <li class="nav-item" th:if="*{authority.contains('EVENTS')}">
+                    <a class="nav-link" href="/events">События</a>
                 </li>
                 <li class="nav-item">
                     <div class="dropdown">
@@ -50,9 +49,14 @@
                             Настройки
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
-                            <a class="dropdown-item" href="/settings/fields">Названия столбцов</a>
-                            <a class="dropdown-item" href="/settings/projects">Проекты для загрузки</a>
-                            <a class="dropdown-item" href="/settings/webhook-success-statuses">Статусы для отправки
+                            <a class="dropdown-item" href="/settings/fields"
+                               th:if="*{authority.contains('COLUMN_NAME')}">Названия столбцов</a>
+                            <a class="dropdown-item" href="/users" th:if="*{authority.contains('USERS')}">Пользователи
+                                системы</a>
+                            <a class="dropdown-item" href="/settings/projects"
+                               th:if="*{authority.contains('DOWNLOADS_PROJECT')}">Проекты для загрузки</a>
+                            <a class="dropdown-item" href="/settings/webhook-success-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Статусы для отправки
                                 заявок</a>
                         </div>
                     </div>

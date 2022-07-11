@@ -23,6 +23,8 @@ import ru.medvedev.importer.service.FileInfoService;
 import java.io.File;
 import java.io.IOException;
 
+import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
+
 @Controller
 @RequestMapping("/file-storage")
 @RequiredArgsConstructor
@@ -40,6 +42,7 @@ public class FileInfoController {
 
         Page<FileInfoDto> resultPage = service.getPage(pageable);
         model.addAttribute("files", resultPage);
+        model.addAttribute("authority", getAuthorityList());
         model.addAttribute("paging", PagingDto.of(resultPage.getTotalPages(), page, size));
         return "file_storage";
     }

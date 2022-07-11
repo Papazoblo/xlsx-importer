@@ -33,7 +33,8 @@ public class XlsxStorageService {
     }
 
     public void upload(MultipartFile file) throws IOException {
-        if (isBlank(file.getOriginalFilename()) || !file.getOriginalFilename().contains(".xlsx")) {
+        if (isBlank(file.getOriginalFilename()) || !file.getOriginalFilename().contains(".xlsx")
+                || !file.getOriginalFilename().contains(".xls")) {
             throw new BadRequestException("Неверный формат файла");
         }
         deleteIfExist();
@@ -49,14 +50,14 @@ public class XlsxStorageService {
         if (storage.isExist()) {
             File root = new File(".");
             Arrays.stream(root.listFiles())
-                    .filter(file -> file.getName().contains(".xlsx"))
+                    .filter(file -> file.getName().contains(".xlsx") || file.getName().contains(".xls"))
                     .forEach(file -> file.delete());
         }
     }
 
     private void checkIsExist() {
         File root = new File(".");
-        Arrays.stream(root.listFiles()).filter(file -> file.getName().contains(".xlsx"))
+        Arrays.stream(root.listFiles()).filter(file -> file.getName().contains(".xlsx") || file.getName().contains(".xls"))
                 .findFirst().ifPresent(file -> {
             storage.setFileName(file.getName());
         });
