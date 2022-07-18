@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -41,6 +42,10 @@ public class FileInfoService {
         return new PageImpl<>(page.getContent().stream()
                 .map(FileInfoDto::of).collect(Collectors.toList()),
                 page.getPageable(), page.getTotalElements());
+    }
+
+    public List<Long> getAllChatIds() {
+        return repository.getAllChatId();
     }
 
     public Long getChatIdByFile(Long fileId) {

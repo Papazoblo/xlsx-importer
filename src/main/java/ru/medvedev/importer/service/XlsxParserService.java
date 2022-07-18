@@ -104,10 +104,10 @@ public class XlsxParserService {
     private static void addFieldValue(XlsxRecordDto record, Row row, SkorozvonField field, List<Integer> cells) {
         switch (field) {
             case USR_FIO:
-                record.setFio(replaceSpecialCharacters(cellValueToString(row, cells)));
+                record.setFio(cellValueToString(row, cells));
                 break;
             case USR_PHONE:
-                record.setPhone(cellValueToString(row, cells));
+                record.setPhone(replaceSpecialCharacters(cellValueToString(row, cells)));
                 break;
             case USR_EMAIL:
                 record.setEmail(cellValueToString(row, cells));

@@ -28,6 +28,10 @@ public class WebhookSuccessStatusService {
         return repository.existsByName(name.trim());
     }
 
+    public WebhookSuccessStatusEntity getByName(String name) {
+        return repository.findByName(name).orElse(null);
+    }
+
     public void create(String name) {
         String trimName = name.trim();
         if (!repository.existsByName(trimName)) {

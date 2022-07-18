@@ -9,12 +9,16 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.FileStatus;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface FileInfoRepository extends JpaRepository<FileInfoEntity, Long> {
 
     Optional<FileInfoEntity> findFirstByStatusOrderByCreateAt(FileStatus status);
+
+    @Query(value = "select chat_id from file_info group by chat_id", nativeQuery = true)
+    List<Long> getAllChatId();
 
     @Modifying
     @Transactional

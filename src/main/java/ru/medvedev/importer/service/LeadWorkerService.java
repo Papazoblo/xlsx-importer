@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.enums.CheckLeadStatus;
+import ru.medvedev.importer.enums.WebhookStatus;
 import ru.medvedev.importer.exception.BadRequestException;
 
 import java.util.*;
@@ -26,6 +27,7 @@ public class LeadWorkerService {
     private final SkorozvonAuthClientService skorozvonAuthClientService;
     private final SkorozvonClientService skorozvonClientService;
     private final WebhookSuccessStatusService webhookSuccessStatusService;
+    private final WebhookStatisticService webhookStatisticService;
 
     public void processWebhook(WebhookDto webhookDto) {
         if (webhookDto.getType().equals("call_result")) {
@@ -37,13 +39,14 @@ public class LeadWorkerService {
                 if (!response.isEmpty()) {
                     log.debug("*** have a positive lead inn {} ", response.get(0).getInn());
                     vtbClientService.createLead(webhookDto.getLead());
-                    response = vtbClientService.getPositiveFromCheckLead(
-                            Collections.singletonList(webhookDto.getLead().getInn()));
+                    response = vtbClientService.getAllFromCheckLead(Collections.singletonList(webhookDto.getLead().getInn()));
                     if (response.stream().anyMatch(item ->
                             item.getInn().equals(inn) && item.getResponseCode() != CheckLeadStatus.POSITIVE)) {
-                        //todo
                         log.debug("*** lead loaded in VTB {} ", response.get(0).getInn());
+                        webhookStatisticService.addStatistic(WebhookStatus.SUCCESS, webhookDto);
                     }
+                } else {
+                    webhookStatisticService.addStatistic(WebhookStatus.REJECTED, webhookDto);
                 }
             }
         }
