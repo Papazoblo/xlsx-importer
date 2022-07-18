@@ -1,0 +1,154 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Xlsx importer</title>
+
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/4.6.0-1/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/fontawesome.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/solid.min.css}"/>
+    <link rel="stylesheet" th:href="@{/css/main.css}"/>
+
+</head>
+
+<body>
+
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
+    <div class="container">
+        <a class="navbar-brand" href="/">Importer service</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive"
+                aria-controls="navbarResponsive"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
+                    <a class="nav-link" href="/xlsx/import">Загрузка
+                    </a>
+                </li>
+                <li class="nav-item" th:if="*{authority.contains('FILE_STORAGE')}">
+                    <a class="nav-link" href="/file-storage">Хранилище
+                    </a>
+                </li>
+                <li class="nav-item" th:if="*{authority.contains('CONTACTS')}">
+                    <a class="nav-link" href="/contacts">Контакты
+                    </a>
+                </li>
+                <li class="nav-item" th:if="*{authority.contains('EVENTS')}">
+                    <a class="nav-link" href="/events">События</a>
+                </li>
+                <li class="nav-item">
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown2" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Настройки
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+                            <a class="dropdown-item" href="/settings/fields"
+                               th:if="*{authority.contains('COLUMN_NAME')}">Названия столбцов</a>
+                            <a class="dropdown-item" href="/users" th:if="*{authority.contains('USERS')}">Пользователи
+                                системы</a>
+                            <a class="dropdown-item" href="/settings/projects"
+                               th:if="*{authority.contains('DOWNLOADS_PROJECT')}">Проекты для загрузки</a>
+                            <a class="dropdown-item" href="/settings/webhook-success-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Статусы для отправки
+                                заявок</a>
+                        </div>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout">Выйти
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+<main role="main" class="container">
+    <div th:class="row">
+        <div class="col-md-10 offset-md-1">
+            <table id="users" class="table table-bordered table-responsive-sm">
+                <thead>
+                <tr>
+                    <th style="text-align: right" colspan="6">
+                        <a href="/users/update">
+                            <button id="createUser" class="btn-2">Создать пользователя</button>
+                        </a>
+                    </th>
+                </tr>
+                <tr>
+                    <th>ID</th>
+                    <th>Логин</th>
+                    <th>ФИО</th>
+                    <th>Разрешения</th>
+                    <th>Дата</th>
+                    <th>Действие</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="user : ${users}">
+                    <td th:text="${user.getId()}">id</td>
+                    <td th:text="${user.getLogin()}">login</td>
+                    <td th:text="${user.getFio()}">fio</td>
+                    <td th:text="${user.getPermissions()}" class="permission">permission</td>
+                    <td th:text="${user.getCreateAt()}" class="double-action-td">createDate</td>
+                    <td class="double-action-td">
+                        <button th:if="${user.isActive()}" class="btn btn-lock" title="Заблокировать"
+                                th:name="${user.id}">
+                            <a th:href="'/users/' + ${user.id} + '/lock/' + ${paging.getPageNumber()}">
+                                <i style="color:green" class="fa-solid fa-lock-open"></i></a>
+                        </button>
+                        <button th:if="${!user.isActive()}" class="btn btn-unlock" title="Разблокировать"
+                                th:name="${user.id}">
+                            <a th:href="'/users/' + ${user.id} + '/unlock/' + ${paging.getPageNumber()}">
+                                <i style="color:red" class="fa-solid fa-lock"></i></a>
+                        </button>
+                        <button class="btn btn-edit" title="Редактировать">
+                            <a th:href="'/users/update?id=' + ${user.id}"><i class="fa-solid fa-pen-to-square"></i></a>
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <nav aria-label="Page navigation" class="paging">
+        <ul class="pagination" th:if="${users.totalPages > 1}">
+            <li class="page-item" th:classappend="${!paging.isPrevEnabled()? 'disabled' : ''}">
+                <a class="page-link" th:href="@{'/users?page=' + ${paging.pageNumber - 1}}"
+                   tabindex="-1">Previous</a>
+            </li>
+            <th:block th:each="item : ${paging.getItems()}">
+                <li class="page-item" th:classappend="${item.index == paging.pageNumber? 'active' : ''}"
+                    th:if="${item.pageItemType.name() == 'PAGE'}">
+                    <a class="page-link" th:href="@{'/users?page=' + ${item.index}}"
+                       th:text="${item.index}"></a>
+                </li>
+                <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}">
+                    <a class="page-link" href="#">...</a>
+                </li>
+            </th:block>
+            <li class="page-item" th:classappend="${!paging.isNextEnabled()? 'disabled' : ''}">
+                <a class="page-link" th:href="@{'/users?page=' + ${paging.pageNumber + 1}}">Next</a>
+            </li>
+        </ul>
+    </nav>
+</main>
+<!-- /.container -->
+
+<script type="text/javascript" th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
+<script type="text/javascript" th:src="@{/js/user.js}"></script>
+</body>
+</html>

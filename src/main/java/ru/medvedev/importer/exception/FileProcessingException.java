@@ -1,0 +1,14 @@
+package ru.medvedev.importer.exception;
+
+import lombok.Data;
+
+@Data
+public class FileProcessingException extends RuntimeException {
+
+    private final Long fileId;
+
+    public FileProcessingException(String message, Long fileId) {
+        super(message);
+        this.fileId = fileId;
+    }
+}

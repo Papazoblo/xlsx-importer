@@ -1,0 +1,48 @@
+server:
+  ssl:
+    key-store: classpath:springboot.p12
+    key-store-password: password
+    key-store-type: pkcs12
+    key-alias: springboot
+    key-password: password
+  port: 8081
+
+feign:
+  client:
+    config:
+      default:
+        loggerLevel: full
+
+logging:
+  file:
+    name: /opt/xlsx-importer/logs/application.log
+  level:
+    ru.medvedev.importer: DEBUG
+
+spring:
+  datasource:
+    jdbc-url: jdbc:postgresql://127.0.0.1:5432/xlsx_importer_db
+    driver-class-name: org.postgresql.Driver
+  main:
+    allow-bean-definition-overriding: true
+  thymeleaf:
+    cache: false
+
+directory:
+  upload-dir: /opt/xlsx-importer/storage
+
+cron:
+  fixed-rate-update-token: 1200000
+  fixed-rate-check-xlsx-exists: 900000
+  launch-file-processing: '0 * * * * *'
+
+telegram:
+  botName: Xlsx collector
+  reconnectTimer: 10000
+
+skorozvon:
+  url: https://app.skorozvon.ru
+
+vtb:
+  url: https://epa.api.vtb.ru/openapi/smb/lecs
+  token-url: https://passport.api.vtb.ru/passport/oauth2/token

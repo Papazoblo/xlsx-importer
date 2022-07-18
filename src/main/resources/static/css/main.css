@@ -1,0 +1,204 @@
+#mainTable {
+    width: 100%;
+}
+
+#mainTable th, #btn-add-project {
+    width: 50%;
+}
+
+input[type=text], input[type=password], .multiselect-native-select, #uploadTable {
+    width: 100%;
+}
+
+.multiselect-native-select {
+    display: grid;
+}
+
+input[type=text], input[type=password] {
+    height: calc(1.5em + 0.75rem + 2px);
+    border-radius: 0.25rem;
+    border: 1px solid #ced4da;
+}
+
+.space-block {
+    height: 70px;
+    vertical-align: bottom;
+}
+
+.space-height {
+    height: 100px;
+}
+
+.select-hover:hover {
+    background: aliceblue;
+}
+
+.hide-block {
+    display: none;
+}
+
+.btn3 {
+    background-color: #cd050c !important;
+}
+
+.btn-2, .btn3 {
+    display: inline-block;
+    box-sizing: border-box;
+    padding: 0 24px;
+    margin: 15px 0 15px 0;
+    outline: none;
+    border: none;
+    border-radius: 3px;
+    height: 37px;
+    line-height: 37px;
+    font-size: 14px;
+    text-transform: uppercase;
+    font-weight: normal;
+    text-decoration: none;
+    color: #fff;
+    background-color: #05cd51;
+    cursor: pointer;
+    user-select: none;
+    appearance: none;
+    touch-action: manipulation;
+    transition: box-shadow .18s ease-out, background .18s ease-out, color .18s ease-out;
+}
+
+.btn-2:focus-visible, .btn3:focus-visible {
+    box-shadow: 0 0 0 3px lightskyblue;
+}
+
+.btn-2:hover, .btn-3:hover {
+    box-shadow: 0 1px 1px 0 #cfcfcf, 0 2px 5px 0 #cfcfcf;
+}
+
+.btn-2:active {
+    background-color: #058c38 !important;
+}
+
+.btn-3:active {
+    background-color: #6a0909 !important;
+}
+
+.btn-2:disabled {
+    background-color: #aed2bc;
+    color: #444;
+    pointer-events: none;
+}
+
+input {
+    padding-left: 12px;
+}
+
+.btn-3:disabled {
+    background-color: #d2aeae;
+    color: #444;
+    pointer-events: none;
+}
+
+label[for='enableWhatsAppLink'] {
+    cursor: pointer;
+}
+
+#btnSendFile.btn-2, #parseXlsx.btn-2 {
+    width: 55% !important;
+}
+
+.custom-file-label::after {
+    content: "Выбрать файл" !important;
+}
+
+#systemFile {
+    font-size: 1.5rem !important;
+}
+
+.btnSubmit {
+    position: absolute;
+    top: 10px;
+}
+
+.deleted {
+    background: darkgray;
+}
+
+#files, #events, #contacts, #users {
+    margin-top: 1.5rem;
+}
+
+.variantTable td, .variantTable th, #files th, #files td {
+    text-align: center;
+}
+
+.paging {
+    float: right;
+}
+
+#files td, #events td, #contacts td, #users td {
+    line-height: 18px;
+    font-size: 12px;
+    vertical-align: baseline;
+}
+
+#users td.permission {
+    white-space: break-spaces;
+    width: 300px;
+}
+
+button.btn i.fa-trash-can {
+    color: #af0c0c;
+}
+
+.action-td {
+    width: 80px;
+}
+
+.double-action-td {
+    width: 115px;
+}
+
+.settingInput {
+    width: 80% !important;
+}
+
+.btn-2 {
+    width: 19%;
+}
+
+.settingNameTable {
+    width: 100% !important;
+}
+
+.settingNameTable td {
+    padding: 6px;
+    line-height: 25px;
+}
+
+.settingNameTable td.fieldNameValue {
+    text-align: left !important;
+}
+
+.settingNameTable td.deleteFieldNameValue {
+    width: 19%;
+}
+
+.settingNameTable td.deleteFieldNameValue button {
+    width: 100%;
+    padding: 0px;
+    color: #cd0000;
+}
+
+.btnAdd {
+    margin-top: 4px;
+    margin-bottom: 2px;
+}
+
+.variantTable .fieldName {
+    line-height: 42px;
+}
+
+#btnSave {
+    position: fixed;
+    top: 109px;
+    right: 50px;
+    width: 160px;
+}

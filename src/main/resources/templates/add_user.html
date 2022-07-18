@@ -1,0 +1,126 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Xlsx importer</title>
+
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/4.6.0-1/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/fontawesome.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/solid.min.css}"/>
+    <link rel="stylesheet" th:href="@{/css/main.css}"/>
+
+</head>
+
+<body>
+
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
+    <div class="container">
+        <a class="navbar-brand" href="/">Importer service</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive"
+                aria-controls="navbarResponsive"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
+                    <a class="nav-link" href="/xlsx/import">Загрузка
+                    </a>
+                </li>
+                <li class="nav-item" th:if="*{authority.contains('FILE_STORAGE')}">
+                    <a class="nav-link" href="/file-storage">Хранилище
+                    </a>
+                </li>
+                <li class="nav-item" th:if="*{authority.contains('CONTACTS')}">
+                    <a class="nav-link" href="/contacts">Контакты
+                    </a>
+                </li>
+                <li class="nav-item" th:if="*{authority.contains('EVENTS')}">
+                    <a class="nav-link" href="/events">События</a>
+                </li>
+                <li class="nav-item">
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Настройки
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+                            <a class="dropdown-item" href="/settings/fields"
+                               th:if="*{authority.contains('COLUMN_NAME')}">Названия столбцов</a>
+                            <a class="dropdown-item" href="/users" th:if="*{authority.contains('USERS')}">Пользователи
+                                системы</a>
+                            <a class="dropdown-item" href="/settings/projects"
+                               th:if="*{authority.contains('DOWNLOADS_PROJECT')}">Проекты для загрузки</a>
+                            <a class="dropdown-item" href="/settings/webhook-success-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Статусы для отправки
+                                заявок</a>
+                        </div>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout">Выйти
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+<main role="main" class="container">
+    <div th:class="row">
+        <div class="col-md-12">
+            <label th:text="${user == null ? 'Добавление пользователя' : 'Редактирование пользователя'}"></label>
+            <table id="users" class="table table-bordered table-responsive-sm">
+                <tbody>
+                <tr>
+                    <th><label for="login">Логин</label></th>
+                    <th>
+                        <input id="login" type="text" maxlength="20" th:value="${user == null ? '' : user.login}"/>
+                    </th>
+                </tr>
+                <tr>
+                    <th><label for="password">Пароль</label></th>
+                    <th>
+                        <input id="password" type="password" maxlength="50"/>
+                    </th>
+                </tr>
+                <tr>
+                    <th><label for="fio">ФИО</label></th>
+                    <th>
+                        <input id="fio" type="text" maxlength="300" th:value="${user == null ? '' : user.fio}"/>
+                    </th>
+                </tr>
+                <tr>
+                    <th><label>Права доступа</label></th>
+                    <th>
+                        <p th:each="permission : ${permissions}">
+                            <input type="checkbox" th:id="${permission.code}"
+                                   th:checked="${user == null ? false : user.isHavePermission(permission.description)}"/>
+                            <label th:for="${permission.code}" th:text="${permission.description}"></label>
+                        </p>
+                    </th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th style="text-align: right">
+                        <button id="saveUser" th:name="${user == null ? '' : user.id}" class="btn-2">Сохранить</button>
+                    </th>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+<!-- /.container -->
+
+<script type="text/javascript" th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/add_user.js}"></script>
+</body>
+</html>
