@@ -1,5 +1,6 @@
 package ru.medvedev.importer.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -9,10 +10,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.component.XlsxStorage;
-import ru.medvedev.importer.dto.CreateLeadDto;
-import ru.medvedev.importer.dto.CreateOrganizationDto;
-import ru.medvedev.importer.dto.FieldNameVariantDto;
-import ru.medvedev.importer.dto.FieldPositionDto;
+import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.ContactEntity;
@@ -29,9 +27,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 import static org.apache.logging.log4j.util.Strings.isBlank;
 
 @Service
@@ -51,6 +49,7 @@ public class FileProcessingService {
     private final ApplicationEventPublisher eventPublisher;
     private final InnRegionService innRegionService;
     private final XlsxStorage xlsxStorage;
+    private final ObjectMapper objectMapper;
 
     private Set<String> regionCodes = new HashSet<>();
 
@@ -97,12 +96,8 @@ public class FileProcessingService {
                           Long fileId)
             throws IOException {
 
-        Workbook wb;
-        if (fileName.endsWith("xlsx")) {
-            wb = new XSSFWorkbook(fis);
-        } else {
-            wb = new HSSFWorkbook(fis);
-        }
+        Workbook wb = fileName.endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
+
         Sheet sheet = wb.getSheetAt(0);
         Map<XlsxRequireField, FieldPositionDto> fieldPositionMap = new HashMap<>();
 
@@ -166,78 +161,118 @@ public class FileProcessingService {
 
                 if (fieldNameVariantDto.getNames().stream()
                         .anyMatch(name -> name.toLowerCase().equals(cell.getStringCellValue().toLowerCase()))) {
-                    dto.setPosition(cell.getColumnIndex());
+                    HeaderDto header = new HeaderDto();
+                    header.setPosition(cell.getColumnIndex());
+                    header.setValue(cell.getStringCellValue());
+                    dto.getHeader().add(header);
                     break;
                 }
             }
 
-            if (dto.isRequired() && dto.getPosition() == null) {
+            if (dto.isRequired() && dto.getHeader().isEmpty()) {
                 throw new ColumnNotFoundException(String.format("Столбец %s не найден в файле", key.getDescription()),
                         fileId);
             }
             positionField.put(key, dto);
         });
+
+        positionField.put(XlsxRequireField.TRASH, parseTrashColumns(row, positionField));
         return positionField;
+    }
+
+    private FieldPositionDto parseTrashColumns(Row row, Map<XlsxRequireField, FieldPositionDto> positionField) {
+        List<Integer> usedPositions = positionField.keySet().stream()
+                .flatMap(key -> positionField.get(key).getHeader().stream())
+                .map(HeaderDto::getPosition)
+                .collect(toList());
+
+        FieldPositionDto fieldPositionDto = new FieldPositionDto();
+        List<HeaderDto> headers = new ArrayList<>();
+        for (Cell cell : row) {
+            if (!usedPositions.contains(cell.getColumnIndex())) {
+                HeaderDto headerDto = new HeaderDto();
+                headerDto.setPosition(cell.getColumnIndex());
+                headerDto.setValue(cell.getStringCellValue());
+                headers.add(headerDto);
+            }
+        }
+        fieldPositionDto.setHeader(headers);
+        return fieldPositionDto;
     }
 
     private ContactEntity parseContact(Row row, Map<XlsxRequireField, FieldPositionDto> cellPositionMap, Long fileId,
                                        Map<String, InnRegionEntity> innRegionMap) {
 
         ContactEntity contact = new ContactEntity();
+        List<TrashColumnDto> trashColumns = new ArrayList<>();
         cellPositionMap.keySet().forEach(field -> {
             FieldPositionDto positionInfo = cellPositionMap.get(field);
-            if (positionInfo.getPosition() == null) {
+            if (positionInfo.getHeader().isEmpty()) {
                 return;
             }
 
-            Cell cell = row.getCell(positionInfo.getPosition());
-            switch (field) {
-                case NAME:
-                    getCellValue(cell, contact::setName, positionInfo, fileId);
-                    break;
-                case SURNAME:
-                    getCellValue(cell, contact::setSurname, positionInfo, fileId);
-                    break;
-                case MIDDLE_NAME:
-                    getCellValue(cell, contact::setMiddleName, positionInfo, fileId);
-                    break;
-                case ORG_NAME:
-                    try {
-                        getCellValue(cell, contact::setOrgName, positionInfo, fileId);
-                    } catch (IllegalCellTypeException ex) {
-                        log.debug("*** OrgName is empty");
-                    }
-                    break;
-                case PHONE:
-                    getCellValue(cell, val -> contact.setPhone(new BigDecimal(replaceSpecialCharacters(val))
-                            .toString()), positionInfo, fileId);
+            positionInfo.getHeader().forEach(header -> {
+                Cell cell = row.getCell(header.getPosition());
+                switch (field) {
+                    case NAME:
+                        getCellValue(cell, contact::setName, header, fileId);
+                        break;
+                    case SURNAME:
+                        getCellValue(cell, contact::setSurname, header, fileId);
+                        break;
+                    case MIDDLE_NAME:
+                        getCellValue(cell, contact::setMiddleName, header, fileId);
+                        break;
+                    case ORG_NAME:
+                        try {
+                            getCellValue(cell, contact::setOrgName, header, fileId);
+                        } catch (IllegalCellTypeException ex) {
+                            log.debug("*** OrgName is empty");
+                        }
+                        break;
+                    case PHONE:
+                        getCellValue(cell, val -> contact.setPhone(new BigDecimal(replaceSpecialCharacters(val))
+                                .toString()), header, fileId);
 
-                    break;
-                case INN:
-                    getCellValue(cell, val -> contact.setInn(val.length() == 9 || val.length() == 11 ? "0" + val : val), positionInfo, fileId);
-                    contact.setRegion(Optional.ofNullable(innRegionMap.get(contact.getInn().substring(0, 2)))
-                            .map(InnRegionEntity::getName).orElseGet(() -> {
-                                regionCodes.add(contact.getInn().substring(0, 2));
-                                return "";
-                            }));
-                    break;
-                case OGRN:
-                    getCellValue(cell, contact::setOgrn, positionInfo, fileId);
-                    break;
-                case ADDRESS:
-                    getCellValue(cell, contact::setAddress, positionInfo, fileId);
-                    break;
-            }
+                        break;
+                    case INN:
+                        getCellValue(cell, val -> contact.setInn(val.length() == 9 || val.length() == 11 ? "0" + val : val), header, fileId);
+                        contact.setRegion(Optional.ofNullable(innRegionMap.get(contact.getInn().substring(0, 2)))
+                                .map(InnRegionEntity::getName).orElseGet(() -> {
+                                    regionCodes.add(contact.getInn().substring(0, 2));
+                                    return "";
+                                }));
+                        break;
+                    case OGRN:
+                        getCellValue(cell, contact::setOgrn, header, fileId);
+                        break;
+                    case ADDRESS:
+                        getCellValue(cell, contact::setAddress, header, fileId);
+                        break;
+                    case TRASH:
+                        TrashColumnDto columnDto = new TrashColumnDto();
+                        columnDto.setColumnName(header.getValue());
+                        getCellValue(cell, columnDto::setValue, header, fileId);
+                        trashColumns.add(columnDto);
+                        break;
+                }
+            });
         });
         if (isBlank(contact.getOrgName())) {
             contact.setOrgName(String.format("%s %s %s", Optional.ofNullable(contact.getSurname()).orElse(""),
                     Optional.ofNullable(contact.getName()).orElse(""),
                     Optional.ofNullable(contact.getMiddleName()).orElse("")).trim());
         }
+
+        try {
+            contact.setTrashColumns(objectMapper.writeValueAsString(trashColumns));
+        } catch (Exception ex) {
+            log.debug("*** Error convert trashColumn to String");
+        }
         return contact;
     }
 
-    private void getCellValue(Cell cell, Consumer<String> contactFieldSetter, FieldPositionDto fieldInfo, long fileId) {
+    private void getCellValue(Cell cell, Consumer<String> contactFieldSetter, HeaderDto header, long fileId) {
         if (cell == null) {
             contactFieldSetter.accept("");
             return;
@@ -252,7 +287,7 @@ public class FileProcessingService {
                 break;
             default:
                 throw new IllegalCellTypeException(String.format("Неверный тип поля Строка [%d], " +
-                        "Столбец [%s]", cell.getRowIndex() + 1, fieldInfo.getPosition() + 1), fileId);
+                        "Столбец [%s]", cell.getRowIndex() + 1, header.getPosition() + 1), fileId);
         }
     }
 
@@ -264,7 +299,7 @@ public class FileProcessingService {
             List<ContactEntity> contactSublist = contacts.subList(i, Math.min(i + REQUEST_BATCH_SIZE, contacts.size()));
             vtbClientService.getAllFromCheckLead(contactSublist.stream()
                     .map(ContactEntity::getInn)
-                    .collect(Collectors.toList())).forEach(lead -> {
+                    .collect(toList())).forEach(lead -> {
                 if (lead.getResponseCode() == CheckLeadStatus.POSITIVE) {
                     positiveLead.add(lead);
                 } else {
@@ -293,7 +328,7 @@ public class FileProcessingService {
                     CreateOrganizationDto orgDto = xlsxRecordToOrganization(contactList.get(0));
                     contactList.forEach(contact -> orgDto.getLeads().add(xlsxRecordToLead(contact)));
                     return orgDto;
-                }).collect(Collectors.toList());
+                }).collect(toList());
 
         for (int i = 0; i < orgList.size(); i = i + REQUEST_BATCH_SIZE) {
             skorozvonClientService.createMultiple(projectNumber,

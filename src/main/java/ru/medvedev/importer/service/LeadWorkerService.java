@@ -2,10 +2,14 @@ package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.*;
+import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.enums.CheckLeadStatus;
+import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.WebhookStatus;
 import ru.medvedev.importer.exception.BadRequestException;
 
@@ -28,10 +32,13 @@ public class LeadWorkerService {
     private final SkorozvonClientService skorozvonClientService;
     private final WebhookSuccessStatusService webhookSuccessStatusService;
     private final WebhookStatisticService webhookStatisticService;
+    private final ContactService contactService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public void processWebhook(WebhookDto webhookDto) {
         if (webhookDto.getType().equals("call_result")) {
             String resultName = webhookDto.getCallResult().getResultName();
+            contactService.changeWebhookStatus(webhookDto.getLead().getInn(), resultName);
             if (isNotBlank(resultName) && webhookSuccessStatusService.existByName(resultName)) {
                 String inn = webhookDto.getLead().getInn();
                 List<LeadInfoResponse> response = vtbClientService.getPositiveFromCheckLead(
@@ -52,17 +59,24 @@ public class LeadWorkerService {
         }
     }
 
+    @Async
     public void processXlsxRecords(XlsxImportInfo importInfo) {
         Map<String, List<XlsxRecordDto>> records;
         try {
+            eventPublisher.publishEvent(new ImportEvent(this, "Запущена обработка файла с интерфейса",
+                    EventType.LOG_TG, -1L));
             //boolean withOrganization = importInfo.getFieldLinks().get(SkorozvonField.ORG_NAME) != null;
             records = xlsxParserService.readColumnBody(importInfo).stream()
                     .filter(item -> item.getOrgInn().length() == 10 || item.getOrgInn().length() == 12)
                     .collect(groupingBy(XlsxRecordDto::getOrgInn));
             List<String> positiveInn = sendCheckDuplicates(new ArrayList<>(records.keySet()));
             splitToContactAndOrganization(records, positiveInn, importInfo);
+            eventPublisher.publishEvent(new ImportEvent(this, "Файл с интерфейса успешно бработан\nЗагружено " + positiveInn.size() + " контактов",
+                    EventType.LOG_TG, -1L));
         } catch (Exception ex) {
             log.debug("*** Error excel parsing", ex);
+            eventPublisher.publishEvent(new ImportEvent(this, "Ошибка обработки файла с интерфейса\n" + ex.getMessage(),
+                    EventType.LOG_TG, -1L));
             throw new BadRequestException("Ошибка парсинга экселя", ex);
         }
     }

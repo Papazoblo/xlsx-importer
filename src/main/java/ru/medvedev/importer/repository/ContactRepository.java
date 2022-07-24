@@ -37,4 +37,14 @@ public interface ContactRepository extends JpaRepository<ContactEntity, Long> {
     @Query("update ContactEntity c set c.status = :status where c.id in :idList")
     void changeContactStatusById(@Param("status") ContactStatus status,
                                  @Param("idList") List<Long> idList);
+
+    @Modifying
+    @Transactional
+    @Query(value = "update contact \n" +
+            "set webhook_status_id = :webhookStatusId\n" +
+            "where id = (select max(id) from contact c\n" +
+            "where c.webhook_status_id = -1 and c.inn = :inn)",
+            nativeQuery = true)
+    void changeWebhookStatus(@Param("webhookStatusId") Long webhookStatusId,
+                             @Param("inn") String inn);
 }

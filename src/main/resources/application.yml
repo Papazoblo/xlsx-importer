@@ -35,6 +35,7 @@ cron:
   fixed-rate-update-token: 1200000
   fixed-rate-check-xlsx-exists: 900000
   launch-file-processing: '0 * * * * *'
+  webhook-statistic: '0 0 19 * * *'
 
 telegram:
   botName: Xlsx collector

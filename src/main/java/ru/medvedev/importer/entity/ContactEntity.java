@@ -47,6 +47,13 @@ public class ContactEntity {
     @Enumerated(EnumType.STRING)
     private ContactStatus status;
 
+    @Column(name = "trash_columns")
+    private String trashColumns;
+
+    @ManyToOne
+    @JoinColumn(name = "webhook_status_id")
+    private WebhookStatusEntity webhookStatus;
+
     @Column(name = "create_at")
     private LocalDateTime createAt;
 

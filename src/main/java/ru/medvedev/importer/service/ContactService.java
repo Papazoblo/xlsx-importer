@@ -7,8 +7,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.ContactDto;
 import ru.medvedev.importer.dto.ContactStatistic;
+import ru.medvedev.importer.dto.WebhookStatusDto;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.ContactEntity;
+import ru.medvedev.importer.entity.WebhookStatusEntity;
 import ru.medvedev.importer.enums.ContactStatus;
 import ru.medvedev.importer.repository.ContactRepository;
 
@@ -28,6 +30,7 @@ public class ContactService {
 
     private final ContactRepository repository;
     private final ContactFileInfoService contactFileInfoService;
+    private final WebhookStatusService webhookStatusService;
 
     public Page<ContactDto> getPage(Pageable pageable) {
         Page<ContactEntity> page = repository.findAll(pageable);
@@ -36,6 +39,11 @@ public class ContactService {
         return new PageImpl<>(page.getContent().stream()
                 .map(item -> ContactDto.of(item, contactOriginalMap.get(item.getId()))).collect(Collectors.toList()),
                 page.getPageable(), page.getTotalElements());
+    }
+
+    public void changeWebhookStatus(String inn, String resultName) {
+        WebhookStatusDto webhookStatus = webhookStatusService.getByName(resultName);
+        repository.changeWebhookStatus(webhookStatus.getId(), inn);
     }
 
     public List<ContactEntity> filteredContacts(List<ContactEntity> contacts, Long fileId) {
@@ -57,12 +65,18 @@ public class ContactService {
             }
         });
 
-        List<ContactEntity> savedOriginal = repository.saveAll(originalContact);
-        List<ContactEntity> savedDuplicate = repository.saveAll(duplicatedContact);
+        List<ContactEntity> savedOriginal = createNew(originalContact);
+        List<ContactEntity> savedDuplicate = createNew(duplicatedContact);
 
         contactFileInfoService.create(savedOriginal, fileId, true);
         contactFileInfoService.create(savedDuplicate, fileId, false);
         return originalContact;
+    }
+
+    private List<ContactEntity> createNew(List<ContactEntity> contacts) {
+        WebhookStatusEntity webhookStatus = webhookStatusService.getById(-1L);
+        contacts.forEach(item -> item.setWebhookStatus(webhookStatus));
+        return repository.saveAll(contacts);
     }
 
     public void changeContactStatus(List<LeadInfoResponse> leads, Long fileId, ContactStatus status) {

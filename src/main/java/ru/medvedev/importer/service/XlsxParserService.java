@@ -69,12 +69,8 @@ public class XlsxParserService {
         }
 
         FileInputStream fis = new FileInputStream(new File(storage.getFileName()));
-        Workbook wb;
-        if (storage.getFileName().endsWith("xlsx")) {
-            wb = new XSSFWorkbook(fis);
-        } else {
-            wb = new HSSFWorkbook(fis);
-        }
+        Workbook wb = storage.getFileName().endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
+
         Sheet sheet = wb.getSheetAt(0);
         List<XlsxRecordDto> list = new ArrayList<>();
         for (Row row : sheet) {

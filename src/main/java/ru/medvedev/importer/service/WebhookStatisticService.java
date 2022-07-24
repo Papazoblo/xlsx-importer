@@ -1,6 +1,7 @@
 package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.WebhookDto;
@@ -25,21 +26,23 @@ public class WebhookStatisticService {
 
     private static final String STATISTIC_MESSAGE = "*Статистика отправленных заявок* \nс %s по %s\nДобавленные: %d\nОтказано в добавлении: %d";
 
+    @Value("${telegram.scanningChatId}")
+    private Long scanningChatId;
+
     private final WebhookStatisticRepository repository;
     private final WebhookSuccessStatusService webhookSuccessStatusService;
     private final TelegramPollingService telegramPollingService;
     private final FileInfoService fileInfoService;
 
-    @Scheduled(cron = "0 0 19 * * *")
+    @Scheduled(cron = "${cron.webhook-statistic}")
     public void printScheduledStatistic() {
         Map<WebhookStatus, List<WebhookStatisticEntity>> entities = getCountByPrevDay();
-        List<Long> chatIds = fileInfoService.getAllChatIds();
         String message = String.format(STATISTIC_MESSAGE,
-                LocalDateTime.now().minusDays(1).format(DateTimeFormatter.ofPattern("dd.MM.yyyy hh:mm")),
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy hh:mm")),
+                LocalDateTime.now().minusDays(1).format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")),
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")),
                 Optional.ofNullable(entities.get(WebhookStatus.SUCCESS)).map(List::size).orElse(0),
                 Optional.ofNullable(entities.get(WebhookStatus.REJECTED)).map(List::size).orElse(0));
-        chatIds.forEach(chatId -> telegramPollingService.sendMessage(message, chatId));
+        telegramPollingService.sendMessage(message, scanningChatId);
     }
 
     public Map<WebhookStatus, List<WebhookStatisticEntity>> getCountByPrevDay() {

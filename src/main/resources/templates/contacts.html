@@ -85,6 +85,7 @@
                     <th>Регион</th>
                     <th>Дата добавления</th>
                     <th>Статус</th>
+                    <th>Вебхук</th>
                     <th>Оригинал</th>
                 </tr>
                 </thead>
@@ -98,6 +99,7 @@
                     <td th:text="${contact.getRegion()}">region</td>
                     <td th:text="${contact.getCreateAt()}">createAt</td>
                     <td th:text="${contact.getStatus()}">status</td>
+                    <td th:text="${contact.getWebhookStatus()}">webhookStatus</td>
                     <td th:text="${contact.getOriginal()}">original</td>
                 </tr>
                 </tbody>

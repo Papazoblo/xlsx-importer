@@ -13,7 +13,8 @@ public enum XlsxRequireField {
     PHONE("Телефон"),
     INN("ИНН"),
     OGRN("ОГРН"),
-    ADDRESS("Адрес");
+    ADDRESS("Адрес"),
+    TRASH("Мусорный столбец");
 
     @Getter
     private final String description;

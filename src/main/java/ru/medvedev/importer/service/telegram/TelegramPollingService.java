@@ -34,6 +34,8 @@ public class TelegramPollingService extends TelegramLongPollingBot {
 
     @Value("${directory.upload-dir}")
     private String uploadDir;
+    @Value("${telegram.scanningChatId}")
+    private Long scanningChatId;
 
     private final TelegramProperty properties;
     private final FileInfoService fileInfoService;
@@ -67,6 +69,10 @@ public class TelegramPollingService extends TelegramLongPollingBot {
             }
             if (message != null) {
                 Long chatId = message.getChatId();
+                if (!chatId.equals(scanningChatId)) {
+                    sendMessage("Permission access denied", chatId);
+                    return;
+                }
                 Optional.ofNullable(message.getDocument()).ifPresent(document ->
                         downloadFile(document, chatId));
             }
