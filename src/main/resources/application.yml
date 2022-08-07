@@ -36,6 +36,8 @@ cron:
   fixed-rate-check-xlsx-exists: 900000
   launch-file-processing: '0 * * * * *'
   webhook-statistic: '0 0 19 * * *'
+  tg-column-header-request: '*/5 * * * * *'
+  tg-file-body-processor: '*/5 * * * * *'
 
 telegram:
   botName: Xlsx collector

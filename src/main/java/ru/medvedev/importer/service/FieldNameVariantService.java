@@ -32,6 +32,7 @@ public class FieldNameVariantService {
         return map.entrySet().stream()
                 .collect(toMap(Map.Entry::getKey, entry -> {
                     FieldNameVariantDto dto = new FieldNameVariantDto();
+                    dto.setField(entry.getKey());
                     dto.setNames(entry.getValue().stream()
                             .filter(name -> isNotBlank(name.getName()))
                             .map(FieldNameVariantEntity::getName).collect(Collectors.toSet()));
