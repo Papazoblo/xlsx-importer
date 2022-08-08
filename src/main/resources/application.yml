@@ -42,6 +42,7 @@ cron:
   webhook-statistic: '0 0 19 * * *'
   tg-column-header-request: '*/5 * * * * *'
   tg-file-body-processor: '*/5 * * * * *'
+  webhook-change-status: '17 */1 * * * *'
 
 telegram:
   botName: Xlsx collector

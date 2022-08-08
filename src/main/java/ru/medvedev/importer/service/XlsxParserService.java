@@ -43,6 +43,9 @@ public class XlsxParserService {
                 break;
             }
             for (Cell cell : row) {
+                if (cell.getCellType() == CellType.BLANK) {
+                    continue;
+                }
                 if (cell.getCellType() != CellType.STRING) {
                     throw new BadRequestException("У файла отсутсвует шапка");
                 }

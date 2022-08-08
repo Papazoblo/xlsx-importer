@@ -75,7 +75,7 @@ public class BodyProcessingService {
             } catch (Exception ex) {
                 log.debug("Error processing file: {}", ex.getMessage());
                 eventPublisher.publishEvent(new ImportEvent(this, Optional.ofNullable(ex.getMessage())
-                        .orElse("Непредвиденная ошибка"), EventType.ERROR,
+                        .orElse("Непредвиденная ошибка\n" + ex.getClass()), EventType.ERROR,
                         file.getId()));
             }
         });
@@ -93,7 +93,7 @@ public class BodyProcessingService {
         Map<String, InnRegionEntity> innRegionMap = innRegionService.getAllMap();
         regionCodes.clear();
         for (Row row : sheet) {
-            if (!file.getWithHeader() && row.getRowNum() == 0) {
+            if (file.getWithHeader() && row.getRowNum() == 0) {
                 continue;
             }
             contactBatch.add(parseContact(row, fieldPositionMap, file.getId(), innRegionMap));
@@ -161,12 +161,12 @@ public class BodyProcessingService {
                     case ADDRESS:
                         getCellValue(cell, contact::setAddress, header, fileId);
                         break;
-                    case TRASH:
+                    /*case TRASH:
                         TrashColumnDto columnDto = new TrashColumnDto();
                         columnDto.setColumnName(header.getValue());
                         getCellValue(cell, columnDto::setValue, header, fileId);
                         trashColumns.add(columnDto);
-                        break;
+                        break;*/
                 }
             });
         });

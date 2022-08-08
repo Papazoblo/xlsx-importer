@@ -57,12 +57,13 @@ public class EventService {
                         fileInfoService.getById(id).getName()).orElse("");
                 telegramPollingService.sendMessage(String.format(MESSAGE_PATTERN, event.getEventType().getDescription(),
                         getCurDateTime(),
-                        fileName, event.getDescription()), chatId);
+                        fileName, event.getDescription()), chatId, event.isWithCancelButton());
                 if (event.getEventType() == EventType.SUCCESS) {
                     printStatistic(chatId, fileId, fileName);
                 }
             } else if (event.getFileId() == -1) {
-                telegramPollingService.sendMessage(String.format(MESSAGE_SIMPLE_PATTERN, event.getDescription()), null);
+                telegramPollingService.sendMessage(String.format(MESSAGE_SIMPLE_PATTERN, event.getDescription()),
+                        null, event.isWithCancelButton());
             }
         });
 
@@ -89,7 +90,7 @@ public class EventService {
                 ContactStatus.DOWNLOADED.getDescription(),
                 Optional.ofNullable(mapStatistic.get(ContactStatus.DOWNLOADED)).orElse(0L),
                 ContactStatus.REJECTED.getDescription(),
-                Optional.ofNullable(mapStatistic.get(ContactStatus.REJECTED)).orElse(0L)), chatId);
+                Optional.ofNullable(mapStatistic.get(ContactStatus.REJECTED)).orElse(0L)), chatId, false);
     }
 
     private static String getCurDateTime() {

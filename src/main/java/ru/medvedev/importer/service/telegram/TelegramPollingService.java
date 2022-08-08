@@ -83,7 +83,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
             if (message != null) {
                 Long chatId = message.getChatId();
                 if (!chatId.equals(scanningChatId)) {
-                    sendMessage("Permission access denied", chatId);
+                    sendMessage("Permission access denied", chatId, false);
                     return;
                 }
                 Optional.ofNullable(message.getDocument()).ifPresent(document ->
@@ -133,12 +133,19 @@ public class TelegramPollingService extends TelegramLongPollingBot {
     3. хз, посмотреть , что все в относительно работчем состоянии и отправить на прод
      */
 
-    public void sendMessage(String message, Long idChat) {
+    public void sendMessage(String message, Long idChat, boolean withCancelButton) {
+        KeyboardRow keyboardRow = new KeyboardRow();
+        keyboardRow.add(new KeyboardButton("Отменить загрузку"));
         SendMessage method = SendMessage.builder()
                 .chatId(String.valueOf(idChat == null ? scanningChatId : idChat))
                 .parseMode(ParseMode.MARKDOWN)
                 .text(message)
-                .replyMarkup(null)
+                .replyMarkup(!withCancelButton
+                        ? null
+                        : ReplyKeyboardMarkup.builder()
+                        .resizeKeyboard(true)
+                        .keyboard(Collections.singleton(keyboardRow))
+                        .build())
                 .build();
         executeCommand(method);
         log.info(transformTgMessage(message));
@@ -191,6 +198,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                 .sorted(Comparator.comparing(KeyboardButton::getText))
                 .collect(Collectors.toList());
         buttons.add(new KeyboardButton("Пропустить"));
+        buttons.add(new KeyboardButton("Отменить загрузку"));
         List<KeyboardRow> rows = new ArrayList<>();
         for (int i = 0; i < buttons.size(); i = i + buttonCountInRow) {
             KeyboardRow row = new KeyboardRow();
@@ -211,6 +219,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                 .collect(Collectors.toList());
 
         buttons.add(new KeyboardButton("Пропустить"));
+        buttons.add(new KeyboardButton("Отменить загрузку"));
         List<KeyboardRow> rows = new ArrayList<>();
         for (int i = 0; i < buttons.size(); i = i + buttonCountInRow) {
             KeyboardRow row = new KeyboardRow();

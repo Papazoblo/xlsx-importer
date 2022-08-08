@@ -16,6 +16,7 @@ import ru.medvedev.importer.entity.FileRequestEmptyRequireFieldEntity;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.FileProcessingStep;
 import ru.medvedev.importer.enums.XlsxRequireField;
+import ru.medvedev.importer.exception.FileProcessingException;
 import ru.medvedev.importer.service.telegram.TelegramPollingService;
 
 import java.util.Collections;
@@ -42,32 +43,57 @@ public class HeaderColumnAssignmentService {
 
     @EventListener(CheckBotColumnResponseEvent.class)
     public void checkBotColumnResponseEventListener(CheckBotColumnResponseEvent event) {
-        fileInfoService.getFileWaitColumnResponse().ifPresent(file -> file.getColumnInfo().ifPresent(columnInfo -> {
-            Optional.ofNullable(file.getAskColumnNumber()).ifPresent(columnPosition -> {
-                try {
-                    XlsxRequireField xlsxField = XlsxRequireField.of(event.getText());
-                    FieldPositionDto fieldPositionDto = columnInfo.getFieldPositionMap().get(xlsxField);
-                    if (fieldPositionDto == null) {
-                        fieldPositionDto = new FieldPositionDto();
-                        fieldPositionDto.setRequired(true);
-                    }
-                    HeaderDto headerDto = new HeaderDto();
-                    headerDto.setPosition(columnPosition);
-                    headerDto.setValue(columnInfo.getColumnInfoMap().get(columnPosition).get(0));
-                    fieldPositionDto.getHeader().add(headerDto);
-                    columnInfo.getFieldPositionMap().put(xlsxField, fieldPositionDto);
-                    file.setColumnInfo(columnInfo);
-                    file.setProcessingStep(FileProcessingStep.RESPONSE_COLUMN_NAME);
-                    file.setAskColumnNumber(null);
-                } catch (Exception ex) {
-                    log.debug("Error convert text to XlsxRequireField");
-                }
+
+        if (event.getText().equals("Отменить загрузку")) {
+            fileInfoService.getFileInProcess().ifPresent(file -> {
+                eventPublisher.publishEvent(new ImportEvent(this, "Загрузка файла отменена",
+                        EventType.ERROR, file.getId()));
             });
-            fileInfoService.save(file);
-        }));
+            return;
+        }
+
+        fileInfoService.getFileWaitColumnResponse().ifPresent(file -> {
+
+            if (event.getText().equals("Отменить загрузку")) {
+                throw new FileProcessingException("Принудительная отмена загрузки", file.getId());
+            }
+
+            file.getColumnInfo().ifPresent(columnInfo -> {
+                Optional.ofNullable(file.getAskColumnNumber()).ifPresent(columnPosition -> {
+                    try {
+                        XlsxRequireField xlsxField = XlsxRequireField.of(event.getText());
+                        FieldPositionDto fieldPositionDto = columnInfo.getFieldPositionMap().get(xlsxField);
+                        if (fieldPositionDto == null) {
+                            fieldPositionDto = new FieldPositionDto();
+                            fieldPositionDto.setRequired(true);
+                        }
+                        HeaderDto headerDto = new HeaderDto();
+                        headerDto.setPosition(columnPosition);
+                        headerDto.setValue(columnInfo.getColumnInfoMap().get(columnPosition).get(0));
+                        fieldNameVariantService.add(xlsxField, headerDto.getValue(), true);
+                        fieldPositionDto.getHeader().add(headerDto);
+                        columnInfo.getFieldPositionMap().put(xlsxField, fieldPositionDto);
+                        file.setColumnInfo(columnInfo);
+                        file.setProcessingStep(FileProcessingStep.RESPONSE_COLUMN_NAME);
+                        file.setAskColumnNumber(null);
+                    } catch (Exception ex) {
+                        log.debug("Error convert text to XlsxRequireField");
+                    }
+                });
+
+                fileInfoService.save(file);
+            });
+        });
+
 
         fileInfoService.getFileWaitRequireColumnResponse().ifPresent(file -> {
-            file.getFileRequestEmptyRequireFieldEntities().stream()
+
+            if (event.getText().equals("Отменить загрузку")) {
+                throw new FileProcessingException("Принудительная отмена загрузки", file.getId());
+            }
+
+            file.getFileRequestEmptyRequireFieldEntities()
+                    .stream()
                     .filter(request -> !request.getHaveAnswer())
                     .findFirst().ifPresent(requestEntity -> file.getColumnInfo().ifPresent(columnInfo -> {
                 if (!event.getText().equals("Пропустить")) {
@@ -78,6 +104,7 @@ public class HeaderColumnAssignmentService {
                     fieldPositionDto.setHeader(Collections.singletonList(headerDto));
                     columnInfo.getFieldPositionMap().put(requestEntity.getColumn(), fieldPositionDto);
                     file.setColumnInfo(columnInfo);
+                    fieldNameVariantService.add(requestEntity.getColumn(), event.getText(), true);
                 }
                 file.getFileRequestEmptyRequireFieldEntities().forEach(item -> item.setHaveAnswer(true));
                 file.setProcessingStep(FileProcessingStep.RESPONSE_REQUIRE_FIELD);
@@ -144,7 +171,8 @@ public class HeaderColumnAssignmentService {
                 .collect(Collectors.toList());
     }
 
-    private List<String> getEmptyRequireColumnWithNoRequest(FileInfoEntity file, Map<XlsxRequireField, FieldPositionDto> requireFields) {
+    private List<String> getEmptyRequireColumnWithNoRequest(FileInfoEntity
+                                                                    file, Map<XlsxRequireField, FieldPositionDto> requireFields) {
         List<String> emptyRequireFieldList = getEmptyRequiredColumn(requireFields);
         return emptyRequireFieldList.stream()
                 .filter(field -> file.getFileRequestEmptyRequireFieldEntities().stream()

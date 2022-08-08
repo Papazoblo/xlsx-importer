@@ -77,4 +77,18 @@ public class FieldNameVariantService {
                 }).collect(Collectors.toList());
         repository.saveAll(entities);
     }
+
+    public void add(XlsxRequireField field, String value, boolean required) {
+
+        FieldNameVariantDto dto = getByField(field);
+        if (dto.getNames().stream().anyMatch(item -> item.equalsIgnoreCase(value))) {
+            return;
+        }
+
+        FieldNameVariantEntity entity = new FieldNameVariantEntity();
+        entity.setField(field);
+        entity.setName(value);
+        entity.setRequired(required);
+        repository.save(entity);
+    }
 }

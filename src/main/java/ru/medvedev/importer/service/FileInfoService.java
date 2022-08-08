@@ -60,6 +60,10 @@ public class FileInfoService {
         return repository.findById(fileId).map(FileInfoEntity::getChatId).orElse(null);
     }
 
+    public Optional<FileInfoEntity> getFileInProcess() {
+        return repository.findByStatusAndSource(FileStatus.IN_PROCESS, TELEGRAM);
+    }
+
     public Optional<FileInfoEntity> getFileToTgRequest() {
         return repository.findByStatusAndSourceAndProcessingStepIn(FileStatus.IN_PROCESS, TELEGRAM,
                 Arrays.asList(FileProcessingStep.RESPONSE_COLUMN_NAME, FileProcessingStep.RESPONSE_REQUIRE_FIELD));
@@ -117,7 +121,7 @@ public class FileInfoService {
         FileInfoEntity entity = repository.findById(id).orElseThrow(EntityNotFoundException::new);
         entity.setDeleted(true);
         repository.save(entity);
-        new File(entity.getPath()).delete();
+        deleteFile(entity.getId());
     }
 
     public FileInfoEntity getById(Long id) {
@@ -141,11 +145,19 @@ public class FileInfoService {
     @EventListener(InvalidFileEvent.class)
     public void invalidFileEventListener(InvalidFileEvent event) {
         repository.changeStatus(event.getFileId(), FileStatus.ERROR);
+        deleteFile(event.getFileId());
     }
 
     @EventListener(CompleteFileEvent.class)
     public void completeFileEventListener(CompleteFileEvent event) {
         repository.changeStatus(event.getFileId(), FileStatus.SUCCESS);
+        deleteFile(event.getFileId());
+    }
+
+    private void deleteFile(Long fileId) {
+        repository.findById(fileId).ifPresent(file -> {
+            new File(file.getPath()).delete();
+        });
     }
 
     @SneakyThrows

@@ -44,13 +44,13 @@ public class FileProcessingService {
         fileInfoService.getDownloadedFile().ifPresent(entity -> {
             log.debug("*** launch file processing [{}, id = {}]", entity.getName(), entity.getId());
             eventPublisher.publishEvent(new ImportEvent(this, "Файл взят в обработку",
-                    EventType.LOG_TG, entity.getId()));
+                    EventType.LOG_TG, entity.getId(), true));
             entity = fileInfoService.changeStatus(entity, FileStatus.IN_PROCESS);
             xlsxStorage.setFileId(entity.getId());
             try {
                 Map<XlsxRequireField, FieldNameVariantDto> namesMap = fieldNameVariantService.getAll();
-                if (namesMap.keySet().stream().anyMatch(key -> namesMap.get(key).getNames().isEmpty() &&
-                        namesMap.get(key).isRequired())) {
+                if (namesMap.keySet().stream().filter(field -> field != XlsxRequireField.TRASH)
+                        .anyMatch(key -> namesMap.get(key).getNames().isEmpty() && namesMap.get(key).isRequired())) {
                     throw new ColumnNamesNotFoundException("Не указаны варианты названий полей", entity.getId());
                 } else {
                     readFile(entity, namesMap);

@@ -37,11 +37,12 @@ public class HeaderProcessingService {
         Map<XlsxRequireField, FieldPositionDto> fieldPositionMap;
         try {
             fieldPositionMap = parseHeader(sheet.getRow(0), namesMap, fileInfo.getId());
+            fileInfo.setWithHeader(true);
         } catch (FileHeaderNotFoundException ex) {
             fieldPositionMap = new HashMap<>();
             fileInfo.setWithHeader(false);
-            fileInfoService.save(fileInfo);
         }
+        fileInfoService.save(fileInfo);
         Map<Integer, List<String>> columnInfoMap = readLines(sheet);
         ColumnInfoDto columnInfo = new ColumnInfoDto();
         columnInfo.setColumnInfoMap(columnInfoMap);
@@ -57,7 +58,9 @@ public class HeaderProcessingService {
         Map<XlsxRequireField, FieldPositionDto> positionField = new HashMap<>();
 
         namesMap.keySet().forEach(key -> {
-
+            if (key == XlsxRequireField.TRASH) {
+                return;
+            }
             FieldPositionDto dto = new FieldPositionDto();
             FieldNameVariantDto fieldNameVariantDto = namesMap.get(key);
             dto.setRequired(fieldNameVariantDto.isRequired());

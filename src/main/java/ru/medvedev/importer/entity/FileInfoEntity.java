@@ -87,6 +87,10 @@ public class FileInfoEntity {
         processingStep = INITIALIZE;
     }
 
+    public Boolean getWithHeader() {
+        return withHeader != null || withHeader;
+    }
+
     public void setColumnInfo(ColumnInfoDto columnInfo) {
         try {
             this.columnInfo = new ObjectMapper().writeValueAsString(columnInfo);

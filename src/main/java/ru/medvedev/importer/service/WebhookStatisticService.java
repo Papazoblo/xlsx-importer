@@ -17,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 
@@ -32,7 +33,6 @@ public class WebhookStatisticService {
     private final WebhookStatisticRepository repository;
     private final WebhookSuccessStatusService webhookSuccessStatusService;
     private final TelegramPollingService telegramPollingService;
-    private final FileInfoService fileInfoService;
 
     @Scheduled(cron = "${cron.webhook-statistic}")
     public void printScheduledStatistic() {
@@ -42,7 +42,7 @@ public class WebhookStatisticService {
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")),
                 Optional.ofNullable(entities.get(WebhookStatus.SUCCESS)).map(List::size).orElse(0),
                 Optional.ofNullable(entities.get(WebhookStatus.REJECTED)).map(List::size).orElse(0));
-        telegramPollingService.sendMessage(message, scanningChatId);
+        telegramPollingService.sendMessage(message, scanningChatId, false);
     }
 
     public Map<WebhookStatus, List<WebhookStatisticEntity>> getCountByPrevDay() {
@@ -55,11 +55,24 @@ public class WebhookStatisticService {
         return statistics.stream().collect(groupingBy(WebhookStatisticEntity::getStatus));
     }
 
+    public List<WebhookStatisticEntity> getByStatus(WebhookStatus status) {
+        return repository.findAllByStatus(status);
+    }
+
     public void addStatistic(WebhookStatus status, WebhookDto webhook) {
         WebhookStatisticEntity entity = new WebhookStatisticEntity();
         entity.setInn(webhook.getLead().getInn());
         entity.setStatus(status);
+        entity.setPhone(webhook.getLead().getPhones());
+        entity.setCity(webhook.getLead().getCity());
         entity.setSuccessStatus(webhookSuccessStatusService.getByName(webhook.getCallResult().getResultName()));
         repository.save(entity);
+    }
+
+    public void updateStatisticStatus(String inn, WebhookStatus oldStatus, WebhookStatus newStatus) {
+        repository.saveAll(repository.findAllByInnAndStatus(inn, oldStatus)
+                .stream()
+                .peek(item -> item.setStatus(newStatus))
+                .collect(Collectors.toList()));
     }
 }
