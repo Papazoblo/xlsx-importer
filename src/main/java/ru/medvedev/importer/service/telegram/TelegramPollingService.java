@@ -126,9 +126,16 @@ public class TelegramPollingService extends TelegramLongPollingBot {
         return fileInfo;
     }
 
+    /*
+    TODO
+    1. увеличить минимальный размер файла
+    2. ошибка INVALID_INN - необходимо исключать его и отправлять запроса снова
+    3. хз, посмотреть , что все в относительно работчем состоянии и отправить на прод
+     */
+
     public void sendMessage(String message, Long idChat) {
         SendMessage method = SendMessage.builder()
-                .chatId(String.valueOf(idChat))
+                .chatId(String.valueOf(idChat == null ? scanningChatId : idChat))
                 .parseMode(ParseMode.MARKDOWN)
                 .text(message)
                 .replyMarkup(null)

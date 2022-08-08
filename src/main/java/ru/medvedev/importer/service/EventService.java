@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EventService {
 
+    protected static final String MESSAGE_SIMPLE_PATTERN = "*Импорт с интерфейса* \n_%s_";
     protected static final String MESSAGE_PATTERN = "*%s* %s\n*Файл: %s*\n%s";
     protected static final String MESSAGE_STATISTIC_PATTERN = "*Статистика загрузки* %s\n*Файл: %s*\n%s: %d\n%s: %d\n%s: %d";
 
@@ -60,6 +61,8 @@ public class EventService {
                 if (event.getEventType() == EventType.SUCCESS) {
                     printStatistic(chatId, fileId, fileName);
                 }
+            } else if (event.getFileId() == -1) {
+                telegramPollingService.sendMessage(String.format(MESSAGE_SIMPLE_PATTERN, event.getDescription()), null);
             }
         });
 

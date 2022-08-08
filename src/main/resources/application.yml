@@ -20,6 +20,10 @@ logging:
     ru.medvedev.importer: DEBUG
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   datasource:
     jdbc-url: jdbc:postgresql://127.0.0.1:5432/xlsx_importer_db
     driver-class-name: org.postgresql.Driver

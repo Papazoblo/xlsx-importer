@@ -71,13 +71,12 @@ public class LeadWorkerService {
                     .collect(groupingBy(XlsxRecordDto::getOrgInn));
             List<String> positiveInn = sendCheckDuplicates(new ArrayList<>(records.keySet()));
             splitToContactAndOrganization(records, positiveInn, importInfo);
-            eventPublisher.publishEvent(new ImportEvent(this, "Файл с интерфейса успешно бработан\nЗагружено " + positiveInn.size() + " контактов",
+            eventPublisher.publishEvent(new ImportEvent(this, "Файл успешно импортирован\nЗагружено " + positiveInn.size() + " контактов",
                     EventType.LOG_TG, -1L));
         } catch (Exception ex) {
             log.debug("*** Error excel parsing", ex);
-            eventPublisher.publishEvent(new ImportEvent(this, "Ошибка обработки файла с интерфейса\n" + ex.getMessage(),
+            eventPublisher.publishEvent(new ImportEvent(this, "Ошибка импорта файла\n" + ex.getMessage(),
                     EventType.LOG_TG, -1L));
-            throw new BadRequestException("Ошибка парсинга экселя", ex);
         }
     }
 
