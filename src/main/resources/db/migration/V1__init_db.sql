@@ -12,7 +12,7 @@ CREATE TABLE file_info
     tg_file_id varchar(100) NOT NULL,
     hash       varchar(100) not null,
     status     varchar(50)  NOT NULL,
-    path       varchar(200) not null,
+    path       varchar(500) not null,
     deleted    boolean default false,
     create_at  timestamp    not null,
     primary key (id)

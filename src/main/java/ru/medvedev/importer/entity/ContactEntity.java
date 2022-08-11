@@ -1,6 +1,7 @@
 package ru.medvedev.importer.entity;
 
 import lombok.Data;
+import lombok.ToString;
 import ru.medvedev.importer.enums.ContactStatus;
 
 import javax.persistence.*;
@@ -46,6 +47,14 @@ public class ContactEntity {
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private ContactStatus status;
+
+    @Column(name = "trash_columns")
+    private String trashColumns;
+
+    @ToString.Exclude
+    @ManyToOne
+    @JoinColumn(name = "webhook_status_id")
+    private WebhookStatusEntity webhookStatus;
 
     @Column(name = "create_at")
     private LocalDateTime createAt;

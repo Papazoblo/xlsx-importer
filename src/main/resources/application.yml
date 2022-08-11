@@ -20,6 +20,10 @@ logging:
     ru.medvedev.importer: DEBUG
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   datasource:
     jdbc-url: jdbc:postgresql://127.0.0.1:5432/xlsx_importer_db
     driver-class-name: org.postgresql.Driver
@@ -35,6 +39,10 @@ cron:
   fixed-rate-update-token: 1200000
   fixed-rate-check-xlsx-exists: 900000
   launch-file-processing: '0 * * * * *'
+  webhook-statistic: '0 0 19 * * *'
+  tg-column-header-request: '*/5 * * * * *'
+  tg-file-body-processor: '*/5 * * * * *'
+  webhook-change-status: '17 */1 * * * *'
 
 telegram:
   botName: Xlsx collector

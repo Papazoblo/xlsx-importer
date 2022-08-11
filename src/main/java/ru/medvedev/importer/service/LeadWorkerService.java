@@ -2,10 +2,15 @@ package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.*;
+import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.enums.CheckLeadStatus;
+import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.WebhookStatus;
 import ru.medvedev.importer.exception.BadRequestException;
 
@@ -28,42 +33,85 @@ public class LeadWorkerService {
     private final SkorozvonClientService skorozvonClientService;
     private final WebhookSuccessStatusService webhookSuccessStatusService;
     private final WebhookStatisticService webhookStatisticService;
+    private final ContactService contactService;
+    private final ApplicationEventPublisher eventPublisher;
+
+    @Scheduled(cron = "${cron.webhook-change-status}")
+    public void fromStatusFixed() {
+
+        webhookStatisticService.getByStatus(WebhookStatus.FIXED).forEach(item -> {
+            //мы спрашиваем у ВТБ можем ли мы добавить лид
+            List<LeadInfoResponse> response = vtbClientService.getPositiveFromCheckLead(Collections.singletonList(item.getInn()));
+            //если ответ положительный, добавляем лид в ВТБ
+            if (!response.isEmpty()) {
+                log.debug("*** have a positive lead inn {} ", item.getInn());
+                webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.FIXED, WebhookStatus.TRY_TO_CREATE_LEAD);
+            } else {
+                webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.FIXED, WebhookStatus.REJECTED);
+            }
+        });
+    }
+
+    @Scheduled(cron = "${cron.webhook-change-status}")
+    public void fromStatusTryToCreateLead() {
+
+        webhookStatisticService.getByStatus(WebhookStatus.TRY_TO_CREATE_LEAD).forEach(item -> {
+            WebhookLeadDto leadDto = new WebhookLeadDto();
+            leadDto.setCity(item.getCity());
+            leadDto.setInn(item.getInn());
+            leadDto.setPhones(item.getPhone());
+            //мы спрашиваем у ВТБ можем ли мы добавить лид
+            vtbClientService.createLead(leadDto);
+            webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD, WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
+        });
+    }
+
+    @Scheduled(cron = "${cron.webhook-change-status}")
+    public void fromStatusTryToCreateLeadSuccess() {
+
+        webhookStatisticService.getByStatus(WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS).forEach(item -> {
+            List<LeadInfoResponse> response = vtbClientService.getAllFromCheckLead(Collections.singletonList(item.getInn()));
+            //и проверям добавился лид или нет
+            if (response.stream().anyMatch(lead ->
+                    lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {
+                log.debug("*** lead loaded in VTB {} ", item.getInn());
+                webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.SUCCESS);
+            }
+        });
+    }
 
     public void processWebhook(WebhookDto webhookDto) {
+        //если вебхук имеет тип call_result
         if (webhookDto.getType().equals("call_result")) {
             String resultName = webhookDto.getCallResult().getResultName();
+            contactService.changeWebhookStatus(webhookDto.getLead().getInn(), resultName);
+
+            //если результат соответствует нашим ожиданиям
             if (isNotBlank(resultName) && webhookSuccessStatusService.existByName(resultName)) {
-                String inn = webhookDto.getLead().getInn();
-                List<LeadInfoResponse> response = vtbClientService.getPositiveFromCheckLead(
-                        Collections.singletonList(inn));
-                if (!response.isEmpty()) {
-                    log.debug("*** have a positive lead inn {} ", response.get(0).getInn());
-                    vtbClientService.createLead(webhookDto.getLead());
-                    response = vtbClientService.getAllFromCheckLead(Collections.singletonList(webhookDto.getLead().getInn()));
-                    if (response.stream().anyMatch(item ->
-                            item.getInn().equals(inn) && item.getResponseCode() != CheckLeadStatus.POSITIVE)) {
-                        log.debug("*** lead loaded in VTB {} ", response.get(0).getInn());
-                        webhookStatisticService.addStatistic(WebhookStatus.SUCCESS, webhookDto);
-                    }
-                } else {
-                    webhookStatisticService.addStatistic(WebhookStatus.REJECTED, webhookDto);
-                }
+                webhookStatisticService.addStatistic(WebhookStatus.FIXED, webhookDto);
             }
         }
     }
 
+
+    @Async
     public void processXlsxRecords(XlsxImportInfo importInfo) {
         Map<String, List<XlsxRecordDto>> records;
         try {
+            eventPublisher.publishEvent(new ImportEvent(this, "Запущена обработка файла с интерфейса",
+                    EventType.LOG_TG, -1L));
             //boolean withOrganization = importInfo.getFieldLinks().get(SkorozvonField.ORG_NAME) != null;
             records = xlsxParserService.readColumnBody(importInfo).stream()
                     .filter(item -> item.getOrgInn().length() == 10 || item.getOrgInn().length() == 12)
                     .collect(groupingBy(XlsxRecordDto::getOrgInn));
             List<String> positiveInn = sendCheckDuplicates(new ArrayList<>(records.keySet()));
             splitToContactAndOrganization(records, positiveInn, importInfo);
+            eventPublisher.publishEvent(new ImportEvent(this, "Файл успешно импортирован\nЗагружено " + positiveInn.size() + " контактов",
+                    EventType.LOG_TG, -1L));
         } catch (Exception ex) {
             log.debug("*** Error excel parsing", ex);
-            throw new BadRequestException("Ошибка парсинга экселя", ex);
+            eventPublisher.publishEvent(new ImportEvent(this, "Ошибка импорта файла\n" + ex.getMessage(),
+                    EventType.LOG_TG, -1L));
         }
     }
 

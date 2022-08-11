@@ -3,6 +3,9 @@ package ru.medvedev.importer.enums;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import javax.persistence.EntityNotFoundException;
+import java.util.Arrays;
+
 @RequiredArgsConstructor
 public enum XlsxRequireField {
 
@@ -13,8 +16,19 @@ public enum XlsxRequireField {
     PHONE("Телефон"),
     INN("ИНН"),
     OGRN("ОГРН"),
-    ADDRESS("Адрес");
+    ADDRESS("Адрес"),
+    TRASH("Мусорный столбец");
 
     @Getter
     private final String description;
+
+    public static XlsxRequireField of(String name) {
+        if (name.equals("Пропустить")) {
+            return TRASH;
+        }
+        return Arrays.stream(XlsxRequireField.values())
+                .filter(field -> field != TRASH)
+                .filter(field -> field.getDescription().equals(name))
+                .findFirst().orElseThrow(EntityNotFoundException::new);
+    }
 }

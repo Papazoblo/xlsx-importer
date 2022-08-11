@@ -1,60 +1,73 @@
 package ru.medvedev.importer.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.component.XlsxStorage;
-import ru.medvedev.importer.dto.ColumnInfoDto;
-import ru.medvedev.importer.dto.FieldNameVariantDto;
+import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.events.ImportEvent;
+import ru.medvedev.importer.dto.response.LeadInfoResponse;
+import ru.medvedev.importer.entity.ContactEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
-import ru.medvedev.importer.enums.EventType;
-import ru.medvedev.importer.enums.FileProcessingStep;
-import ru.medvedev.importer.enums.FileStatus;
-import ru.medvedev.importer.enums.XlsxRequireField;
-import ru.medvedev.importer.exception.ColumnNamesNotFoundException;
+import ru.medvedev.importer.entity.InnRegionEntity;
+import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.exception.FileProcessingException;
+import ru.medvedev.importer.exception.IllegalCellTypeException;
+import ru.medvedev.importer.exception.NumberProjectNotFoundException;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.function.Consumer;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
+import static org.apache.logging.log4j.util.Strings.isBlank;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class FileProcessingService {
+public class BodyProcessingService {
 
+    private static final int REQUEST_BATCH_SIZE = 150;
+    private static final Integer BATCH_SIZE = 100;
+
+    private final ProjectNumberService projectNumberService;
     private final FileInfoService fileInfoService;
     private final FieldNameVariantService fieldNameVariantService;
+    private final ContactService contactService;
+    private final VtbClientService vtbClientService;
+    private final SkorozvonClientService skorozvonClientService;
     private final ApplicationEventPublisher eventPublisher;
+    private final InnRegionService innRegionService;
     private final XlsxStorage xlsxStorage;
+    private final ObjectMapper objectMapper;
     private final HeaderProcessingService headerProcessingService;
 
+    private Set<String> regionCodes = new HashSet<>();
 
-    @Scheduled(cron = "${cron.launch-file-processing}")
-    public void launchProcessFile() {
-        if (fileInfoService.isExistsInProcess()) {
-            return;
-        }
-
-        fileInfoService.getDownloadedFile().ifPresent(entity -> {
-            log.debug("*** launch file processing [{}, id = {}]", entity.getName(), entity.getId());
-            eventPublisher.publishEvent(new ImportEvent(this, "Файл взят в обработку",
-                    EventType.LOG_TG, entity.getId(), true));
-            entity = fileInfoService.changeStatus(entity, FileStatus.IN_PROCESS);
-            xlsxStorage.setFileId(entity.getId());
+    @Scheduled(cron = "${cron.tg-file-body-processor}")
+    public void sendRequestToTelegram() {
+        fileInfoService.getFileToProcessingBody().ifPresent(file -> {
+            file.setProcessingStep(FileProcessingStep.READ_DATA);
+            fileInfoService.save(file);
             try {
-                Map<XlsxRequireField, FieldNameVariantDto> namesMap = fieldNameVariantService.getAll();
-                if (namesMap.keySet().stream().filter(field -> field != XlsxRequireField.TRASH)
-                        .anyMatch(key -> namesMap.get(key).getNames().isEmpty() && namesMap.get(key).isRequired())) {
-                    throw new ColumnNamesNotFoundException("Не указаны варианты названий полей", entity.getId());
-                } else {
-                    readFile(entity, namesMap);
-                }
+                readFile(file);
+                eventPublisher.publishEvent(new ImportEvent(this, "Файл обработан",
+                        EventType.SUCCESS, file.getId()));
             } catch (FileProcessingException ex) {
                 log.debug("Error processing file: {}", ex.getMessage());
                 eventPublisher.publishEvent(new ImportEvent(this, ex.getMessage(), EventType.ERROR,
@@ -62,126 +75,44 @@ public class FileProcessingService {
             } catch (Exception ex) {
                 log.debug("Error processing file: {}", ex.getMessage());
                 eventPublisher.publishEvent(new ImportEvent(this, Optional.ofNullable(ex.getMessage())
-                        .orElse("Непредвиденная ошибка"), EventType.ERROR,
-                        entity.getId()));
+                        .orElse("Непредвиденная ошибка\n" + ex.getClass()), EventType.ERROR,
+                        file.getId()));
             }
-            xlsxStorage.setFileId(null);
-            //new File(entity.getPath()).delete();
         });
     }
 
-    /*private void readFile(String fileName, FileInputStream fis, Map<XlsxRequireField, FieldNameVariantDto> namesMap,
-                          Long fileId)
-            throws IOException {
-
-        Workbook wb = fileName.endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
+    private void readFile(FileInfoEntity file) throws IOException {
+        FileInputStream fis = new FileInputStream(new File(file.getPath()));
+        Workbook wb = file.getName().endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
 
         Sheet sheet = wb.getSheetAt(0);
-        Map<XlsxRequireField, FieldPositionDto> fieldPositionMap = new HashMap<>();
+        Map<XlsxRequireField, FieldPositionDto> fieldPositionMap = file.getColumnInfo().get().getFieldPositionMap();
 
         List<ContactEntity> contactBatch = new ArrayList<>();
         List<ContactEntity> resultContactList = new ArrayList<>();
         Map<String, InnRegionEntity> innRegionMap = innRegionService.getAllMap();
         regionCodes.clear();
         for (Row row : sheet) {
-            if (row.getRowNum() == 0) {
-                try {
-                    fieldPositionMap = readHeader(row, namesMap, fileId);
-                } catch (BadRequestException ex) {
-                    return;
-                }
-            } else {
-                contactBatch.add(parseContact(row, fieldPositionMap, fileId, innRegionMap));
+            if (file.getWithHeader() && row.getRowNum() == 0) {
+                continue;
             }
+            contactBatch.add(parseContact(row, fieldPositionMap, file.getId(), innRegionMap));
             if (contactBatch.size() == BATCH_SIZE) {
-                resultContactList.addAll(contactService.filteredContacts(contactBatch, fileId));
+                resultContactList.addAll(contactService.filteredContacts(contactBatch, file.getId()));
                 contactBatch.clear();
             }
         }
         if (!contactBatch.isEmpty()) {
-            resultContactList.addAll(contactService.filteredContacts(contactBatch, fileId));
+            resultContactList.addAll(contactService.filteredContacts(contactBatch, file.getId()));
             contactBatch.clear();
         }
         regionCodes.forEach(code -> eventPublisher.publishEvent(new ImportEvent(this,
-                String.format("Регион с кодом %s не найден в справочнике", code), EventType.LOG, fileId)));
+                String.format("Регион с кодом %s не найден в справочнике", code), EventType.LOG, file.getId())));
         wb.close();
-        prepareContactToSkorozvon(resultContactList, fileId);
-    }*/
-
-    private void readFile(FileInfoEntity entity, Map<XlsxRequireField, FieldNameVariantDto> namesMap) {
-        try {
-            FileInputStream fis = new FileInputStream(new File(entity.getPath()));
-            ColumnInfoDto columnInfoDto = headerProcessingService.headerProcessing(entity, namesMap, fis);
-            entity.setColumnInfo(columnInfoDto);
-            entity.setProcessingStep(FileProcessingStep.RESPONSE_COLUMN_NAME);
-            fileInfoService.save(entity);
-            fis.close();
-        } catch (IOException e) {
-            throw new FileProcessingException("Невозможно открыть файл", entity.getId());
-        }
+        prepareContactToSkorozvon(resultContactList, file.getId());
     }
 
-    /*private Map<XlsxRequireField, FieldPositionDto> readHeader(Row row, Map<XlsxRequireField,
-            FieldNameVariantDto> namesMap, Long fileId) {
-        Map<XlsxRequireField, FieldPositionDto> positionField = new HashMap<>();
-        namesMap.keySet().forEach(key -> {
-
-            FieldPositionDto dto = new FieldPositionDto();
-            FieldNameVariantDto fieldNameVariantDto = namesMap.get(key);
-            dto.setRequired(fieldNameVariantDto.isRequired());
-
-            for (Cell cell : row) {
-                if (cell.getCellType() == CellType.BLANK) {
-                    continue;
-                }
-                if (cell.getCellType() != CellType.STRING) {
-                    eventPublisher.publishEvent(new ImportEvent(this, "В файле отсутствует шапка таблицы",
-                            EventType.LOG_TG, fileId));
-                    break;
-                }
-
-                if (fieldNameVariantDto.getNames().stream()
-                        .anyMatch(name -> name.toLowerCase().equals(cell.getStringCellValue().toLowerCase()))) {
-                    HeaderDto header = new HeaderDto();
-                    header.setPosition(cell.getColumnIndex());
-                    header.setValue(cell.getStringCellValue());
-                    dto.getHeader().add(header);
-                    break;
-                }
-            }
-
-            if (dto.isRequired() && dto.getHeader().isEmpty()) {
-                eventPublisher.publishEvent(new ImportEvent(this, String.format("Столбец %s не найден в файле",
-                        key.getDescription()), EventType.LOG_TG, fileId));
-            }
-            positionField.put(key, dto);
-        });
-
-        //positionField.put(XlsxRequireField.TRASH, parseTrashColumns(row, positionField));
-        return positionField;
-    }*/
-
-    /*private FieldPositionDto parseTrashColumns(Row row, Map<XlsxRequireField, FieldPositionDto> positionField) {
-        List<Integer> usedPositions = positionField.keySet().stream()
-                .flatMap(key -> positionField.get(key).getHeader().stream())
-                .map(HeaderDto::getPosition)
-                .collect(toList());
-
-        FieldPositionDto fieldPositionDto = new FieldPositionDto();
-        List<HeaderDto> headers = new ArrayList<>();
-        for (Cell cell : row) {
-            if (!usedPositions.contains(cell.getColumnIndex())) {
-                HeaderDto headerDto = new HeaderDto();
-                headerDto.setPosition(cell.getColumnIndex());
-                headerDto.setValue(cell.getStringCellValue());
-                headers.add(headerDto);
-            }
-        }
-        fieldPositionDto.setHeader(headers);
-        return fieldPositionDto;
-    }*/
-
-    /*private ContactEntity parseContact(Row row, Map<XlsxRequireField, FieldPositionDto> cellPositionMap, Long fileId,
+    private ContactEntity parseContact(Row row, Map<XlsxRequireField, FieldPositionDto> cellPositionMap, Long fileId,
                                        Map<String, InnRegionEntity> innRegionMap) {
 
         ContactEntity contact = new ContactEntity();
@@ -230,12 +161,12 @@ public class FileProcessingService {
                     case ADDRESS:
                         getCellValue(cell, contact::setAddress, header, fileId);
                         break;
-                    case TRASH:
+                    /*case TRASH:
                         TrashColumnDto columnDto = new TrashColumnDto();
                         columnDto.setColumnName(header.getValue());
                         getCellValue(cell, columnDto::setValue, header, fileId);
                         trashColumns.add(columnDto);
-                        break;
+                        break;*/
                 }
             });
         });
@@ -344,5 +275,5 @@ public class FileProcessingService {
 
     private static String replaceSpecialCharacters(String val) {
         return val.replaceAll("[+*_()#\\-\"'$№%^&? ,]+", "");
-    }*/
+    }
 }

@@ -2,8 +2,10 @@ package ru.medvedev.importer.dto;
 
 import lombok.Data;
 import ru.medvedev.importer.entity.ContactEntity;
+import ru.medvedev.importer.entity.WebhookStatusEntity;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 @Data
 public class ContactDto {
@@ -17,6 +19,7 @@ public class ContactDto {
     private String createAt;
     private String status;
     private String original;
+    private String webhookStatus;
 
     public static ContactDto of(ContactEntity entity, boolean original) {
         ContactDto dto = new ContactDto();
@@ -31,6 +34,8 @@ public class ContactDto {
                 .format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")));
         dto.setStatus(entity.getStatus().getDescription());
         dto.setOriginal(original ? "+" : "");
+        dto.setWebhookStatus(Optional.ofNullable(entity.getWebhookStatus())
+                .map(WebhookStatusEntity::getName).orElse(""));
         return dto;
     }
 }

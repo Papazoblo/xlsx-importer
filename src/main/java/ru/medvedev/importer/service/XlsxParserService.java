@@ -2,10 +2,7 @@ package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.component.XlsxStorage;
@@ -38,12 +35,7 @@ public class XlsxParserService {
         }
 
         FileInputStream fis = new FileInputStream(new File(storage.getFileName()));
-        Workbook wb;
-        if (storage.getFileName().endsWith("xlsx")) {
-            wb = new XSSFWorkbook(fis);
-        } else {
-            wb = new HSSFWorkbook(fis);
-        }
+        Workbook wb = storage.getFileName().endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
         Sheet sheet = wb.getSheetAt(0);
         List<String> headers = new ArrayList<>();
         for (Row row : sheet) {
@@ -51,6 +43,12 @@ public class XlsxParserService {
                 break;
             }
             for (Cell cell : row) {
+                if (cell.getCellType() == CellType.BLANK) {
+                    continue;
+                }
+                if (cell.getCellType() != CellType.STRING) {
+                    throw new BadRequestException("У файла отсутсвует шапка");
+                }
                 String value = cell.getStringCellValue();
                 if (isNotBlank(value)) {
                     headers.add(value);
@@ -69,12 +67,8 @@ public class XlsxParserService {
         }
 
         FileInputStream fis = new FileInputStream(new File(storage.getFileName()));
-        Workbook wb;
-        if (storage.getFileName().endsWith("xlsx")) {
-            wb = new XSSFWorkbook(fis);
-        } else {
-            wb = new HSSFWorkbook(fis);
-        }
+        Workbook wb = storage.getFileName().endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
+
         Sheet sheet = wb.getSheetAt(0);
         List<XlsxRecordDto> list = new ArrayList<>();
         for (Row row : sheet) {

@@ -32,6 +32,7 @@ public class FieldNameVariantService {
         return map.entrySet().stream()
                 .collect(toMap(Map.Entry::getKey, entry -> {
                     FieldNameVariantDto dto = new FieldNameVariantDto();
+                    dto.setField(entry.getKey());
                     dto.setNames(entry.getValue().stream()
                             .filter(name -> isNotBlank(name.getName()))
                             .map(FieldNameVariantEntity::getName).collect(Collectors.toSet()));
@@ -75,5 +76,19 @@ public class FieldNameVariantService {
                     return fnvList.stream();
                 }).collect(Collectors.toList());
         repository.saveAll(entities);
+    }
+
+    public void add(XlsxRequireField field, String value, boolean required) {
+
+        FieldNameVariantDto dto = getByField(field);
+        if (dto.getNames().stream().anyMatch(item -> item.equalsIgnoreCase(value))) {
+            return;
+        }
+
+        FieldNameVariantEntity entity = new FieldNameVariantEntity();
+        entity.setField(field);
+        entity.setName(value);
+        entity.setRequired(required);
+        repository.save(entity);
     }
 }
