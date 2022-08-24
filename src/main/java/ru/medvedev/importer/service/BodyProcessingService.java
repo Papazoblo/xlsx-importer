@@ -133,7 +133,12 @@ public class BodyProcessingService {
                         getCellValue(cell, contact::setSurname, header, fileId);
                         break;
                     case MIDDLE_NAME:
-                        getCellValue(cell, contact::setMiddleName, header, fileId);
+                        try {
+                            getCellValue(cell, contact::setMiddleName, header, fileId);
+                        } catch (IllegalCellTypeException ex) {
+                            log.debug("*** MiddleName is empty");
+                            contact.setCity("");
+                        }
                         break;
                     case ORG_NAME:
                         try {
@@ -149,6 +154,9 @@ public class BodyProcessingService {
                         break;
                     case INN:
                         getCellValue(cell, val -> contact.setInn(val.length() == 9 || val.length() == 11 ? "0" + val : val), header, fileId);
+                        if (isBlank(contact.getInn())) {
+                            return;
+                        }
                         contact.setRegion(Optional.ofNullable(innRegionMap.get(contact.getInn().substring(0, 2)))
                                 .map(InnRegionEntity::getName).orElseGet(() -> {
                                     regionCodes.add(contact.getInn().substring(0, 2));
@@ -158,8 +166,13 @@ public class BodyProcessingService {
                     case OGRN:
                         getCellValue(cell, contact::setOgrn, header, fileId);
                         break;
-                    case ADDRESS:
-                        getCellValue(cell, contact::setAddress, header, fileId);
+                    case CITY:
+                        try {
+                            getCellValue(cell, contact::setCity, header, fileId);  //todo бывший адрес
+                        } catch (IllegalCellTypeException ex) {
+                            log.debug("*** City is empty");
+                            contact.setCity("");
+                        }
                         break;
                     /*case TRASH:
                         TrashColumnDto columnDto = new TrashColumnDto();
@@ -252,21 +265,19 @@ public class BodyProcessingService {
 
     private static CreateLeadDto xlsxRecordToLead(ContactEntity contact) {
         CreateLeadDto lead = new CreateLeadDto();
-        lead.setName(String.format("%s %s %s", Optional.ofNullable(contact.getSurname()).orElse(""),
-                Optional.ofNullable(contact.getName()).orElse(""),
-                Optional.ofNullable(contact.getMiddleName()).orElse("")).trim());
+        lead.setName(getFio(contact));
         lead.setPhones(Collections.singletonList(contact.getPhone()));
-        lead.setAddress(contact.getAddress());
+        lead.setCity(contact.getCity());
         lead.setRegion(contact.getRegion());
         return lead;
     }
 
     private static CreateOrganizationDto xlsxRecordToOrganization(ContactEntity contact) {
         CreateOrganizationDto organization = new CreateOrganizationDto();
-        organization.setName(contact.getOrgName());
+        organization.setName(String.format("%s %s", getFio(contact), contact.getOrgName()));
         organization.setPhones(Collections.singletonList(contact.getPhone()));
         organization.setHomepage(String.format("https://api.whatsapp.com/send?phone=%s", contact.getPhone()));
-        organization.setAddress(contact.getAddress());
+        organization.setCity(contact.getCity());
         organization.setRegion(contact.getRegion());
         organization.setInn(contact.getInn());
         organization.setComment(contact.getOgrn());
@@ -275,5 +286,11 @@ public class BodyProcessingService {
 
     private static String replaceSpecialCharacters(String val) {
         return val.replaceAll("[+*_()#\\-\"'$№%^&? ,]+", "");
+    }
+
+    private static String getFio(ContactEntity contact) {
+        return String.format("%s %s %s", Optional.ofNullable(contact.getSurname()).orElse(""),
+                Optional.ofNullable(contact.getName()).orElse(""),
+                Optional.ofNullable(contact.getMiddleName()).orElse("")).trim();
     }
 }

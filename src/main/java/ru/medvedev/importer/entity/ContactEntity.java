@@ -41,8 +41,8 @@ public class ContactEntity {
     @Column(name = "region")
     private String region;
 
-    @Column(name = "address")
-    private String address;
+    @Column(name = "address") // todo переименовать в БД
+    private String city; //todo бывший адрес
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)

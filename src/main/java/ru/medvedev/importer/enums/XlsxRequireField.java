@@ -16,7 +16,7 @@ public enum XlsxRequireField {
     PHONE("Телефон"),
     INN("ИНН"),
     OGRN("ОГРН"),
-    ADDRESS("Адрес"),
+    CITY("Город"), //todo бывший адрес
     TRASH("Мусорный столбец");
 
     @Getter

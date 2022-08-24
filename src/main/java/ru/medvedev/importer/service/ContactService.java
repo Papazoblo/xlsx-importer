@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.logging.log4j.util.Strings.isNotBlank;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +49,7 @@ public class ContactService {
 
     public List<ContactEntity> filteredContacts(List<ContactEntity> contacts, Long fileId) {
         List<String> contactInn = contacts.stream()
+                .filter(entity -> isNotBlank(entity.getInn()))
                 .map(ContactEntity::getInn)
                 .collect(Collectors.toList());
         Map<String, List<ContactEntity>> contactMap = repository.findAllByInnIn(contactInn).stream()
@@ -56,14 +58,16 @@ public class ContactService {
         //сохранение оригинальных контактов
         List<ContactEntity> originalContact = new ArrayList<>();
         List<ContactEntity> duplicatedContact = new ArrayList<>();
-        contacts.forEach(contact -> {
-            contact.setStatus(ContactStatus.ADDED);
-            if (contactMap.get(contact.getInn()) == null) {
-                originalContact.add(contact);
-            } else {
-                duplicatedContact.add(contact);
-            }
-        });
+        contacts.stream()
+                .filter(entity -> isNotBlank(entity.getInn()))
+                .forEach(contact -> {
+                    contact.setStatus(ContactStatus.ADDED);
+                    if (contactMap.get(contact.getInn()) == null) {
+                        originalContact.add(contact);
+                    } else {
+                        duplicatedContact.add(contact);
+                    }
+                });
 
         List<ContactEntity> savedOriginal = createNew(originalContact);
         List<ContactEntity> savedDuplicate = createNew(duplicatedContact);
