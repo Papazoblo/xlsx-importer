@@ -12,6 +12,7 @@ import ru.medvedev.importer.dto.events.CompleteFileEvent;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.events.InvalidFileEvent;
 import ru.medvedev.importer.entity.EventEntity;
+import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.ContactStatus;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.repository.EventRepository;
@@ -29,8 +30,8 @@ import java.util.stream.Collectors;
 public class EventService {
 
     protected static final String MESSAGE_SIMPLE_PATTERN = "*Импорт с интерфейса* \n_%s_";
-    protected static final String MESSAGE_PATTERN = "*%s* %s\n*Файл: %s*\n%s";
-    protected static final String MESSAGE_STATISTIC_PATTERN = "*Статистика загрузки* %s\n*Файл: %s*\n%s: %d\n%s: %d\n%s: %d";
+    protected static final String MESSAGE_PATTERN = "*%s* %s\n*Файл: %s*\n*Источник: %s*\n%s";
+    protected static final String MESSAGE_STATISTIC_PATTERN = "*Статистика загрузки* %s\n*Файл: %s*\n*Источник: %s*\n%s: %d\n%s: %d\n%s: %d";
 
     private final EventRepository repository;
     private final TelegramPollingService telegramPollingService;
@@ -53,14 +54,16 @@ public class EventService {
         Optional.ofNullable(event.getFileId()).ifPresent(fileId -> {
             Long chatId = fileInfoService.getChatIdByFile(fileId);
             if (event.getEventType() != EventType.LOG && chatId != null) {
-                String fileName = Optional.ofNullable(event.getFileId()).map(id ->
-                        fileInfoService.getById(id).getName()).orElse("");
-                telegramPollingService.sendMessage(String.format(MESSAGE_PATTERN, event.getEventType().getDescription(),
-                        getCurDateTime(),
-                        fileName, event.getDescription()), chatId, event.isWithCancelButton());
-                if (event.getEventType() == EventType.SUCCESS) {
-                    printStatistic(chatId, fileId, fileName);
-                }
+                Optional<FileInfoEntity> fileInfoEntity = Optional.ofNullable(event.getFileId())
+                        .map(fileInfoService::getById);
+                fileInfoEntity.ifPresent(file -> {
+                    telegramPollingService.sendMessage(String.format(MESSAGE_PATTERN, event.getEventType().getDescription(),
+                            getCurDateTime(),
+                            file.getName(), file.getSource().getDescription(), event.getDescription()), chatId, event.isWithCancelButton());
+                    if (event.getEventType() == EventType.SUCCESS) {
+                        printStatistic(chatId, file);
+                    }
+                });
             } else if (event.getFileId() == -1) {
                 telegramPollingService.sendMessage(String.format(MESSAGE_SIMPLE_PATTERN, event.getDescription()),
                         null, event.isWithCancelButton());
@@ -80,11 +83,12 @@ public class EventService {
         }
     }
 
-    private void printStatistic(Long chatId, Long fileId, String fileName) {
-        Map<ContactStatus, Long> mapStatistic = contactService.getContactStatisticByFileId(fileId);
+    private void printStatistic(Long chatId, FileInfoEntity fileInfo) {
+        Map<ContactStatus, Long> mapStatistic = contactService.getContactStatisticByFileId(fileInfo.getId());
         telegramPollingService.sendMessage(String.format(MESSAGE_STATISTIC_PATTERN,
                 getCurDateTime(),
-                fileName,
+                fileInfo.getName(),
+                fileInfo.getSource().getDescription(),
                 ContactStatus.ADDED.getDescription(),
                 Optional.ofNullable(mapStatistic.get(ContactStatus.ADDED)).orElse(0L),
                 ContactStatus.DOWNLOADED.getDescription(),

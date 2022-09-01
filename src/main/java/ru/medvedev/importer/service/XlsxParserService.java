@@ -5,9 +5,8 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
-import ru.medvedev.importer.component.XlsxStorage;
-import ru.medvedev.importer.dto.XlsxImportInfo;
 import ru.medvedev.importer.dto.XlsxRecordDto;
+import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.SkorozvonField;
 import ru.medvedev.importer.exception.BadRequestException;
 
@@ -21,21 +20,17 @@ import java.util.stream.Collectors;
 
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import static org.hibernate.internal.util.StringHelper.isBlank;
+import static ru.medvedev.importer.utils.StringUtils.addPhoneCountryCode;
+import static ru.medvedev.importer.utils.StringUtils.replaceSpecialCharacters;
 
 @Service
 @RequiredArgsConstructor
 public class XlsxParserService {
 
-    private final XlsxStorage storage;
+    public List<String> readColumnHeaders(File file) throws IOException {
 
-    public List<String> readColumnHeaders() throws IOException {
-
-        if (!storage.isExist()) {
-            throw new BadRequestException("Необходимо загрузить файл");
-        }
-
-        FileInputStream fis = new FileInputStream(new File(storage.getFileName()));
-        Workbook wb = storage.getFileName().endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
+        FileInputStream fis = new FileInputStream(file);
+        Workbook wb = file.getName().endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
         Sheet sheet = wb.getSheetAt(0);
         List<String> headers = new ArrayList<>();
         for (Row row : sheet) {
@@ -60,14 +55,10 @@ public class XlsxParserService {
         return headers;
     }
 
-    public List<XlsxRecordDto> readColumnBody(XlsxImportInfo info) throws IOException {
+    public List<XlsxRecordDto> readColumnBody(FileInfoEntity fileInfo) throws IOException {
 
-        if (!storage.isExist()) {
-            throw new BadRequestException("Необходимо загрузить файл");
-        }
-
-        FileInputStream fis = new FileInputStream(new File(storage.getFileName()));
-        Workbook wb = storage.getFileName().endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
+        FileInputStream fis = new FileInputStream(new File(fileInfo.getPath()));
+        Workbook wb = fileInfo.getName().endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
 
         Sheet sheet = wb.getSheetAt(0);
         List<XlsxRecordDto> list = new ArrayList<>();
@@ -76,9 +67,9 @@ public class XlsxParserService {
                 continue;
             }
             XlsxRecordDto record = new XlsxRecordDto();
-            info.getFieldLinks().keySet().stream()
-                    .filter(key -> !info.getFieldLinks().get(key).isEmpty())
-                    .forEach(item -> addFieldValue(record, row, item, info.getFieldLinks().get(item)));
+            fileInfo.getFieldLinks().keySet().stream()
+                    .filter(key -> !fileInfo.getFieldLinks().get(key).isEmpty())
+                    .forEach(item -> addFieldValue(record, row, item, fileInfo.getFieldLinks().get(item)));
             if (isNotBlank(record.getOrgInn())) {
                 list.add(record);
             }
@@ -86,7 +77,7 @@ public class XlsxParserService {
         wb.close();
         fis.close();
 
-        if (info.isEnableWhatsAppLink()) {
+        if (fileInfo.getEnableWhatsAppLink()) {
             list = list.stream().peek(recordDto ->
                     recordDto.setOrgHost(String.format("https://api.whatsapp.com/send?phone=%s", isBlank(recordDto.getPhone()) ?
                             recordDto.getPhone() : recordDto.getOrgPhone()))).collect(Collectors.toList());
@@ -101,7 +92,7 @@ public class XlsxParserService {
                 record.setFio(cellValueToString(row, cells));
                 break;
             case USR_PHONE:
-                record.setPhone(replaceSpecialCharacters(cellValueToString(row, cells)));
+                record.setPhone(addPhoneCountryCode(replaceSpecialCharacters(cellValueToString(row, cells))));
                 break;
             case USR_EMAIL:
                 record.setEmail(cellValueToString(row, cells));
@@ -128,7 +119,7 @@ public class XlsxParserService {
                 record.setOrgName(cellValueToString(row, cells));
                 break;
             case ORG_PHONE:
-                record.setOrgPhone(replaceSpecialCharacters(cellValueToString(row, cells)));
+                record.setOrgPhone(addPhoneCountryCode(replaceSpecialCharacters(cellValueToString(row, cells))));
                 break;
             case ORG_EMAIL:
                 record.setOrgEmail(cellValueToString(row, cells));
@@ -187,9 +178,5 @@ public class XlsxParserService {
             default:
                 return cell.getStringCellValue();
         }
-    }
-
-    private static String replaceSpecialCharacters(String val) {
-        return val.replaceAll("[+*_()#\\-\"'$№%^&? ,]+", "");
     }
 }

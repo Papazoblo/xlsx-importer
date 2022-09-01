@@ -12,7 +12,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import ru.medvedev.importer.component.XlsxStorage;
 import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
@@ -36,6 +35,7 @@ import java.util.function.Consumer;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static org.apache.logging.log4j.util.Strings.isBlank;
+import static ru.medvedev.importer.utils.StringUtils.*;
 
 @Service
 @RequiredArgsConstructor
@@ -47,21 +47,21 @@ public class BodyProcessingService {
 
     private final ProjectNumberService projectNumberService;
     private final FileInfoService fileInfoService;
-    private final FieldNameVariantService fieldNameVariantService;
     private final ContactService contactService;
     private final VtbClientService vtbClientService;
     private final SkorozvonClientService skorozvonClientService;
     private final ApplicationEventPublisher eventPublisher;
     private final InnRegionService innRegionService;
-    private final XlsxStorage xlsxStorage;
     private final ObjectMapper objectMapper;
-    private final HeaderProcessingService headerProcessingService;
 
-    private Set<String> regionCodes = new HashSet<>();
+    private final Set<String> regionCodes = new HashSet<>();
 
     @Scheduled(cron = "${cron.tg-file-body-processor}")
     public void sendRequestToTelegram() {
         fileInfoService.getFileToProcessingBody().ifPresent(file -> {
+            eventPublisher.publishEvent(new ImportEvent(this, "Взят в обработку",
+                    EventType.SUCCESS, file.getId()));
+
             file.setProcessingStep(FileProcessingStep.READ_DATA);
             fileInfoService.save(file);
             try {
@@ -109,7 +109,7 @@ public class BodyProcessingService {
         regionCodes.forEach(code -> eventPublisher.publishEvent(new ImportEvent(this,
                 String.format("Регион с кодом %s не найден в справочнике", code), EventType.LOG, file.getId())));
         wb.close();
-        prepareContactToSkorozvon(resultContactList, file.getId());
+        prepareContactToSkorozvon(resultContactList, file);
     }
 
     private ContactEntity parseContact(Row row, Map<XlsxRequireField, FieldPositionDto> cellPositionMap, Long fileId,
@@ -148,7 +148,7 @@ public class BodyProcessingService {
                         }
                         break;
                     case PHONE:
-                        getCellValue(cell, val -> contact.setPhone(new BigDecimal(replaceSpecialCharacters(val))
+                        getCellValue(cell, val -> contact.setPhone(new BigDecimal(addPhoneCountryCode(replaceSpecialCharacters(val)))
                                 .toString()), header, fileId);
 
                         break;
@@ -184,9 +184,7 @@ public class BodyProcessingService {
             });
         });
         if (isBlank(contact.getOrgName())) {
-            contact.setOrgName(String.format("%s %s %s", Optional.ofNullable(contact.getSurname()).orElse(""),
-                    Optional.ofNullable(contact.getName()).orElse(""),
-                    Optional.ofNullable(contact.getMiddleName()).orElse("")).trim());
+            contact.setOrgName(getFioStringFromContact(contact));
         }
 
         try {
@@ -216,7 +214,7 @@ public class BodyProcessingService {
         }
     }
 
-    private void prepareContactToSkorozvon(List<ContactEntity> contacts, Long fileId) {
+    private void prepareContactToSkorozvon(List<ContactEntity> contacts, FileInfoEntity file) {
         List<LeadInfoResponse> positiveLead = new ArrayList<>();
         List<LeadInfoResponse> negativeLead = new ArrayList<>();
 
@@ -224,7 +222,7 @@ public class BodyProcessingService {
             List<ContactEntity> contactSublist = contacts.subList(i, Math.min(i + REQUEST_BATCH_SIZE, contacts.size()));
             vtbClientService.getAllFromCheckLead(contactSublist.stream()
                     .map(ContactEntity::getInn)
-                    .collect(toList())).forEach(lead -> {
+                    .collect(toList()), file).forEach(lead -> {
                 if (lead.getResponseCode() == CheckLeadStatus.POSITIVE) {
                     positiveLead.add(lead);
                 } else {
@@ -232,8 +230,8 @@ public class BodyProcessingService {
                 }
             });
         }
-        contactService.changeContactStatus(negativeLead, fileId, ContactStatus.REJECTED);
-        sendContactToSkorozvon(contacts, positiveLead, fileId);
+        contactService.changeContactStatus(negativeLead, file.getId(), ContactStatus.REJECTED);
+        sendContactToSkorozvon(contacts, positiveLead, file.getId());
     }
 
     private void sendContactToSkorozvon(List<ContactEntity> contacts, List<LeadInfoResponse> leads, Long fileId) {
@@ -265,7 +263,7 @@ public class BodyProcessingService {
 
     private static CreateLeadDto xlsxRecordToLead(ContactEntity contact) {
         CreateLeadDto lead = new CreateLeadDto();
-        lead.setName(getFio(contact));
+        lead.setName(getFioStringFromContact(contact));
         lead.setPhones(Collections.singletonList(contact.getPhone()));
         lead.setCity(contact.getCity());
         lead.setRegion(contact.getRegion());
@@ -274,7 +272,7 @@ public class BodyProcessingService {
 
     private static CreateOrganizationDto xlsxRecordToOrganization(ContactEntity contact) {
         CreateOrganizationDto organization = new CreateOrganizationDto();
-        organization.setName(String.format("%s %s", getFio(contact), contact.getOrgName()));
+        organization.setName(String.format("%s %s", getFioStringFromContact(contact), contact.getOrgName()));
         organization.setPhones(Collections.singletonList(contact.getPhone()));
         organization.setHomepage(String.format("https://api.whatsapp.com/send?phone=%s", contact.getPhone()));
         organization.setCity(contact.getCity());
@@ -282,15 +280,5 @@ public class BodyProcessingService {
         organization.setInn(contact.getInn());
         organization.setComment(contact.getOgrn());
         return organization;
-    }
-
-    private static String replaceSpecialCharacters(String val) {
-        return val.replaceAll("[+*_()#\\-\"'$№%^&? ,]+", "");
-    }
-
-    private static String getFio(ContactEntity contact) {
-        return String.format("%s %s %s", Optional.ofNullable(contact.getSurname()).orElse(""),
-                Optional.ofNullable(contact.getName()).orElse(""),
-                Optional.ofNullable(contact.getMiddleName()).orElse("")).trim();
     }
 }

@@ -102,6 +102,7 @@
     </div>
     <div th:class="'row mt-4 ' + (${fileExist} ? '' : 'hide-block')">
         <div class="col-md-8 offset-md-2">
+            <input type="hidden" id="fileId" th:value="${fileId}"/>
             <table id="mainTable">
                 <tr>
                     <th><label for="textProjectId">Идентификатор проекта*</label></th>

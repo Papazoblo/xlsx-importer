@@ -3,22 +3,24 @@ package ru.medvedev.importer.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
+import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.CheckLeadStatus;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.WebhookStatus;
-import ru.medvedev.importer.exception.BadRequestException;
+import ru.medvedev.importer.exception.InnListIsEmptyException;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
+import static ru.medvedev.importer.utils.StringUtils.addPhoneCountryCode;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +43,7 @@ public class LeadWorkerService {
 
         webhookStatisticService.getByStatus(WebhookStatus.FIXED).forEach(item -> {
             //мы спрашиваем у ВТБ можем ли мы добавить лид
-            List<LeadInfoResponse> response = vtbClientService.getPositiveFromCheckLead(Collections.singletonList(item.getInn()));
+            List<LeadInfoResponse> response = vtbClientService.getPositiveFromCheckLead(Collections.singletonList(item.getInn()), null);
             //если ответ положительный, добавляем лид в ВТБ
             if (!response.isEmpty()) {
                 log.debug("*** have a positive lead inn {} ", item.getInn());
@@ -70,7 +72,7 @@ public class LeadWorkerService {
     public void fromStatusTryToCreateLeadSuccess() {
 
         webhookStatisticService.getByStatus(WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS).forEach(item -> {
-            List<LeadInfoResponse> response = vtbClientService.getAllFromCheckLead(Collections.singletonList(item.getInn()));
+            List<LeadInfoResponse> response = vtbClientService.getAllFromCheckLead(Collections.singletonList(item.getInn()), null);
             //и проверям добавился лид или нет
             if (response.stream().anyMatch(lead ->
                     lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {
@@ -93,61 +95,23 @@ public class LeadWorkerService {
         }
     }
 
-
-    @Async
-    public void processXlsxRecords(XlsxImportInfo importInfo) {
+    //обработка файла загрженного с интерфейса
+    public void processXlsxRecords(FileInfoEntity fileInfo) throws IOException {
         Map<String, List<XlsxRecordDto>> records;
-        try {
-            eventPublisher.publishEvent(new ImportEvent(this, "Запущена обработка файла с интерфейса",
-                    EventType.LOG_TG, -1L));
-            //boolean withOrganization = importInfo.getFieldLinks().get(SkorozvonField.ORG_NAME) != null;
-            records = xlsxParserService.readColumnBody(importInfo).stream()
-                    .filter(item -> item.getOrgInn().length() == 10 || item.getOrgInn().length() == 12)
-                    .collect(groupingBy(XlsxRecordDto::getOrgInn));
-            List<String> positiveInn = sendCheckDuplicates(new ArrayList<>(records.keySet()));
-            splitToContactAndOrganization(records, positiveInn, importInfo);
-            eventPublisher.publishEvent(new ImportEvent(this, "Файл успешно импортирован\nЗагружено " + positiveInn.size() + " контактов",
-                    EventType.LOG_TG, -1L));
-        } catch (Exception ex) {
-            log.debug("*** Error excel parsing", ex);
-            eventPublisher.publishEvent(new ImportEvent(this, "Ошибка импорта файла\n" + ex.getMessage(),
-                    EventType.LOG_TG, -1L));
-        }
+        records = xlsxParserService.readColumnBody(fileInfo).stream()
+                .filter(item -> item.getOrgInn().length() == 10 || item.getOrgInn().length() == 12)
+                .collect(groupingBy(XlsxRecordDto::getOrgInn));
+        List<String> positiveInn = sendCheckDuplicates(new ArrayList<>(records.keySet()), fileInfo);
+        splitToContactAndOrganization(records, positiveInn, fileInfo);
+        eventPublisher.publishEvent(new ImportEvent(this, "Импорт завершён\nЗагружено " + positiveInn.size() + " контактов",
+                EventType.LOG_TG, fileInfo.getId()));
     }
 
     private void splitToContactAndOrganization(Map<String, List<XlsxRecordDto>> recordsMap,
-                                               List<String> inn, XlsxImportInfo importInfo) {
+                                               List<String> inn, FileInfoEntity fileInfo) {
         List<CreateOrganizationDto> orgList = createOrganizationFromInn(recordsMap, inn);
-        sendOrganizationToSkorozvon(importInfo.getProjectCode(), importInfo.getOrgTags(), orgList);
+        sendOrganizationToSkorozvon(Long.valueOf(fileInfo.getProjectId()), fileInfo.getOrgTags(), orgList);
     }
-
-    /*private void splitToContactAndOrganization(Map<String, XlsxRecordDto> recordsMap,
-                                               List<String> inn, XlsxImportInfo importInfo) {
-        if (withOrganizations) {
-        List<CreateOrganizationDto> orgList = createOrganizationFromInn(recordsMap, inn);
-        List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn.stream()
-                .filter(item -> isBlank(recordsMap.get(item).get(0).getOrgName()))
-                .collect(Collectors.toList()));
-        sendOrganizationToSkorozvon(importInfo.getProjectCode(), importInfo.getOrgTags(), orgList);
-        sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
-        } else {
-            List<CreateLeadDto> leadList = createLeadFromInn(recordsMap, inn, importInfo.getUsrTags());
-            sendLeadToSkorozvon(importInfo.getProjectCode(), Collections.emptyList(), leadList);
-        }
-    }
-
-     private void sendLeadToSkorozvon(Long projectId, List<String> tags, List<CreateLeadDto> leads) {
-        log.debug("*** Send leads to skorozvon {}", leads.size());
-
-        if (leads.isEmpty()) {
-            return;
-        }
-
-        for (int i = 0; i < leads.size(); i = i + BATCH_SIZE) {
-            skorozvonClientService.importLeads(projectId, leads.subList(i, Math.min(i + BATCH_SIZE, leads.size())),
-                    tags);
-        }
-    }*/
 
     private void sendOrganizationToSkorozvon(Long projectId, List<String> tags, List<CreateOrganizationDto> leads) {
 
@@ -179,7 +143,7 @@ public class LeadWorkerService {
                 for (int i = 0; i < leads.size(); i++) {
                     if (leads.get(i).getName().equals(record.getFio())) {
                         List<String> phones = new ArrayList<>(leads.get(i).getPhones());
-                        phones.add(record.getPhone());
+                        phones.add(addPhoneCountryCode(record.getPhone()));
                         leads.get(i).setPhones(phones);
                         isFind = true;
                         break;
@@ -199,16 +163,16 @@ public class LeadWorkerService {
                 .map(inn -> xlsxRecordToLead(records.get(inn))).collect(Collectors.toList());
     }
 
-    private List<String> sendCheckDuplicates(List<String> innList) {
+    private List<String> sendCheckDuplicates(List<String> innList, FileInfoEntity fileInfo) {
         if (innList.isEmpty()) {
-            throw new BadRequestException("Список ИНН пуст");
+            throw new InnListIsEmptyException("Список ИНН пуст", fileInfo.getId());
         }
 
         //Делим на пачки
         Set<String> result = new HashSet<>();
         for (int i = 0; i < innList.size(); i = i + BATCH_SIZE) {
             List<String> innSublist = innList.subList(i, Math.min(i + BATCH_SIZE, innList.size()));
-            result.addAll(vtbClientService.getPositiveFromCheckLead(innSublist).stream().map(LeadInfoResponse::getInn)
+            result.addAll(vtbClientService.getPositiveFromCheckLead(innSublist, fileInfo).stream().map(LeadInfoResponse::getInn)
                     .collect(Collectors.toSet()));
         }
         return new ArrayList<>(result);
@@ -217,7 +181,8 @@ public class LeadWorkerService {
     private static CreateLeadDto xlsxRecordToLead(XlsxRecordDto record) {
         CreateLeadDto lead = new CreateLeadDto();
         lead.setName(record.getFio());
-        lead.setPhones(Optional.ofNullable(record.getPhone()).map(Arrays::asList).orElse(null));
+        lead.setPhones(Optional.ofNullable(record.getPhone())
+                .map(phones -> addPhoneCountryCode(Collections.singletonList(phones))).orElse(null));
         lead.setEmails(Optional.ofNullable(record.getEmail()).map(Arrays::asList).orElse(null));
         lead.setCity(record.getCity());
         lead.setAddress(record.getAddress());
@@ -230,7 +195,8 @@ public class LeadWorkerService {
     private static CreateOrganizationDto xlsxRecordToOrganization(XlsxRecordDto recordDto) {
         CreateOrganizationDto organization = new CreateOrganizationDto();
         organization.setName(recordDto.getOrgName());
-        organization.setPhones(Optional.ofNullable(recordDto.getPhone()).map(Arrays::asList).orElse(null));
+        organization.setPhones(Optional.ofNullable(recordDto.getPhone())
+                .map(phones -> addPhoneCountryCode(Collections.singletonList(phones))).orElse(null));
         organization.setEmails(Optional.ofNullable(recordDto.getEmail()).map(Arrays::asList).orElse(null));
         organization.setHomepage(recordDto.getOrgHost());
         organization.setCity(recordDto.getOrgCity());

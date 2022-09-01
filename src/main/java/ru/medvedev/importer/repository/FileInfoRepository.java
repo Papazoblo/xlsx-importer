@@ -17,7 +17,7 @@ import java.util.Optional;
 @Repository
 public interface FileInfoRepository extends JpaRepository<FileInfoEntity, Long> {
 
-    Optional<FileInfoEntity> findFirstByStatusOrderByCreateAt(FileStatus status);
+    Optional<FileInfoEntity> findFirstByStatusAndProcessingStepOrderByCreateAt(FileStatus status, FileProcessingStep step);
 
     @Query(value = "select chat_id from file_info group by chat_id", nativeQuery = true)
     List<Long> getAllChatId();
@@ -31,6 +31,8 @@ public interface FileInfoRepository extends JpaRepository<FileInfoEntity, Long> 
                                                                       List<FileProcessingStep> processingStep);
 
     Optional<FileInfoEntity> findByStatusAndSource(FileStatus status, FileSource source);
+
+    Optional<FileInfoEntity> findFirstByProcessingStepAndSource(FileProcessingStep processingStep, FileSource source);
 
     boolean existsByHashAndStatus(String hash, FileStatus status);
 

@@ -13,6 +13,7 @@ $(document).ready(function () {
         var result = new Map();
         var elements = $('select[name=ORG_TAGS], .SELECT');
         var textProjectId = $('#textProjectId').val();
+        var fileId = $('#fileId').val();
 
         for (var i = 0; i < elements.length; i++) {
             var select = elements.get(i);
@@ -44,6 +45,7 @@ $(document).ready(function () {
 
         var data = JSON.stringify({
             "projectCode": textProjectId,
+            "fileId": fileId,
             "fieldLinks": Object.fromEntries(result),
             "orgTags": orgTagsInput,
             "enableWhatsAppLink": $('#enableWhatsAppLink').is(":checked")
@@ -60,14 +62,16 @@ $(document).ready(function () {
             type: 'POST',
             success: function (data) {
                 $("#parseXlsx").removeAttr('disabled');
-                alert("Контакты успешно импортированы");
+                alert("Файл поставлен в очередь на обработку");
+                window.location.replace("/xlsx/import");
             },
             error: function (e) {
                 $("#parseXlsx").removeAttr('disabled');
                 if (e.status === 200) {
-                    alert("Контакты успешно импортированы");
+                    alert("Файл поставлен в очередь на обработку");
+                    window.location.replace("/xlsx/import");
                 } else {
-                    alert("Невозможно импортировать контакты");
+                    alert("Ошибка");
                 }
             }
         });
@@ -88,6 +92,11 @@ $(document).ready(function () {
             type: 'POST',
             success: function (data) {
                 window.location.replace("/xlsx/import");
+            },
+            error: function (e) {
+                if (e.status !== 200) {
+                    alert("Невозможно загрузить файл. \n" + e.responseText);
+                }
             }
         });
     });

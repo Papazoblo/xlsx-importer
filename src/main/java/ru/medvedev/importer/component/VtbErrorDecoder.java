@@ -53,13 +53,13 @@ public class VtbErrorDecoder implements ErrorDecoder {
 
                     response.request().requestTemplate().body(objectMapper.writeValueAsString(leadRequest));
                 } catch (IOException e) {
-                    log.debug("*** error updating check lead request");
+                    log.debug("*** error updating check lead request", e);
                 }
             }
         }
 
         if (response.status() > 300) {
-            log.debug("*** vtb error {}", response.status());
+            log.debug("*** vtb error {}", response.body());
             throw new RetryableException(response.status(), response.toString(),
                     response.request().httpMethod(), null, response.request());
         }

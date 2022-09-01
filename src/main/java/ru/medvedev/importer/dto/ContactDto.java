@@ -7,6 +7,8 @@ import ru.medvedev.importer.entity.WebhookStatusEntity;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
+import static ru.medvedev.importer.utils.StringUtils.getFioStringFromContact;
+
 @Data
 public class ContactDto {
 
@@ -25,8 +27,7 @@ public class ContactDto {
         ContactDto dto = new ContactDto();
         dto.setId(entity.getId());
         dto.setInn(entity.getInn());
-        dto.setFio(String.format("%s %s %s",
-                entity.getSurname(), entity.getName(), entity.getMiddleName()).trim());
+        dto.setFio(getFioStringFromContact(entity));
         dto.setPhone(entity.getPhone());
         dto.setOrgName(entity.getOrgName());
         dto.setRegion(entity.getRegion());

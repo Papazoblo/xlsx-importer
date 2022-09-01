@@ -9,8 +9,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.telegram.telegrambots.meta.api.objects.Document;
 import ru.medvedev.importer.dto.FileInfoDto;
+import ru.medvedev.importer.dto.XlsxImportInfo;
 import ru.medvedev.importer.dto.events.CompleteFileEvent;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.events.InvalidFileEvent;
@@ -19,6 +21,7 @@ import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.FileProcessingStep;
 import ru.medvedev.importer.enums.FileSource;
 import ru.medvedev.importer.enums.FileStatus;
+import ru.medvedev.importer.exception.BadRequestException;
 import ru.medvedev.importer.repository.FileInfoRepository;
 
 import javax.persistence.EntityNotFoundException;
@@ -31,7 +34,10 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
+import static ru.medvedev.importer.enums.FileProcessingStep.DOWNLOADED;
+import static ru.medvedev.importer.enums.FileProcessingStep.INITIALIZE;
 import static ru.medvedev.importer.enums.FileSource.TELEGRAM;
+import static ru.medvedev.importer.enums.FileSource.UI;
 
 @Service
 @RequiredArgsConstructor
@@ -52,16 +58,20 @@ public class FileInfoService {
         repository.save(entity);
     }
 
-    public List<Long> getAllChatIds() {
-        return repository.getAllChatId();
-    }
-
     public Long getChatIdByFile(Long fileId) {
         return repository.findById(fileId).map(FileInfoEntity::getChatId).orElse(null);
     }
 
+    public Optional<FileInfoEntity> getDownloadedFile() {
+        return repository.findFirstByStatusAndProcessingStepOrderByCreateAt(FileStatus.DOWNLOADED, INITIALIZE);
+    }
+
     public Optional<FileInfoEntity> getFileInProcess() {
         return repository.findByStatusAndSource(FileStatus.IN_PROCESS, TELEGRAM);
+    }
+
+    public Optional<FileInfoEntity> getDownloadedUiFile() {
+        return repository.findFirstByProcessingStepAndSource(DOWNLOADED, UI);
     }
 
     public Optional<FileInfoEntity> getFileToTgRequest() {
@@ -104,17 +114,64 @@ public class FileInfoService {
             entity.setDeleted(false);
             entity.setChatId(chatId);
             entity.setSource(source);
-            repository.save(entity);
-            eventPublisher.publishEvent(new ImportEvent(this, "Файл *" + entity.getName() + "* добавлен в систему и ждет своей очереди",
+            entity.setProcessingStep(INITIALIZE);
+            entity = repository.save(entity);
+            eventPublisher.publishEvent(new ImportEvent(this, "Добавлен в систему и ждет своей очереди",
                     EventType.LOG_TG, entity.getId()));
             log.debug("*** create file with hash {}", hash);
             return true;
         } else {
-            eventPublisher.publishEvent(new ImportEvent(this, "Файл *" + file.getName() + "* уже был успешно обработан системой",
+            eventPublisher.publishEvent(new ImportEvent(this, "Файл *" + file.getName() + "* ранее был успешно обработан системой",
                     EventType.LOG_TG, -1L));
             log.debug("*** file with hash {} already exist", hash);
             return false;
         }
+    }
+
+    public boolean create(MultipartFile multipartFile, Long chatId, File file, FileSource source) {
+
+        String hash = hashFile(file.toPath());
+        if (!repository.existsByHashAndStatus(hash, FileStatus.SUCCESS)) {
+            FileInfoEntity entity = new FileInfoEntity();
+            entity.setName(multipartFile.getOriginalFilename());
+            entity.setSize(multipartFile.getSize());
+            entity.setType(multipartFile.getContentType());
+            entity.setHash(hash);
+            entity.setPath(file.getPath());
+            entity.setDeleted(false);
+            entity.setChatId(chatId);
+            entity.setSource(source);
+            entity.setUniqueId("");
+            entity.setTgFileId("");
+            entity.setProcessingStep(DOWNLOADED);
+            repository.save(entity);
+            eventPublisher.publishEvent(new ImportEvent(this, "Добавлен в систему через интерфейс и ждет указания столбцов для дальнейшей обратки",
+                    EventType.LOG_TG, entity.getId()));
+            log.debug("*** create file with hash {}", hash);
+            return true;
+        } else {
+            eventPublisher.publishEvent(new ImportEvent(this, "Файл *" + file.getName() + "* ранее был успешно обработан системой",
+                    EventType.LOG_TG, -1L));
+            log.debug("*** file with hash {} already exist", hash);
+            return false;
+        }
+    }
+
+    public void addUiColumnInfo(XlsxImportInfo xlsxImportInfo) {
+        repository.findById(xlsxImportInfo.getFileId()).map(file -> {
+            file.setProcessingStep(INITIALIZE);
+            file.setProjectId(xlsxImportInfo.getProjectCode().toString());
+            file.setEnableWhatsAppLink(xlsxImportInfo.isEnableWhatsAppLink());
+            file.setFieldLinks(xlsxImportInfo.getFieldLinks());
+            file.setOrgTags(xlsxImportInfo.getOrgTags());
+            repository.save(file);
+            eventPublisher.publishEvent(new ImportEvent(this, "Добавлена информация о колонках. Файл ожидает обработки", EventType.LOG_TG,
+                    file.getId()));
+            return true;
+        }).orElseThrow(() -> {
+            log.debug("Файл с id {} не найден", xlsxImportInfo.getFileId());
+            return new BadRequestException(String.format("Файл с id %d не найден", xlsxImportInfo.getFileId()));
+        });
     }
 
     public void delete(Long id) {
@@ -130,10 +187,6 @@ public class FileInfoService {
 
     public boolean isExistsInProcess() {
         return repository.existsByStatus(FileStatus.IN_PROCESS);
-    }
-
-    public Optional<FileInfoEntity> getDownloadedFile() {
-        return repository.findFirstByStatusOrderByCreateAt(FileStatus.DOWNLOADED);
     }
 
     public FileInfoEntity changeStatus(FileInfoEntity entity, FileStatus status) {
