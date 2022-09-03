@@ -10,6 +10,7 @@ import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.CheckLeadStatus;
+import ru.medvedev.importer.enums.DownloadFilter;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.WebhookStatus;
 import ru.medvedev.importer.exception.InnListIsEmptyException;
@@ -37,6 +38,7 @@ public class LeadWorkerService {
     private final WebhookStatisticService webhookStatisticService;
     private final ContactService contactService;
     private final ApplicationEventPublisher eventPublisher;
+    private final DownloadFilterService downloadFilterService;
 
     @Scheduled(cron = "${cron.webhook-change-status}")
     public void fromStatusFixed() {
@@ -78,6 +80,8 @@ public class LeadWorkerService {
                     lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {
                 log.debug("*** lead loaded in VTB {} ", item.getInn());
                 webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.SUCCESS);
+            } else {
+                //вернуть в статус TRY_TO_CREATE_LEAD
             }
         });
     }
@@ -97,9 +101,17 @@ public class LeadWorkerService {
 
     //обработка файла загрженного с интерфейса
     public void processXlsxRecords(FileInfoEntity fileInfo) throws IOException {
+
+        List<String> innFilter = (List<String>) downloadFilterService.getByName(DownloadFilter.INN).getFilter();
         Map<String, List<XlsxRecordDto>> records;
         records = xlsxParserService.readColumnBody(fileInfo).stream()
                 .filter(item -> item.getOrgInn().length() == 10 || item.getOrgInn().length() == 12)
+                .filter(item -> {
+                    if (innFilter.isEmpty()) {
+                        return true;
+                    }
+                    return innFilter.stream().noneMatch(innPrefix -> item.getOrgInn().startsWith(innPrefix));
+                })
                 .collect(groupingBy(XlsxRecordDto::getOrgInn));
         List<String> positiveInn = sendCheckDuplicates(new ArrayList<>(records.keySet()), fileInfo);
         splitToContactAndOrganization(records, positiveInn, fileInfo);

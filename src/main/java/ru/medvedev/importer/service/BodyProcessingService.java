@@ -31,6 +31,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
@@ -52,6 +53,7 @@ public class BodyProcessingService {
     private final SkorozvonClientService skorozvonClientService;
     private final ApplicationEventPublisher eventPublisher;
     private final InnRegionService innRegionService;
+    private final DownloadFilterService downloadFilterService;
     private final ObjectMapper objectMapper;
 
     private final Set<String> regionCodes = new HashSet<>();
@@ -217,6 +219,17 @@ public class BodyProcessingService {
     private void prepareContactToSkorozvon(List<ContactEntity> contacts, FileInfoEntity file) {
         List<LeadInfoResponse> positiveLead = new ArrayList<>();
         List<LeadInfoResponse> negativeLead = new ArrayList<>();
+        List<String> innFilter = (List<String>) downloadFilterService.getByName(DownloadFilter.INN).getFilter();
+
+        contacts = contacts.stream()
+                .filter(item -> item.getInn().length() == 10 || item.getInn().length() == 12)
+                .filter(item -> {
+                    if (innFilter.isEmpty()) {
+                        return true;
+                    }
+                    return innFilter.stream().noneMatch(innPrefix -> item.getInn().startsWith(innPrefix));
+                })
+                .collect(Collectors.toList());
 
         for (int i = 0; i < contacts.size(); i = i + REQUEST_BATCH_SIZE) {
             List<ContactEntity> contactSublist = contacts.subList(i, Math.min(i + REQUEST_BATCH_SIZE, contacts.size()));

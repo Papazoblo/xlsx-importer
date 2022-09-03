@@ -44,7 +44,7 @@
                 </li>
                 <li class="nav-item">
                     <div class="dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button"
+                        <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown2" role="button"
                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             Настройки
                         </a>
@@ -75,54 +75,69 @@
 
 <main role="main" class="container">
     <div th:class="row">
-        <div class="col-md-12">
-            <label th:text="${user == null ? 'Добавление пользователя' : 'Редактирование пользователя'}"></label>
-            <table id="users" class="table table-bordered table-responsive-sm">
+        <div class="col-md-10 offset-md-1">
+            <table class="table table-bordered table-responsive-sm variantTable"
+                   style="font-size: 14px; margin: 4px">
+                <thead>
+                <tr>
+                    <th style="width: 300px">
+                        <select data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
+                                th:class="'selectpicker w-100 '"
+                                th:name="filterList">
+                            <option th:each="item : ${filterList}" th:value="${item}" th:text="${item.title}"
+                                    th:selected="${item == currentFilter}">
+                            </option>
+                        </select>
+                    </th>
+                    <th th:text="${currentFilter.getDescription()}" style="vertical-align: middle"></th>
+                </tr>
+                </thead>
                 <tbody>
                 <tr>
-                    <th><label for="login">Логин</label></th>
-                    <th>
-                        <input id="login" type="text" maxlength="20" th:value="${user == null ? '' : user.login}"/>
-                    </th>
-                </tr>
-                <tr>
-                    <th><label for="password">Пароль</label></th>
-                    <th>
-                        <input id="password" type="password" maxlength="50"/>
-                    </th>
-                </tr>
-                <tr>
-                    <th><label for="fio">ФИО</label></th>
-                    <th>
-                        <input id="fio" type="text" maxlength="300" th:value="${user == null ? '' : user.fio}"/>
-                    </th>
-                </tr>
-                <tr>
-                    <th><label>Права доступа</label></th>
-                    <th>
-                        <p th:each="permission : ${permissions}">
-                            <input type="checkbox" th:id="${permission.code}"
-                                   th:checked="${user == null ? false : user.isHavePermission(permission.description)}"/>
-                            <label th:for="${permission.code}" th:text="${permission.description}"></label>
-                        </p>
-                    </th>
-                </tr>
-                <tr>
-                    <th></th>
-                    <th style="text-align: right">
-                        <button id="saveUser" th:name="${user == null ? '' : user.id}" class="btn-2">Сохранить</button>
-                    </th>
+                    <td colspan="2">
+                        <input type="text" class="settingInput onlyNumbers"/>
+                        <button th:class="${currentFilter} + ' btnAdd btn-2'">
+                            Добавить
+                        </button>
+                        <table class="settingNameTable">
+                            <tbody>
+                            <tr th:each="value : ${filter.getFilter()}">
+                                <td th:text="${value}" class="filterValue"></td>
+                                <td class="deleteFilterValue">
+                                    <button class="btn btn-delete" title="Удалить">
+                                        <i class="fa-solid fa-circle-minus"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </td>
                 </tr>
                 </tbody>
             </table>
         </div>
     </div>
 </main>
+
+<button class="btn-2" id="btnSave" disabled="disabled">
+    Сохранить
+</button>
 <!-- /.container -->
 
 <script type="text/javascript" th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
-<script type="text/javascript" th:src="@{/js/add_user.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
+<script type="text/javascript" th:src="@{/js/download_filter.js}"></script>
+<script>
+    $(document).ready(function () {
+        $('.selectpicker').multiselect({
+            nonSelectedText: 'Не выбрано',
+            nSelectedText: 'выбран(о)',
+            allSelectedText: 'Все выбрано',
+            resetText: 'Сбросить'
+        });
+    });
+</script>
 </body>
 </html>
