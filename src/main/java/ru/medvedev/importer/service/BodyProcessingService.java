@@ -62,7 +62,7 @@ public class BodyProcessingService {
     public void sendRequestToTelegram() {
         fileInfoService.getFileToProcessingBody().ifPresent(file -> {
             eventPublisher.publishEvent(new ImportEvent(this, "Взят в обработку",
-                    EventType.SUCCESS, file.getId()));
+                    EventType.LOG_TG, file.getId()));
 
             file.setProcessingStep(FileProcessingStep.READ_DATA);
             fileInfoService.save(file);
@@ -98,7 +98,14 @@ public class BodyProcessingService {
             if (file.getWithHeader() && row.getRowNum() == 0) {
                 continue;
             }
-            contactBatch.add(parseContact(row, fieldPositionMap, file.getId(), innRegionMap));
+            try {
+                contactBatch.add(parseContact(row, fieldPositionMap, file.getId(), innRegionMap));
+            } catch (Exception ex) {
+                log.debug("*** Invalid contact rowNum = {}", row.getRowNum(), ex);
+                eventPublisher.publishEvent(new ImportEvent(this,
+                        String.format("Некорректная запись. Строка №%d", row.getRowNum()), EventType.LOG, file.getId()));
+                continue;
+            }
             if (contactBatch.size() == BATCH_SIZE) {
                 resultContactList.addAll(contactService.filteredContacts(contactBatch, file.getId()));
                 contactBatch.clear();
