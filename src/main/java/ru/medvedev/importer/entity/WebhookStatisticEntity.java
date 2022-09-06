@@ -25,6 +25,9 @@ public class WebhookStatisticEntity {
     @Column(name = "city")
     private String city;
 
+    @Column(name = "name")
+    private String name;
+
     @ManyToOne
     @JoinColumn(name = "webhook_status_id")
     private WebhookSuccessStatusEntity successStatus;

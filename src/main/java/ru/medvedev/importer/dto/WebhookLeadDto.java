@@ -10,4 +10,5 @@ public class WebhookLeadDto {
     private String phones;
     private String city;
     private String inn;
+    private String name;
 }

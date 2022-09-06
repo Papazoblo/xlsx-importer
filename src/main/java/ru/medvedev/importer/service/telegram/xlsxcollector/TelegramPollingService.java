@@ -1,4 +1,4 @@
-package ru.medvedev.importer.service.telegram;
+package ru.medvedev.importer.service.telegram.xlsxcollector;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -19,7 +19,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import ru.medvedev.importer.component.TelegramProperty;
+import ru.medvedev.importer.component.TelegramXlsxCollectorProperty;
 import ru.medvedev.importer.dto.events.CheckBotColumnResponseEvent;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.FileSource;
@@ -41,10 +41,10 @@ public class TelegramPollingService extends TelegramLongPollingBot {
 
     @Value("${directory.upload-dir}")
     private String uploadDir;
-    @Value("${telegram.scanningChatId}")
+    @Value("${telegram.xlsx-collector.scanningChatId}")
     private Long scanningChatId;
 
-    private final TelegramProperty properties;
+    private final TelegramXlsxCollectorProperty properties;
     private final FileInfoService fileInfoService;
     private final ApplicationEventPublisher eventPublisher;
 

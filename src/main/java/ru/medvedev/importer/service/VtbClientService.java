@@ -15,6 +15,7 @@ import ru.medvedev.importer.dto.response.CheckLeadResponse;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.EventType;
+import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,7 +35,7 @@ public class VtbClientService {
     private final ApplicationEventPublisher eventPublisher;
 
 
-    public void createLead(WebhookLeadDto webhookLead) {
+    public boolean createLead(WebhookLeadDto webhookLead) {
 
         log.debug("*** Create lead in VTB");
 
@@ -47,8 +48,12 @@ public class VtbClientService {
         request.setLeads(Collections.singletonList(leadDto));
         try {
             client.addLead(request, BEARER + properties.getAccessToken());
+            return true;
+        } catch (ErrorCreateVtbLeadException ex) {
+            throw ex;
         } catch (Exception ex) {
             log.debug("*** ошибка добавления лида " + ex.getMessage(), ex);
+            return false;
         }
     }
 

@@ -17,7 +17,7 @@ import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.FileProcessingStep;
 import ru.medvedev.importer.enums.XlsxRequireField;
 import ru.medvedev.importer.exception.FileProcessingException;
-import ru.medvedev.importer.service.telegram.TelegramPollingService;
+import ru.medvedev.importer.service.telegram.xlsxcollector.TelegramPollingService;
 
 import java.util.Collections;
 import java.util.List;

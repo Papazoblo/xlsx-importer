@@ -45,8 +45,12 @@ cron:
   webhook-change-status: '17 */1 * * * *'
 
 telegram:
-  botName: Xlsx collector
-  reconnectTimer: 10000
+  xlsx-collector:
+    botName: Xlsx collector
+    reconnectTimer: 10000
+  notificator:
+    botName: Notificator
+    reconnectTimer: 10000
 
 skorozvon:
   url: https://app.skorozvon.ru

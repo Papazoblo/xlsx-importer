@@ -7,12 +7,14 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.events.ImportEvent;
+import ru.medvedev.importer.dto.events.NotificationEvent;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.CheckLeadStatus;
 import ru.medvedev.importer.enums.DownloadFilter;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.WebhookStatus;
+import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
 import ru.medvedev.importer.exception.InnListIsEmptyException;
 
 import java.io.IOException;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
+import static ru.medvedev.importer.service.EventService.NOTIFICATION_PATTERN;
 import static ru.medvedev.importer.utils.StringUtils.addPhoneCountryCode;
 
 @Service
@@ -64,9 +67,21 @@ public class LeadWorkerService {
             leadDto.setCity(item.getCity());
             leadDto.setInn(item.getInn());
             leadDto.setPhones(item.getPhone());
-            //мы спрашиваем у ВТБ можем ли мы добавить лид
-            vtbClientService.createLead(leadDto);
-            webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD, WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
+            try {
+                if (vtbClientService.createLead(leadDto)) {
+                    webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD, WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
+                } else {
+                    eventPublisher.publishEvent(new NotificationEvent(this,
+                            String.format(NOTIFICATION_PATTERN, "Непредвиденная ошибка", leadDto.getInn(), leadDto.getCity(), leadDto.getName()),
+                            EventType.LOG_TG));
+                    webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD, WebhookStatus.ERROR);
+                }
+            } catch (ErrorCreateVtbLeadException ex) {
+                eventPublisher.publishEvent(new NotificationEvent(this,
+                        String.format(NOTIFICATION_PATTERN, ex.getMessage(), leadDto.getInn(), leadDto.getCity(), leadDto.getName()),
+                        EventType.LOG_TG));
+                webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD, WebhookStatus.ERROR);
+            }
         });
     }
 
@@ -81,7 +96,7 @@ public class LeadWorkerService {
                 log.debug("*** lead loaded in VTB {} ", item.getInn());
                 webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.SUCCESS);
             } else {
-                //вернуть в статус TRY_TO_CREATE_LEAD
+                webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.ERROR);
             }
         });
     }

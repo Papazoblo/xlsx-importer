@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 @Component
-@ConfigurationProperties(prefix = "telegram")
-public class TelegramProperty {
+@ConfigurationProperties(prefix = "telegram.notificator")
+public class TelegramNotificatorProperty {
 
     private String token;
     private String botName;

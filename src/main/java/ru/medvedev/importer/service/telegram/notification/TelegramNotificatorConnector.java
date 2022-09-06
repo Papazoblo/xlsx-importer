@@ -1,4 +1,4 @@
-package ru.medvedev.importer.service.telegram;
+package ru.medvedev.importer.service.telegram.notification;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -11,14 +11,14 @@ import javax.annotation.PostConstruct;
 @Component
 @RequiredArgsConstructor
 @Log4j2
-public class TelegramConnector {
+public class TelegramNotificatorConnector {
 
-    private final TelegramPollingService pollingService;
+    private final TelegramNotificatorPollingService pollingService;
 
     @PostConstruct
     public void connect() {
         try {
-            TelegramBotsApi telegramBotsApi = new TelegramBotsApi(TelegramBotSession.class);
+            TelegramBotsApi telegramBotsApi = new TelegramBotsApi(TelegramNotificatorBotSession.class);
             telegramBotsApi.registerBot(pollingService);
         } catch (TelegramApiException ex) {
             log.debug(ex);

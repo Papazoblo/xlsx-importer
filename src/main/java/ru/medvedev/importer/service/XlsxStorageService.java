@@ -17,7 +17,7 @@ import static org.apache.logging.log4j.util.Strings.isBlank;
 @RequiredArgsConstructor
 public class XlsxStorageService {
 
-    @Value("${telegram.scanningChatId}")
+    @Value("${telegram.xlsx-collector.scanningChatId}")
     private Long scanningChatId;
     @Value("${directory.upload-dir}")
     private String uploadDir;

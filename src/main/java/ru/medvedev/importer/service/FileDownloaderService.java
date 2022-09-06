@@ -3,7 +3,7 @@ package ru.medvedev.importer.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.entity.FileInfoEntity;
-import ru.medvedev.importer.service.telegram.TelegramPollingService;
+import ru.medvedev.importer.service.telegram.xlsxcollector.TelegramPollingService;
 
 @Service
 @RequiredArgsConstructor

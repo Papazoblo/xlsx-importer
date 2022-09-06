@@ -8,7 +8,7 @@ import ru.medvedev.importer.dto.WebhookDto;
 import ru.medvedev.importer.entity.WebhookStatisticEntity;
 import ru.medvedev.importer.enums.WebhookStatus;
 import ru.medvedev.importer.repository.WebhookStatisticRepository;
-import ru.medvedev.importer.service.telegram.TelegramPollingService;
+import ru.medvedev.importer.service.telegram.xlsxcollector.TelegramPollingService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,7 +27,7 @@ public class WebhookStatisticService {
 
     private static final String STATISTIC_MESSAGE = "*Статистика отправленных заявок* \nс %s по %s\nДобавленные: %d\nОтказано в добавлении: %d";
 
-    @Value("${telegram.scanningChatId}")
+    @Value("${telegram.xlsx-collector.scanningChatId}")
     private Long scanningChatId;
 
     private final WebhookStatisticRepository repository;
@@ -64,7 +64,8 @@ public class WebhookStatisticService {
         entity.setInn(webhook.getLead().getInn());
         entity.setStatus(status);
         entity.setPhone(webhook.getLead().getPhones());
-        entity.setCity(webhook.getLead().getCity());
+        entity.setCity(webhook.getLead().getCity().trim());
+        entity.setName(webhook.getLead().getName());
         entity.setSuccessStatus(webhookSuccessStatusService.getByName(webhook.getCallResult().getResultName()));
         repository.save(entity);
     }

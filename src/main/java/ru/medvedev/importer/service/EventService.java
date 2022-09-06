@@ -11,12 +11,14 @@ import ru.medvedev.importer.dto.EventDto;
 import ru.medvedev.importer.dto.events.CompleteFileEvent;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.events.InvalidFileEvent;
+import ru.medvedev.importer.dto.events.NotificationEvent;
 import ru.medvedev.importer.entity.EventEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.ContactStatus;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.repository.EventRepository;
-import ru.medvedev.importer.service.telegram.TelegramPollingService;
+import ru.medvedev.importer.service.telegram.notification.TelegramNotificatorPollingService;
+import ru.medvedev.importer.service.telegram.xlsxcollector.TelegramPollingService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -29,15 +31,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EventService {
 
-    protected static final String MESSAGE_SIMPLE_PATTERN = "*Импорт с интерфейса* \n_%s_";
-    protected static final String MESSAGE_PATTERN = "*%s* %s\n*Файл: %s*\n*Источник: %s*\n%s";
-    protected static final String MESSAGE_STATISTIC_PATTERN = "*Статистика загрузки* %s\n*Файл: %s*\n*Источник: %s*\n%s: %d\n%s: %d\n%s: %d";
+    public static final String NOTIFICATION_PATTERN = "*Невозможно загрузить контакт в ВТБ*\n*Причина*: `%s`\n\n*ИНН*: `%s`\n*Город*: `%s`\n*Имя*: `%s`";
+    private static final String MESSAGE_SIMPLE_PATTERN = "*Импорт с интерфейса* \n_%s_";
+    private static final String MESSAGE_PATTERN = "*%s* %s\n*Файл: %s*\n*Источник: %s*\n%s";
+    private static final String MESSAGE_STATISTIC_PATTERN = "*Статистика загрузки* %s\n*Файл: %s*\n*Источник: %s*\n%s: %d\n%s: %d\n%s: %d";
 
     private final EventRepository repository;
     private final TelegramPollingService telegramPollingService;
+    private final TelegramNotificatorPollingService telegramNotificatorPollingService;
     private final FileInfoService fileInfoService;
     private final ContactService contactService;
     private final ApplicationEventPublisher eventPublisher;
+    private final NotificationChatService notificationChatService;
 
     public Page<EventDto> getPage(Pageable pageable) {
         Page<EventEntity> page = repository.findAll(pageable);
@@ -81,6 +86,12 @@ public class EventService {
         } else if (event.getEventType() == EventType.SUCCESS) {
             eventPublisher.publishEvent(new CompleteFileEvent(this, event.getFileId()));
         }
+    }
+
+    @EventListener(NotificationEvent.class)
+    public void sendNotification(NotificationEvent event) {
+        notificationChatService.getAllChatId().forEach(chatId ->
+                telegramNotificatorPollingService.sendMessage(event.getDescription(), chatId));
     }
 
     private void printStatistic(Long chatId, FileInfoEntity fileInfo) {
