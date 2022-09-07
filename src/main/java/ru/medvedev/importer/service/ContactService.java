@@ -92,6 +92,12 @@ public class ContactService {
         }
     }
 
+    public void changeContactStatus(List<ContactEntity> contacts, ContactStatus status) {
+        repository.saveAll(contacts.stream()
+                .peek(contact -> contact.setStatus(status))
+                .collect(Collectors.toList()));
+    }
+
     public Map<ContactStatus, Long> getContactStatisticByFileId(Long fileId) {
         return repository.getContactStatisticByFileId(fileId).stream()
                 .collect(toMap(ContactStatistic::getStatus, ContactStatistic::getCount));

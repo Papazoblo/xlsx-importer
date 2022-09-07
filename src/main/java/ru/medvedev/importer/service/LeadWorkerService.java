@@ -9,11 +9,9 @@ import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.events.NotificationEvent;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
+import ru.medvedev.importer.entity.ContactEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
-import ru.medvedev.importer.enums.CheckLeadStatus;
-import ru.medvedev.importer.enums.DownloadFilter;
-import ru.medvedev.importer.enums.EventType;
-import ru.medvedev.importer.enums.WebhookStatus;
+import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
 import ru.medvedev.importer.exception.InnListIsEmptyException;
 
@@ -22,9 +20,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
+import static org.apache.logging.log4j.util.Strings.isBlank;
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import static ru.medvedev.importer.service.EventService.NOTIFICATION_PATTERN;
 import static ru.medvedev.importer.utils.StringUtils.addPhoneCountryCode;
+import static ru.medvedev.importer.utils.StringUtils.getFioStringFromContact;
 
 @Service
 @RequiredArgsConstructor
@@ -118,8 +118,7 @@ public class LeadWorkerService {
     public void processXlsxRecords(FileInfoEntity fileInfo) throws IOException {
 
         List<String> innFilter = (List<String>) downloadFilterService.getByName(DownloadFilter.INN).getFilter();
-        Map<String, List<XlsxRecordDto>> records;
-        records = xlsxParserService.readColumnBody(fileInfo).stream()
+        Map<String, List<XlsxRecordDto>> records = xlsxParserService.readColumnBody(fileInfo).stream()
                 .filter(item -> item.getOrgInn().length() == 10 || item.getOrgInn().length() == 12)
                 .filter(item -> {
                     if (innFilter.isEmpty()) {
@@ -128,10 +127,54 @@ public class LeadWorkerService {
                     return innFilter.stream().noneMatch(innPrefix -> item.getOrgInn().startsWith(innPrefix));
                 })
                 .collect(groupingBy(XlsxRecordDto::getOrgInn));
+
+        List<ContactEntity> contacts = saveContacts(records, fileInfo.getId());
         List<String> positiveInn = sendCheckDuplicates(new ArrayList<>(records.keySet()), fileInfo);
+        markAsRejectedVtbContact(contacts, positiveInn);
         splitToContactAndOrganization(records, positiveInn, fileInfo);
         eventPublisher.publishEvent(new ImportEvent(this, "Импорт завершён\nЗагружено " + positiveInn.size() + " контактов",
-                EventType.LOG_TG, fileInfo.getId()));
+                EventType.SUCCESS, fileInfo.getId()));
+    }
+
+    private List<ContactEntity> saveContacts(Map<String, List<XlsxRecordDto>> records, Long fileId) {
+        List<ContactEntity> contacts = records.values()
+                .stream()
+                .flatMap(Collection::stream)
+                .map(record -> {
+                    String[] fioSplit = record.getFio().split(" ");
+                    ContactEntity contact = new ContactEntity();
+                    contact.setCity(isNotBlank(record.getCity()) ? record.getCity() : record.getOrgCity());
+                    contact.setOrgName(record.getOrgName());
+                    contact.setInn(record.getOrgInn());
+                    contact.setRegion(isNotBlank(record.getRegion()) ? record.getRegion() : record.getOrgRegion());
+                    contact.setStatus(ContactStatus.ADDED);
+                    contact.setName(fioSplit.length >= 2 ? fioSplit[1] : null);
+                    contact.setSurname(fioSplit.length >= 1 ? fioSplit[0] : null);
+                    contact.setMiddleName(fioSplit.length >= 3 ? fioSplit[2] : null);
+                    contact.setOgrn(record.getOrgKpp());
+                    contact.setPhone(isNotBlank(record.getPhone()) ? record.getPhone() : record.getOrgPhone());
+
+                    if (isBlank(contact.getOrgName())) {
+                        contact.setOrgName(getFioStringFromContact(contact));
+                    }
+                    return contact;
+                }).collect(Collectors.toList());
+        return contactService.filteredContacts(contacts, fileId);
+    }
+
+    private void markAsRejectedVtbContact(List<ContactEntity> contacts, List<String> positiveInn) {
+        List<ContactEntity> positiveContact = new ArrayList<>();
+        List<ContactEntity> negativeContact = new ArrayList<>();
+
+        contacts.forEach(contact -> {
+            if (positiveInn.stream().anyMatch(inn -> inn.equals(contact.getInn()))) {
+                positiveContact.add(contact);
+            } else {
+                negativeContact.add(contact);
+            }
+        });
+        contactService.changeContactStatus(positiveContact, ContactStatus.DOWNLOADED);
+        contactService.changeContactStatus(negativeContact, ContactStatus.REJECTED);
     }
 
     private void splitToContactAndOrganization(Map<String, List<XlsxRecordDto>> recordsMap,
@@ -185,10 +228,6 @@ public class LeadWorkerService {
         return new ArrayList<>(organizationMap.values());
     }
 
-    private List<CreateLeadDto> createLeadFromInn(Map<String, XlsxRecordDto> records, List<String> innList) {
-        return innList.stream().filter(records::containsKey)
-                .map(inn -> xlsxRecordToLead(records.get(inn))).collect(Collectors.toList());
-    }
 
     private List<String> sendCheckDuplicates(List<String> innList, FileInfoEntity fileInfo) {
         if (innList.isEmpty()) {

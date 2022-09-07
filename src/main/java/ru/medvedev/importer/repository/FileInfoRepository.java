@@ -1,5 +1,7 @@
 package ru.medvedev.importer.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -19,6 +21,8 @@ public interface FileInfoRepository extends JpaRepository<FileInfoEntity, Long> 
 
     Optional<FileInfoEntity> findFirstByStatusAndProcessingStepOrderByCreateAt(FileStatus status, FileProcessingStep step);
 
+    Page<FileInfoEntity> findAllByDeletedIsFalse(Pageable pageable);
+
     @Query(value = "select chat_id from file_info group by chat_id", nativeQuery = true)
     List<Long> getAllChatId();
 
@@ -32,7 +36,9 @@ public interface FileInfoRepository extends JpaRepository<FileInfoEntity, Long> 
 
     Optional<FileInfoEntity> findByStatusAndSource(FileStatus status, FileSource source);
 
-    Optional<FileInfoEntity> findFirstByProcessingStepAndSource(FileProcessingStep processingStep, FileSource source);
+    Optional<FileInfoEntity> findFirstByProcessingStepAndSourceAndStatus(FileProcessingStep processingStep,
+                                                                         FileSource source,
+                                                                         FileStatus status);
 
     boolean existsByHashAndStatus(String hash, FileStatus status);
 

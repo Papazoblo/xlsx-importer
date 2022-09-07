@@ -48,7 +48,7 @@ public class FileInfoService {
     private final ApplicationEventPublisher eventPublisher;
 
     public Page<FileInfoDto> getPage(Pageable pageable) {
-        Page<FileInfoEntity> page = repository.findAll(pageable);
+        Page<FileInfoEntity> page = repository.findAllByDeletedIsFalse(pageable);
         return new PageImpl<>(page.getContent().stream()
                 .map(FileInfoDto::of).collect(Collectors.toList()),
                 page.getPageable(), page.getTotalElements());
@@ -71,7 +71,7 @@ public class FileInfoService {
     }
 
     public Optional<FileInfoEntity> getDownloadedUiFile() {
-        return repository.findFirstByProcessingStepAndSource(DOWNLOADED, UI);
+        return repository.findFirstByProcessingStepAndSourceAndStatus(DOWNLOADED, UI, FileStatus.DOWNLOADED);
     }
 
     public Optional<FileInfoEntity> getFileToTgRequest() {
@@ -176,9 +176,13 @@ public class FileInfoService {
 
     public void delete(Long id) {
         FileInfoEntity entity = repository.findById(id).orElseThrow(EntityNotFoundException::new);
-        entity.setDeleted(true);
-        repository.save(entity);
         deleteFile(entity.getId());
+        if (entity.getStatus() == FileStatus.DOWNLOADED) {
+            repository.delete(entity);
+        } else {
+            entity.setDeleted(true);
+            repository.save(entity);
+        }
     }
 
     public FileInfoEntity getById(Long id) {

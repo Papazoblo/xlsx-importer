@@ -83,6 +83,7 @@
                     <th>Название</th>
                     <th>Размер</th>
                     <th>Дата загрузки</th>
+                    <th>Источник</th>
                     <th>Статус</th>
                     <th class="action-td"></th>
                 </tr>
@@ -93,15 +94,17 @@
                     <td th:text="${file.getName()}">name</td>
                     <td th:text="${file.getSize()}">size</td>
                     <td th:text="${file.getDate()}">date</td>
+                    <td th:text="${file.getSource()}">date</td>
                     <td th:text="${file.getStatus()}">status</td>
                     <td>
                         <button th:if="${!file.isDeleted()}" class="btn btn-download" title="Скачать">
                             <a th:href="'/file-storage/download/' + ${file.getId()}"><i
                                     class="fa-solid fa-download"></i></a>
                         </button>
-                        <!--<button th:if="${!file.isDeleted()}" class="btn btn-delete" title="Удалить" th:id="${file.getId()}">
+                        <button th:if="${!file.isDeleted()}" class="btn btn-delete" title="Удалить"
+                                th:id="${file.getId()}">
                             <i class="fa-solid fa-trash-can"></i>
-                        </button>-->
+                        </button>
                     </td>
                 </tr>
                 </tbody>
