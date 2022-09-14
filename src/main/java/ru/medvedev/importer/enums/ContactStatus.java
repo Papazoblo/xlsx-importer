@@ -6,10 +6,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ContactStatus {
 
-    ADDED("Добавлен"),
-    IN_PROCESS("В обработке"), // возможно лишний статус
-    DOWNLOADED("Загружен"), // загружен
-    REJECTED("Отклонен"); // отменен ВТБ или чем то еще
+    ADDED("Дубликаты"),
+    DOWNLOADED("Загружено в скорозвон"), // загружен
+    REJECTED("Отклонен ВТБ"); // отменен ВТБ или чем то еще
 
     @Getter
     private final String description;

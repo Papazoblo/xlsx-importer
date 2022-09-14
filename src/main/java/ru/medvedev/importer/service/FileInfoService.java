@@ -34,8 +34,8 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
-import static ru.medvedev.importer.enums.FileProcessingStep.DOWNLOADED;
 import static ru.medvedev.importer.enums.FileProcessingStep.INITIALIZE;
+import static ru.medvedev.importer.enums.FileProcessingStep.IN_QUEUE;
 import static ru.medvedev.importer.enums.FileSource.TELEGRAM;
 import static ru.medvedev.importer.enums.FileSource.UI;
 
@@ -62,16 +62,24 @@ public class FileInfoService {
         return repository.findById(fileId).map(FileInfoEntity::getChatId).orElse(null);
     }
 
-    public Optional<FileInfoEntity> getDownloadedFile() {
-        return repository.findFirstByStatusAndProcessingStepOrderByCreateAt(FileStatus.DOWNLOADED, INITIALIZE);
+    public Optional<String> getLastTgFileProjectCode() {
+        return repository.getLastUiProjectCode(TELEGRAM, Arrays.asList(FileStatus.SUCCESS, FileStatus.IN_PROCESS));
+    }
+
+    public Optional<FileInfoEntity> getNewUiFileToInitialize() {
+        return repository.findFirstByProcessingStepAndSourceAndStatus(IN_QUEUE, UI, FileStatus.NEW);
+    }
+
+    public Optional<FileInfoEntity> getTgFileToSetProjectCode() {
+        return repository.findFirstByProcessingStepAndSourceAndStatus(INITIALIZE, TELEGRAM, FileStatus.IN_PROCESS);
+    }
+
+    public Optional<FileInfoEntity> getNewFileToProcessing() {
+        return repository.findFirstByStatusAndProcessingStepOrderByCreateAt(FileStatus.NEW, INITIALIZE);
     }
 
     public Optional<FileInfoEntity> getFileInProcess() {
         return repository.findByStatusAndSource(FileStatus.IN_PROCESS, TELEGRAM);
-    }
-
-    public Optional<FileInfoEntity> getDownloadedUiFile() {
-        return repository.findFirstByProcessingStepAndSourceAndStatus(DOWNLOADED, UI, FileStatus.DOWNLOADED);
     }
 
     public Optional<FileInfoEntity> getFileToTgRequest() {
@@ -89,6 +97,11 @@ public class FileInfoService {
                 Collections.singletonList(FileProcessingStep.REQUEST_REQUIRE_FIELD));
     }
 
+    public Optional<FileInfoEntity> getFileWaitProjectCode() {
+        return repository.findByStatusAndSourceAndProcessingStepIn(FileStatus.IN_PROCESS, TELEGRAM,
+                Collections.singletonList(FileProcessingStep.WAIT_PROJECT_CODE_INITIALIZE));
+    }
+
     public Optional<FileInfoEntity> getFileToProcessingBody() {
         return repository.findByStatusAndSourceAndProcessingStepIn(FileStatus.IN_PROCESS, TELEGRAM,
                 Collections.singletonList(FileProcessingStep.WAIT_READ_DATA));
@@ -99,10 +112,16 @@ public class FileInfoService {
                 .collect(toMap(FileInfoEntity::getId, FileInfoEntity::getName));
     }
 
+    //телеграм
     public boolean create(Document document, Long chatId, File file, FileSource source) {
 
         String hash = hashFile(file.toPath());
-        if (!repository.existsByHashAndStatus(hash, FileStatus.SUCCESS)) {
+        if (repository.existsByHashAndStatusNot(hash, FileStatus.SUCCESS)) {
+            eventPublisher.publishEvent(new ImportEvent(this, "Файл *" + file.getName() + "* ранее был успешно обработан системой",
+                    EventType.LOG_TG, -1L));
+            log.debug("*** file with hash {} already exist", hash);
+            return false;
+        } else {
             FileInfoEntity entity = new FileInfoEntity();
             entity.setName(document.getFileName());
             entity.setSize(Long.valueOf(document.getFileSize()));
@@ -111,7 +130,6 @@ public class FileInfoService {
             entity.setTgFileId(document.getFileId());
             entity.setHash(hash);
             entity.setPath(file.getPath());
-            entity.setDeleted(false);
             entity.setChatId(chatId);
             entity.setSource(source);
             entity.setProcessingStep(INITIALIZE);
@@ -120,40 +138,35 @@ public class FileInfoService {
                     EventType.LOG_TG, entity.getId()));
             log.debug("*** create file with hash {}", hash);
             return true;
-        } else {
+        }
+    }
+
+    //интерфейс
+    public boolean create(MultipartFile multipartFile, Long chatId, File file, FileSource source) {
+
+        String hash = hashFile(file.toPath());
+        if (repository.existsByHashAndStatusNot(hash, FileStatus.ERROR)) {
             eventPublisher.publishEvent(new ImportEvent(this, "Файл *" + file.getName() + "* ранее был успешно обработан системой",
                     EventType.LOG_TG, -1L));
             log.debug("*** file with hash {} already exist", hash);
             return false;
-        }
-    }
-
-    public boolean create(MultipartFile multipartFile, Long chatId, File file, FileSource source) {
-
-        String hash = hashFile(file.toPath());
-        if (!repository.existsByHashAndStatus(hash, FileStatus.SUCCESS)) {
+        } else {
             FileInfoEntity entity = new FileInfoEntity();
             entity.setName(multipartFile.getOriginalFilename());
             entity.setSize(multipartFile.getSize());
             entity.setType(multipartFile.getContentType());
             entity.setHash(hash);
             entity.setPath(file.getPath());
-            entity.setDeleted(false);
             entity.setChatId(chatId);
             entity.setSource(source);
             entity.setUniqueId("");
             entity.setTgFileId("");
-            entity.setProcessingStep(DOWNLOADED);
+            entity.setProcessingStep(IN_QUEUE);
             repository.save(entity);
             eventPublisher.publishEvent(new ImportEvent(this, "Добавлен в систему через интерфейс и ждет указания столбцов для дальнейшей обратки",
                     EventType.LOG_TG, entity.getId()));
             log.debug("*** create file with hash {}", hash);
             return true;
-        } else {
-            eventPublisher.publishEvent(new ImportEvent(this, "Файл *" + file.getName() + "* ранее был успешно обработан системой",
-                    EventType.LOG_TG, -1L));
-            log.debug("*** file with hash {} already exist", hash);
-            return false;
         }
     }
 
@@ -165,8 +178,8 @@ public class FileInfoService {
             file.setFieldLinks(xlsxImportInfo.getFieldLinks());
             file.setOrgTags(xlsxImportInfo.getOrgTags());
             repository.save(file);
-            eventPublisher.publishEvent(new ImportEvent(this, "Добавлена информация о колонках. Файл ожидает обработки", EventType.LOG_TG,
-                    file.getId()));
+            eventPublisher.publishEvent(new ImportEvent(this, "Добавлена информация о колонках. " +
+                    "Файл ожидает обработки", EventType.LOG_TG, file.getId()));
             return true;
         }).orElseThrow(() -> {
             log.debug("Файл с id {} не найден", xlsxImportInfo.getFileId());
@@ -177,7 +190,7 @@ public class FileInfoService {
     public void delete(Long id) {
         FileInfoEntity entity = repository.findById(id).orElseThrow(EntityNotFoundException::new);
         deleteFile(entity.getId());
-        if (entity.getStatus() == FileStatus.DOWNLOADED) {
+        if (entity.getStatus() == FileStatus.NEW) {
             repository.delete(entity);
         } else {
             entity.setDeleted(true);

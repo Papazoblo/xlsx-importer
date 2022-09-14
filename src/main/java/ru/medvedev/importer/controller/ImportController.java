@@ -39,7 +39,7 @@ public class ImportController {
     @GetMapping("/xlsx/import")
     public String importXlsx(Model model) {
         try {
-            Optional<FileInfoEntity> fileInfoOptional = fileInfoService.getDownloadedUiFile();
+            Optional<FileInfoEntity> fileInfoOptional = fileInfoService.getNewUiFileToInitialize();
             if (fileInfoOptional.isPresent()) {
                 FileInfoEntity fileInfo = fileInfoOptional.get();
                 File file = new File(fileInfo.getPath());
@@ -47,7 +47,7 @@ public class ImportController {
                 model.addAttribute("fileExist", file.exists());
                 model.addAttribute("fileName", fileInfo.getName());
                 model.addAttribute("fileId", fileInfo.getId());
-                model.addAttribute("headers", file.exists() ? xlsxParserService.readColumnHeaders(file)
+                model.addAttribute("headers", file.exists() ? xlsxParserService.readColumnHeaders(fileInfo, file)
                         : Collections.emptyList());
             } else {
                 model.addAttribute("callProjectId", "");
@@ -56,11 +56,16 @@ public class ImportController {
                 model.addAttribute("fileId", -1L);
                 model.addAttribute("headers", Collections.emptyList());
             }
-            model.addAttribute("authority", getAuthorityList());
-            model.addAttribute("fields", SkorozvonField.values());
         } catch (Exception ex) {
             log.info("Error read xlsx", ex);
+            model.addAttribute("callProjectId", "");
+            model.addAttribute("fileExist", false);
+            model.addAttribute("fileName", "Не найден");
+            model.addAttribute("fileId", -1L);
+            model.addAttribute("headers", Collections.emptyList());
         }
+        model.addAttribute("authority", getAuthorityList());
+        model.addAttribute("fields", SkorozvonField.values());
         return "main";
     }
 

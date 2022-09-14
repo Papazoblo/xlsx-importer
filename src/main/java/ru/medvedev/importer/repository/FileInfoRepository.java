@@ -26,6 +26,10 @@ public interface FileInfoRepository extends JpaRepository<FileInfoEntity, Long> 
     @Query(value = "select chat_id from file_info group by chat_id", nativeQuery = true)
     List<Long> getAllChatId();
 
+    @Query("select fi.projectId from FileInfoEntity fi where fi.source = :source " +
+            "and fi.status in :statuses and fi.projectId is not null order by fi.id DESC")
+    Optional<String> getLastUiProjectCode(FileSource source, List<FileStatus> statuses);
+
     @Modifying
     @Transactional
     @Query("update FileInfoEntity fi set fi.status = :status where fi.id = :id")
@@ -40,7 +44,10 @@ public interface FileInfoRepository extends JpaRepository<FileInfoEntity, Long> 
                                                                          FileSource source,
                                                                          FileStatus status);
 
-    boolean existsByHashAndStatus(String hash, FileStatus status);
+    @Query("select (count(fi) > 0) from FileInfoEntity fi " +
+            "where lower(fi.hash) = lower(:hash) and " +
+            "fi.status <> :status")
+    boolean existsByHashAndStatusNot(String hash, FileStatus status);
 
     boolean existsByStatus(FileStatus status);
 }

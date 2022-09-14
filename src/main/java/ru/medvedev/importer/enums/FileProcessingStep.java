@@ -3,7 +3,8 @@ package ru.medvedev.importer.enums;
 
 public enum FileProcessingStep {
 
-    DOWNLOADED,
+    IN_QUEUE, //
+    WAIT_PROJECT_CODE_INITIALIZE,
     INITIALIZE,
     REQUEST_COLUMN_NAME,
     RESPONSE_COLUMN_NAME,

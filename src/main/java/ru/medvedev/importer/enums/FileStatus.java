@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum FileStatus {
 
-    DOWNLOADED("Загружен"),
+    NEW("Добавлен"),
     IN_PROCESS("В обработке"),
     ERROR("Ошибка обработки"),
     SUCCESS("Успешно обработан");

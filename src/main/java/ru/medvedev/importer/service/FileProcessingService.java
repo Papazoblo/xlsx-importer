@@ -37,15 +37,13 @@ public class FileProcessingService {
             return;
         }
 
-        fileInfoService.getDownloadedFile().ifPresent(entity -> {
+        fileInfoService.getNewFileToProcessing().ifPresent(entity -> {
             log.debug("*** launch file processing [{}, id = {}]", entity.getName(), entity.getId());
             eventPublisher.publishEvent(new ImportEvent(this, "Взят в обработку",
                     EventType.LOG_TG, entity.getId(), true));
             entity = fileInfoService.changeStatus(entity, FileStatus.IN_PROCESS);
             try {
-                if (entity.getSource() == FileSource.TELEGRAM) {
-                    launchProcessTelegramFile(entity);
-                } else {
+                if (entity.getSource() == FileSource.UI) {
                     leadWorkerService.processXlsxRecords(entity);
                 }
             } catch (FileProcessingException ex) {

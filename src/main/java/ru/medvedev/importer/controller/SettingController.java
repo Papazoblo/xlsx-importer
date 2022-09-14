@@ -9,6 +9,7 @@ import ru.medvedev.importer.dto.FieldNameVariantDto;
 import ru.medvedev.importer.enums.XlsxRequireField;
 import ru.medvedev.importer.service.FieldNameVariantService;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
@@ -23,7 +24,9 @@ public class SettingController {
     @GetMapping
     public String getPageField(Model model) {
         model.addAttribute("fieldsMap", fieldNameVariantService.getAll());
-        model.addAttribute("fields", XlsxRequireField.values());
+        model.addAttribute("fields", Arrays.stream(XlsxRequireField.values())
+                .filter(field -> field != XlsxRequireField.FIO)
+                .toArray());
         model.addAttribute("authority", getAuthorityList());
         return "fields_setting";
     }

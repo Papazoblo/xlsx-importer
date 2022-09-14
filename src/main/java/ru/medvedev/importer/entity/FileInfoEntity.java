@@ -94,7 +94,8 @@ public class FileInfoEntity {
     @PrePersist
     public void prePersist() {
         createAt = LocalDateTime.now();
-        status = FileStatus.DOWNLOADED;
+        status = FileStatus.NEW;
+        deleted = false;
     }
 
     public Boolean getWithHeader() {

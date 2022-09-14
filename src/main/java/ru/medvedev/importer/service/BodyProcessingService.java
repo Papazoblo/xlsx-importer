@@ -27,8 +27,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -36,6 +34,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static org.apache.logging.log4j.util.Strings.isBlank;
+import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import static ru.medvedev.importer.utils.StringUtils.*;
 
 @Service
@@ -135,6 +134,23 @@ public class BodyProcessingService {
             positionInfo.getHeader().forEach(header -> {
                 Cell cell = row.getCell(header.getPosition());
                 switch (field) {
+                    case FIO:
+                        getCellValue(cell, value -> {
+                            if (isNotBlank(contact.getName())) {
+                                return;
+                            }
+                            String[] fioSplit = value.split(" ");
+                            if (fioSplit.length == 3) {
+                                contact.setName(fioSplit[1]);
+                                contact.setSurname(fioSplit[0]);
+                                contact.setName(fioSplit[2]);
+                            }
+                            if (fioSplit.length == 2) {
+                                contact.setName(fioSplit[1]);
+                                contact.setSurname(fioSplit[0]);
+                            }
+                        }, header, fileId);
+                        break;
                     case NAME:
                         getCellValue(cell, contact::setName, header, fileId);
                         break;
@@ -256,11 +272,11 @@ public class BodyProcessingService {
 
     private void sendContactToSkorozvon(List<ContactEntity> contacts, List<LeadInfoResponse> leads, Long fileId) {
 
-        String fileName = fileInfoService.getById(fileId).getName();
-        Long projectNumber = projectNumberService.getNumberByDate(LocalDate.now());
-        if (projectNumber == null) {
-            throw new NumberProjectNotFoundException(String.format("Для даты %s не указан номер проекта",
-                    LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))), fileId);
+        FileInfoEntity fileInfo = fileInfoService.getById(fileId);
+        if (fileInfo.getProjectId() == null) {
+            /*,
+                    LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))*/
+            throw new NumberProjectNotFoundException("Не указан номер проекта", fileId);
         }
 
         List<CreateOrganizationDto> orgList = contacts.stream()
@@ -274,9 +290,9 @@ public class BodyProcessingService {
                 }).collect(toList());
 
         for (int i = 0; i < orgList.size(); i = i + REQUEST_BATCH_SIZE) {
-            skorozvonClientService.createMultiple(projectNumber,
+            skorozvonClientService.createMultiple(Long.valueOf(fileInfo.getProjectId()),
                     orgList.subList(i, Math.min(i + REQUEST_BATCH_SIZE, orgList.size())),
-                    Collections.singletonList(fileName));
+                    Collections.singletonList(fileInfo.getName()));
         }
         contactService.changeContactStatus(leads, fileId, ContactStatus.DOWNLOADED);
     }

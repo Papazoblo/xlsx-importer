@@ -21,16 +21,21 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.medvedev.importer.component.TelegramXlsxCollectorProperty;
 import ru.medvedev.importer.dto.events.CheckBotColumnResponseEvent;
+import ru.medvedev.importer.dto.events.ProjectCodeResponseEvent;
 import ru.medvedev.importer.entity.FileInfoEntity;
+import ru.medvedev.importer.enums.ChatState;
 import ru.medvedev.importer.enums.FileSource;
+import ru.medvedev.importer.enums.SystemVariable;
 import ru.medvedev.importer.enums.XlsxRequireField;
 import ru.medvedev.importer.service.FileInfoService;
+import ru.medvedev.importer.service.SystemVariableService;
 
 import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
+import static ru.medvedev.importer.enums.ChatState.PROJECT_CODE;
 import static ru.medvedev.importer.utils.StringUtils.transformTgMessage;
 
 
@@ -47,6 +52,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
     private final TelegramXlsxCollectorProperty properties;
     private final FileInfoService fileInfoService;
     private final ApplicationEventPublisher eventPublisher;
+    private final SystemVariableService systemVariableService;
 
     @Override
     public String getBotUsername() {
@@ -76,7 +82,15 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                 message = update.getChannelPost();
             } else {
                 if (isNotBlank(message.getText())) {
-                    eventPublisher.publishEvent(new CheckBotColumnResponseEvent(this, message.getText()));
+                    String messageText = message.getText();
+                    systemVariableService.getByCode(SystemVariable.CHAT_STATE).ifPresent(entity -> {
+                        ChatState chatState = ChatState.valueOf(entity.getValue());
+                        if (chatState == ChatState.COLUMN_NAME) {
+                            eventPublisher.publishEvent(new CheckBotColumnResponseEvent(this, messageText));
+                        } else if (chatState == PROJECT_CODE) {
+                            eventPublisher.publishEvent(new ProjectCodeResponseEvent(this, messageText));
+                        }
+                    });
                 }
             }
 
@@ -126,13 +140,6 @@ public class TelegramPollingService extends TelegramLongPollingBot {
         return fileInfo;
     }
 
-    /*
-    TODO
-    1. увеличить минимальный размер файла
-    2. ошибка INVALID_INN - необходимо исключать его и отправлять запроса снова
-    3. хз, посмотреть , что все в относительно работчем состоянии и отправить на прод
-     */
-
     public void sendMessage(String message, Long idChat, boolean withCancelButton) {
         KeyboardRow keyboardRow = new KeyboardRow();
         keyboardRow.add(new KeyboardButton("Отменить загрузку"));
@@ -151,6 +158,19 @@ public class TelegramPollingService extends TelegramLongPollingBot {
         log.info(transformTgMessage(message));
     }
 
+    public void sendRequestGetProjectCode(String fileName, List<String> buttons) {
+        SendMessage method = SendMessage.builder()
+                .chatId(String.valueOf(scanningChatId))
+                .parseMode(ParseMode.MARKDOWN)
+                .text(createGetTgGetProjectCodeMessage(fileName))
+                .replyMarkup(ReplyKeyboardMarkup.builder()
+                        .resizeKeyboard(true)
+                        .keyboard(createRequestGetColumnNameMessageKeyboard(buttons))
+                        .build())
+                .build();
+        executeCommand(method);
+    }
+
     public void sendRequestGetColumnName(String fileName, List<String> requiredEmptyColumn, List<String> columnLines) {
         SendMessage method = SendMessage.builder()
                 .chatId(String.valueOf(scanningChatId))
@@ -158,7 +178,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                 .text(createRequestGetColumnNameMessage(fileName, requiredEmptyColumn, columnLines))
                 .replyMarkup(ReplyKeyboardMarkup.builder()
                         .resizeKeyboard(true)
-                        .keyboard(createRequestGetColumnNameMessageMessageKeyboard())
+                        .keyboard(createRequestGetColumnNameMessageKeyboard())
                         .build())
                 .build();
         executeCommand(method);
@@ -185,12 +205,28 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                 String.join("\n", columnLines));
     }
 
+    private static String createGetTgGetProjectCodeMessage(String fileName) {
+        return String.format("*Файл: %s*\nВыберите проект для загрузки контактов или укажите другой", fileName);
+    }
+
     private static String createRequestGetRequireColumnNameMessage(String fileName, String field) {
         return String.format("*Файл: %s*\n*" +
                 "Не указано обязательное поле*: _%s_", fileName, field);
     }
 
-    private static List<KeyboardRow> createRequestGetColumnNameMessageMessageKeyboard() {
+    private static List<KeyboardRow> createRequestGetColumnNameMessageKeyboard(List<String> buttons) {
+        buttons.add("Отменить загрузку");
+        return buttons.stream()
+                .map(KeyboardButton::new)
+                .map(button -> {
+                    KeyboardRow row = new KeyboardRow();
+                    row.add(button);
+                    return row;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private static List<KeyboardRow> createRequestGetColumnNameMessageKeyboard() {
         int buttonCountInRow = 3;
         List<KeyboardButton> buttons = Arrays.stream(XlsxRequireField.values())
                 .filter(xlsxRequireField -> xlsxRequireField != XlsxRequireField.TRASH)

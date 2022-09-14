@@ -4,11 +4,14 @@ import lombok.RequiredArgsConstructor;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.XlsxRecordDto;
+import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.entity.FileInfoEntity;
+import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.SkorozvonField;
-import ru.medvedev.importer.exception.BadRequestException;
+import ru.medvedev.importer.exception.FileHeaderNotFoundException;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,7 +30,9 @@ import static ru.medvedev.importer.utils.StringUtils.replaceSpecialCharacters;
 @RequiredArgsConstructor
 public class XlsxParserService {
 
-    public List<String> readColumnHeaders(File file) throws IOException {
+    private final ApplicationEventPublisher eventPublisher;
+
+    public List<String> readColumnHeaders(FileInfoEntity fileInfo, File file) throws IOException {
 
         FileInputStream fis = new FileInputStream(file);
         Workbook wb = file.getName().endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
@@ -42,7 +47,9 @@ public class XlsxParserService {
                     continue;
                 }
                 if (cell.getCellType() != CellType.STRING) {
-                    throw new BadRequestException("У файла отсутсвует шапка");
+                    eventPublisher.publishEvent(new ImportEvent(this, "В файле отсутствует шапка таблицы",
+                            EventType.ERROR, fileInfo.getId()));
+                    throw new FileHeaderNotFoundException("В файле отсутствует шапка таблицы", fileInfo.getId());
                 }
                 String value = cell.getStringCellValue();
                 if (isNotBlank(value)) {
@@ -103,9 +110,6 @@ public class XlsxParserService {
             case USR_ADDRESS:
                 record.setAddress(cellValueToString(row, cells));
                 break;
-            /*case USR_INN:
-                record.setInn(cellValueToString(row, cells));
-                break;*/
             case USR_REGION:
                 record.setRegion(cellValueToString(row, cells));
                 break;
