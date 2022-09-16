@@ -44,6 +44,7 @@ cron:
   tg-initialized-new-file: '*/3 * * * * *'
   tg-file-body-processor: '*/3 * * * * *'
   webhook-change-status: '17 */1 * * * *'
+  auto-load: '0 0 3 * * *'
 
 telegram:
   xlsx-collector:
