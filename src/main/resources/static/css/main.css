@@ -6,6 +6,10 @@
     width: 50%;
 }
 
+#projectTable th {
+    width: 33.3%;
+}
+
 input[type=text], input[type=password], .multiselect-native-select, #uploadTable {
     width: 100%;
 }

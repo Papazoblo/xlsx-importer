@@ -1,6 +1,7 @@
 package ru.medvedev.importer.entity;
 
 import lombok.Data;
+import ru.medvedev.importer.enums.Bank;
 
 import javax.persistence.*;
 
@@ -17,4 +18,8 @@ public class WebhookSuccessStatusEntity {
 
     @Column(name = "name")
     private String name;
+
+    @Column(name = "bank_name")
+    @Enumerated(EnumType.STRING)
+    private Bank bank;
 }

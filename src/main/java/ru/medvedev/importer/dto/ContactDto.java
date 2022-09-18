@@ -3,6 +3,7 @@ package ru.medvedev.importer.dto;
 import lombok.Data;
 import ru.medvedev.importer.entity.ContactEntity;
 import ru.medvedev.importer.entity.WebhookStatusEntity;
+import ru.medvedev.importer.enums.Bank;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
@@ -19,6 +20,7 @@ public class ContactDto {
     private String orgName;
     private String region;
     private String createAt;
+    private Bank bank;
     private String status;
     private String original;
     private String webhookStatus;
@@ -31,6 +33,7 @@ public class ContactDto {
         dto.setPhone(entity.getPhone());
         dto.setOrgName(entity.getOrgName());
         dto.setRegion(entity.getRegion());
+        dto.setBank(entity.getBank());
         dto.setCreateAt(entity.getCreateAt()
                 .format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")));
         dto.setStatus(entity.getStatus().getDescription());

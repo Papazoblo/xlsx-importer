@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import ru.medvedev.importer.dto.WebhookDto;
 import ru.medvedev.importer.dto.XlsxImportInfo;
 import ru.medvedev.importer.entity.FileInfoEntity;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.SkorozvonField;
 import ru.medvedev.importer.exception.BadRequestException;
 import ru.medvedev.importer.service.FileInfoService;
@@ -20,7 +21,9 @@ import ru.medvedev.importer.service.XlsxStorageService;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
@@ -43,7 +46,7 @@ public class ImportController {
             if (fileInfoOptional.isPresent()) {
                 FileInfoEntity fileInfo = fileInfoOptional.get();
                 File file = new File(fileInfo.getPath());
-                model.addAttribute("callProjectId", fileInfo.getProjectId());
+                model.addAttribute("callProjectId", "");
                 model.addAttribute("fileExist", file.exists());
                 model.addAttribute("fileName", fileInfo.getName());
                 model.addAttribute("fileId", fileInfo.getId());
@@ -66,6 +69,19 @@ public class ImportController {
         }
         model.addAttribute("authority", getAuthorityList());
         model.addAttribute("fields", SkorozvonField.values());
+
+        List<List<Bank>> banks = new ArrayList<>();
+        Bank[] bankArray = Bank.values();
+        for (int i = 0; i < bankArray.length; i += 3) {
+            List<Bank> bankInner = new ArrayList<>();
+            for (int j = 0; j < 3; j++) {
+                if (i + j < bankArray.length) {
+                    bankInner.add(bankArray[i + j]);
+                }
+            }
+            banks.add(bankInner);
+        }
+        model.addAttribute("banks", banks);
         return "main";
     }
 

@@ -142,15 +142,6 @@
 <script type="text/javascript" th:src="@{/webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
 <script type="text/javascript" th:src="@{/js/main.js}"></script>
 <script type="text/javascript">
-    $(document).ready(function () {
-        $('.selectpicker').multiselect({
-            nonSelectedText: 'Не выбрано',
-            nSelectedText: 'выбран(о)',
-            allSelectedText: 'Все выбрано',
-            resetText: 'Сбросить'
-        });
-    });
-
     $("#file").on("change", function () {
         var fileName = $(this).val().split("\\").pop();
         $(this).siblings(".custom-file-label").addClass("selected").html(fileName);

@@ -1,4 +1,4 @@
-package ru.medvedev.importer.service;
+package ru.medvedev.importer.service.bankclientservice;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

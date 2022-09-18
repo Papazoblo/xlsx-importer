@@ -105,16 +105,25 @@
     <div th:class="'row mt-4 ' + (${fileExist} ? '' : 'hide-block')">
         <div class="col-md-8 offset-md-2">
             <input type="hidden" id="fileId" th:value="${fileId}"/>
-            <table id="mainTable">
-                <tr>
-                    <th><label for="textProjectId">Идентификатор проекта*</label></th>
-                    <th>
-                        <input id="textProjectId" class="onlyNumbers" type="text" maxlength="15"/>
+            <table id="projectTable">
+                <tr th:each="bankRow : ${banks}">
+                    <th th:each="bank : ${bankRow}">
+                        <label th:if="${bank != null}"
+                               th:for="textProject + ${bank.name()}"
+                               th:text="'Проект ' + ${bank.title}"></label>
+                        <input th:if="${bank != null}"
+                               th:id="textProject + ${bank.name()}"
+                               th:name="${bank.name()}"
+                               class="onlyNumbers projectId" type="text"
+                               maxlength="15"/>
+                        <label th:if="${bank == null}"></label>
                     </th>
                 </tr>
+            </table>
+            <table id="mainTable">
                 <tr th:class="space-block">
-                    <th th:class="text-center"><label for="textProjectId">Поля контактов в скорозвоне</label></th>
-                    <th th:class="text-center"><label for="textProjectId">Поля excel</label></th>
+                    <th th:class="text-center"><label>Поля контактов в скорозвоне</label></th>
+                    <th th:class="text-center"><label>Поля excel</label></th>
                 </tr>
                 <tr th:each="field : ${fields}" th:class="'select-hover ' +
                             ${field.getFieldType().name().equals('MULTIPLE') ? 'space-height' : ''}">

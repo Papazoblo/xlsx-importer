@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import ru.medvedev.importer.dto.PagingDto;
 import ru.medvedev.importer.dto.WebhookSuccessStatusDto;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.service.WebhookSuccessStatusService;
 
 import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
@@ -29,6 +30,7 @@ public class WebhookSuccessStatusController {
 
         Page<WebhookSuccessStatusDto> resultPage = service.getPage(pageable);
         model.addAttribute("data", resultPage);
+        model.addAttribute("banks", Bank.values());
         model.addAttribute("authority", getAuthorityList());
         model.addAttribute("paging", PagingDto.of(resultPage.getTotalPages(), page, size));
         return "webhook_success_status";
@@ -36,7 +38,7 @@ public class WebhookSuccessStatusController {
 
     @PostMapping
     public String create(@RequestBody WebhookSuccessStatusDto input) {
-        service.create(input.getName());
+        service.create(input);
         return "redirect:/settings/webhook-success-statuses";
     }
 

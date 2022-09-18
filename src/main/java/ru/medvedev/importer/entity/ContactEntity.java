@@ -2,6 +2,7 @@ package ru.medvedev.importer.entity;
 
 import lombok.Data;
 import lombok.ToString;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.ContactStatus;
 
 import javax.persistence.*;
@@ -41,8 +42,8 @@ public class ContactEntity {
     @Column(name = "region")
     private String region;
 
-    @Column(name = "address") // todo переименовать в БД
-    private String city; //todo бывший адрес
+    @Column(name = "city")
+    private String city;
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
@@ -50,6 +51,10 @@ public class ContactEntity {
 
     @Column(name = "trash_columns")
     private String trashColumns;
+
+    @Column(name = "bank_name")
+    @Enumerated(EnumType.STRING)
+    private Bank bank;
 
     @ToString.Exclude
     @ManyToOne
@@ -62,5 +67,22 @@ public class ContactEntity {
     @PrePersist
     public void prePersist() {
         createAt = LocalDateTime.now();
+    }
+
+    public ContactEntity getClone() {
+        ContactEntity entity = new ContactEntity();
+        entity.setOrgName(this.orgName);
+        entity.setName(this.name);
+        entity.setSurname(this.surname);
+        entity.setMiddleName(this.middleName);
+        entity.setPhone(this.phone);
+        entity.setInn(this.inn);
+        entity.setOgrn(this.ogrn);
+        entity.setRegion(this.region);
+        entity.setCity(this.city);
+        entity.setStatus(this.status);
+        entity.setTrashColumns(this.trashColumns);
+        entity.setBank(this.bank);
+        return entity;
     }
 }

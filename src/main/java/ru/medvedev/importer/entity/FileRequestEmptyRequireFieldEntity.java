@@ -17,7 +17,7 @@ public class FileRequestEmptyRequireFieldEntity {
     private Long id;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "file_id")
     private FileInfoEntity fileInfoEntity;
 

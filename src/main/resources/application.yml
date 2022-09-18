@@ -60,3 +60,9 @@ skorozvon:
 vtb:
   url: https://epa.api.vtb.ru/openapi/smb/lecs
   token-url: https://passport.api.vtb.ru/passport/oauth2/token
+
+vtb-opening:
+  url: https://openpartners.ru/api/v2/request
+  url-add-request: /add
+  url-check-request-status: /status
+  url-check-inn: /getduplicates

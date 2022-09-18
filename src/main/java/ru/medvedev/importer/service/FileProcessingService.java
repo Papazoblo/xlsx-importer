@@ -9,7 +9,10 @@ import ru.medvedev.importer.dto.ColumnInfoDto;
 import ru.medvedev.importer.dto.FieldNameVariantDto;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.entity.FileInfoEntity;
-import ru.medvedev.importer.enums.*;
+import ru.medvedev.importer.enums.EventType;
+import ru.medvedev.importer.enums.FileSource;
+import ru.medvedev.importer.enums.FileStatus;
+import ru.medvedev.importer.enums.XlsxRequireField;
 import ru.medvedev.importer.exception.ColumnNamesNotFoundException;
 import ru.medvedev.importer.exception.FileProcessingException;
 
@@ -45,13 +48,15 @@ public class FileProcessingService {
             try {
                 if (entity.getSource() == FileSource.UI) {
                     leadWorkerService.processXlsxRecords(entity);
+                } else {
+                    launchProcessTelegramFile(entity);
                 }
             } catch (FileProcessingException ex) {
                 log.debug("Error processing file: {}", ex.getMessage());
                 eventPublisher.publishEvent(new ImportEvent(this, ex.getMessage(), EventType.ERROR,
                         ex.getFileId()));
             } catch (Exception ex) {
-                log.debug("Error processing file: {}", ex.getMessage());
+                log.debug("Error processing file", ex);
                 eventPublisher.publishEvent(new ImportEvent(this, Optional.ofNullable(ex.getMessage())
                         .orElse("Непредвиденная ошибка"), EventType.ERROR,
                         entity.getId()));
@@ -74,7 +79,6 @@ public class FileProcessingService {
             FileInputStream fis = new FileInputStream(new File(entity.getPath()));
             ColumnInfoDto columnInfoDto = headerProcessingService.headerProcessing(entity, namesMap, fis);
             entity.setColumnInfo(columnInfoDto);
-            entity.setProcessingStep(FileProcessingStep.RESPONSE_COLUMN_NAME);
             fileInfoService.save(entity);
             fis.close();
         } catch (IOException e) {

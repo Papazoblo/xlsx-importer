@@ -14,6 +14,8 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static org.hibernate.internal.util.StringHelper.isBlank;
+
 @Entity
 @Table(name = "file_info")
 @Data
@@ -75,9 +77,6 @@ public class FileInfoEntity {
     @Column(name = "ask_column_number")
     private Integer askColumnNumber;
 
-    @Column(name = "project_id")
-    private String projectId;
-
     @Column(name = "enable_whats_app_link")
     private Boolean enableWhatsAppLink = false;
 
@@ -89,7 +88,10 @@ public class FileInfoEntity {
     private String orgTags;
 
     @OneToMany(mappedBy = "fileInfoEntity", fetch = FetchType.EAGER, orphanRemoval = true, cascade = CascadeType.ALL)
-    private List<FileRequestEmptyRequireFieldEntity> fileRequestEmptyRequireFieldEntities = new ArrayList<>();
+    private Set<FileRequestEmptyRequireFieldEntity> fileRequestEmptyRequireFieldEntities = new HashSet<>();
+
+    @OneToMany(mappedBy = "fileInfo", fetch = FetchType.EAGER, orphanRemoval = true, cascade = CascadeType.ALL)
+    private List<FileInfoBankEntity> bankList = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
@@ -146,6 +148,9 @@ public class FileInfoEntity {
 
     public Optional<ColumnInfoDto> getColumnInfo() {
         try {
+            if (isBlank(this.columnInfo)) {
+                this.columnInfo = "";
+            }
             return Optional.of(new ObjectMapper().readValue(this.columnInfo, ColumnInfoDto.class));
         } catch (JsonProcessingException e) {
             return Optional.empty();

@@ -16,12 +16,14 @@ import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.ContactEntity;
+import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.entity.InnRegionEntity;
 import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.exception.FileProcessingException;
 import ru.medvedev.importer.exception.IllegalCellTypeException;
 import ru.medvedev.importer.exception.NumberProjectNotFoundException;
+import ru.medvedev.importer.service.bankclientservice.VtbClientService;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,7 +31,6 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
@@ -66,7 +67,7 @@ public class BodyProcessingService {
             file.setProcessingStep(FileProcessingStep.READ_DATA);
             fileInfoService.save(file);
             try {
-                readFile(file);
+                processFile(file);
                 eventPublisher.publishEvent(new ImportEvent(this, "Файл обработан",
                         EventType.SUCCESS, file.getId()));
             } catch (FileProcessingException ex) {
@@ -74,7 +75,7 @@ public class BodyProcessingService {
                 eventPublisher.publishEvent(new ImportEvent(this, ex.getMessage(), EventType.ERROR,
                         ex.getFileId()));
             } catch (Exception ex) {
-                log.debug("Error processing file: {}", ex.getMessage());
+                log.debug("Error processing file", ex);
                 eventPublisher.publishEvent(new ImportEvent(this, Optional.ofNullable(ex.getMessage())
                         .orElse("Непредвиденная ошибка\n" + ex.getClass()), EventType.ERROR,
                         file.getId()));
@@ -82,15 +83,28 @@ public class BodyProcessingService {
         });
     }
 
-    private void readFile(FileInfoEntity file) throws IOException {
+    private void processFile(FileInfoEntity file) throws IOException {
+
+        List<List<ContactEntity>> contactBatchList = readValidContactFromFile(file);
+        file.getBankList().forEach(fileBank -> {
+            List<ContactEntity> resultContactList = contactBatchList.stream()
+                    .flatMap(batch -> contactService.filteredContacts(batch, fileBank).stream())
+                    .collect(toList());
+            prepareContactToSkorozvon(resultContactList, fileBank);
+        });
+        contactBatchList.clear();
+    }
+
+    private List<List<ContactEntity>> readValidContactFromFile(FileInfoEntity file) throws IOException {
         FileInputStream fis = new FileInputStream(new File(file.getPath()));
         Workbook wb = file.getName().endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
+        List<String> innFilter = (List<String>) downloadFilterService.getByName(DownloadFilter.INN).getFilter();
 
         Sheet sheet = wb.getSheetAt(0);
         Map<XlsxRequireField, FieldPositionDto> fieldPositionMap = file.getColumnInfo().get().getFieldPositionMap();
 
+        List<List<ContactEntity>> contactBatchList = new ArrayList<>();
         List<ContactEntity> contactBatch = new ArrayList<>();
-        List<ContactEntity> resultContactList = new ArrayList<>();
         Map<String, InnRegionEntity> innRegionMap = innRegionService.getAllMap();
         regionCodes.clear();
         for (Row row : sheet) {
@@ -98,26 +112,31 @@ public class BodyProcessingService {
                 continue;
             }
             try {
-                contactBatch.add(parseContact(row, fieldPositionMap, file.getId(), innRegionMap));
+                ContactEntity contact = parseContact(row, fieldPositionMap, file.getId(), innRegionMap);
+                if (isBlank(contact.getInn()) ||
+                        (contact.getInn().length() != 10 && contact.getInn().length() != 12) ||
+                        (!innFilter.isEmpty() && innFilter.stream()
+                                .anyMatch(innPrefix -> contact.getInn().startsWith(innPrefix)))) {
+                    continue;
+                }
+                contactBatch.add(contact);
             } catch (Exception ex) {
                 log.debug("*** Invalid contact rowNum = {}", row.getRowNum(), ex);
                 eventPublisher.publishEvent(new ImportEvent(this,
                         String.format("Некорректная запись. Строка №%d", row.getRowNum()), EventType.LOG, file.getId()));
-                continue;
             }
             if (contactBatch.size() == BATCH_SIZE) {
-                resultContactList.addAll(contactService.filteredContacts(contactBatch, file.getId()));
-                contactBatch.clear();
+                contactBatchList.add(contactBatch);
+                contactBatch = new ArrayList<>();
             }
         }
         if (!contactBatch.isEmpty()) {
-            resultContactList.addAll(contactService.filteredContacts(contactBatch, file.getId()));
-            contactBatch.clear();
+            contactBatchList.add(contactBatch);
         }
         regionCodes.forEach(code -> eventPublisher.publishEvent(new ImportEvent(this,
                 String.format("Регион с кодом %s не найден в справочнике", code), EventType.LOG, file.getId())));
         wb.close();
-        prepareContactToSkorozvon(resultContactList, file);
+        return contactBatchList;
     }
 
     private ContactEntity parseContact(Row row, Map<XlsxRequireField, FieldPositionDto> cellPositionMap, Long fileId,
@@ -239,26 +258,15 @@ public class BodyProcessingService {
         }
     }
 
-    private void prepareContactToSkorozvon(List<ContactEntity> contacts, FileInfoEntity file) {
+    private void prepareContactToSkorozvon(List<ContactEntity> contacts, FileInfoBankEntity fileBank) {
         List<LeadInfoResponse> positiveLead = new ArrayList<>();
         List<LeadInfoResponse> negativeLead = new ArrayList<>();
-        List<String> innFilter = (List<String>) downloadFilterService.getByName(DownloadFilter.INN).getFilter();
-
-        contacts = contacts.stream()
-                .filter(item -> item.getInn().length() == 10 || item.getInn().length() == 12)
-                .filter(item -> {
-                    if (innFilter.isEmpty()) {
-                        return true;
-                    }
-                    return innFilter.stream().noneMatch(innPrefix -> item.getInn().startsWith(innPrefix));
-                })
-                .collect(Collectors.toList());
 
         for (int i = 0; i < contacts.size(); i = i + REQUEST_BATCH_SIZE) {
             List<ContactEntity> contactSublist = contacts.subList(i, Math.min(i + REQUEST_BATCH_SIZE, contacts.size()));
             vtbClientService.getAllFromCheckLead(contactSublist.stream()
                     .map(ContactEntity::getInn)
-                    .collect(toList()), file).forEach(lead -> {
+                    .collect(toList()), fileBank.getFileInfoId()).forEach(lead -> {
                 if (lead.getResponseCode() == CheckLeadStatus.POSITIVE) {
                     positiveLead.add(lead);
                 } else {
@@ -266,17 +274,16 @@ public class BodyProcessingService {
                 }
             });
         }
-        contactService.changeContactStatus(negativeLead, file.getId(), ContactStatus.REJECTED);
-        sendContactToSkorozvon(contacts, positiveLead, file.getId());
+        contactService.changeContactStatus(negativeLead, fileBank.getFileInfoId(), ContactStatus.REJECTED);
+        sendContactToSkorozvon(contacts, positiveLead, fileBank);
     }
 
-    private void sendContactToSkorozvon(List<ContactEntity> contacts, List<LeadInfoResponse> leads, Long fileId) {
+    private void sendContactToSkorozvon(List<ContactEntity> contacts, List<LeadInfoResponse> leads,
+                                        FileInfoBankEntity fileBank) {
 
-        FileInfoEntity fileInfo = fileInfoService.getById(fileId);
-        if (fileInfo.getProjectId() == null) {
-            /*,
-                    LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))*/
-            throw new NumberProjectNotFoundException("Не указан номер проекта", fileId);
+        FileInfoEntity fileInfo = fileBank.getFileInfo();
+        if (fileBank.getProjectId() == null) {
+            throw new NumberProjectNotFoundException("Не указан номер проекта", fileInfo.getId());
         }
 
         List<CreateOrganizationDto> orgList = contacts.stream()
@@ -290,11 +297,11 @@ public class BodyProcessingService {
                 }).collect(toList());
 
         for (int i = 0; i < orgList.size(); i = i + REQUEST_BATCH_SIZE) {
-            skorozvonClientService.createMultiple(Long.valueOf(fileInfo.getProjectId()),
+            skorozvonClientService.createMultiple(fileBank.getProjectId(),
                     orgList.subList(i, Math.min(i + REQUEST_BATCH_SIZE, orgList.size())),
                     Collections.singletonList(fileInfo.getName()));
         }
-        contactService.changeContactStatus(leads, fileId, ContactStatus.DOWNLOADED);
+        contactService.changeContactStatus(leads, fileInfo.getId(), ContactStatus.DOWNLOADED);
     }
 
     private static CreateLeadDto xlsxRecordToLead(ContactEntity contact) {

@@ -16,6 +16,7 @@ import ru.medvedev.importer.dto.XlsxImportInfo;
 import ru.medvedev.importer.dto.events.CompleteFileEvent;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.events.InvalidFileEvent;
+import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.FileProcessingStep;
@@ -117,7 +118,7 @@ public class FileInfoService {
 
         String hash = hashFile(file.toPath());
         if (repository.existsByHashAndStatusNot(hash, FileStatus.SUCCESS)) {
-            eventPublisher.publishEvent(new ImportEvent(this, "Файл *" + file.getName() + "* ранее был успешно обработан системой",
+            eventPublisher.publishEvent(new ImportEvent(this, "Файл `" + file.getName() + "` ранее был успешно обработан системой",
                     EventType.LOG_TG, -1L));
             log.debug("*** file with hash {} already exist", hash);
             return false;
@@ -146,7 +147,7 @@ public class FileInfoService {
 
         String hash = hashFile(file.toPath());
         if (repository.existsByHashAndStatusNot(hash, FileStatus.ERROR)) {
-            eventPublisher.publishEvent(new ImportEvent(this, "Файл *" + file.getName() + "* ранее был успешно обработан системой",
+            eventPublisher.publishEvent(new ImportEvent(this, "Файл `" + file.getName() + "` ранее был успешно обработан системой",
                     EventType.LOG_TG, -1L));
             log.debug("*** file with hash {} already exist", hash);
             return false;
@@ -170,19 +171,30 @@ public class FileInfoService {
         }
     }
 
+    //добавляем информацию о столбцах
     public void addUiColumnInfo(XlsxImportInfo xlsxImportInfo) {
         repository.findById(xlsxImportInfo.getFileId()).map(file -> {
             file.setProcessingStep(INITIALIZE);
-            file.setProjectId(xlsxImportInfo.getProjectCode().toString());
+            file.getBankList().addAll(xlsxImportInfo.getBanksProject().entrySet().stream()
+                    .map(bankEntry -> {
+                        FileInfoBankEntity bankEntity = new FileInfoBankEntity();
+                        bankEntity.setBank(bankEntry.getKey());
+                        bankEntity.setFileInfo(file);
+                        bankEntity.setProjectId(bankEntry.getValue());
+                        return bankEntity;
+                    }).collect(Collectors.toList()));
             file.setEnableWhatsAppLink(xlsxImportInfo.isEnableWhatsAppLink());
             file.setFieldLinks(xlsxImportInfo.getFieldLinks());
             file.setOrgTags(xlsxImportInfo.getOrgTags());
             repository.save(file);
-            eventPublisher.publishEvent(new ImportEvent(this, "Добавлена информация о колонках. " +
+            eventPublisher.publishEvent(new ImportEvent(this, "Добавлена информация о столбцах. " +
                     "Файл ожидает обработки", EventType.LOG_TG, file.getId()));
             return true;
         }).orElseThrow(() -> {
             log.debug("Файл с id {} не найден", xlsxImportInfo.getFileId());
+            eventPublisher.publishEvent(new ImportEvent(this,
+                    String.format("Файл с id %d не найден", xlsxImportInfo.getFileId()), EventType.LOG_TG,
+                    xlsxImportInfo.getFileId()));
             return new BadRequestException(String.format("Файл с id %d не найден", xlsxImportInfo.getFileId()));
         });
     }

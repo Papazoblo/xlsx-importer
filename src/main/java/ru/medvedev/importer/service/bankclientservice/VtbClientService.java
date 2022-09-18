@@ -1,4 +1,4 @@
-package ru.medvedev.importer.service;
+package ru.medvedev.importer.service.bankclientservice;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,6 @@ import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.request.LeadRequest;
 import ru.medvedev.importer.dto.response.CheckLeadResponse;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
-import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
 
@@ -21,12 +20,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static ru.medvedev.importer.enums.CheckLeadStatus.POSITIVE;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class VtbClientService {
+public class VtbClientService implements BankClientService {
 
     private static final String BEARER = "Bearer ";
 
@@ -57,12 +54,7 @@ public class VtbClientService {
         }
     }
 
-    public List<LeadInfoResponse> getPositiveFromCheckLead(List<String> innList, FileInfoEntity fileInfo) {
-        return getAllFromCheckLead(innList, fileInfo).stream().filter(item -> item.getResponseCode() == POSITIVE)
-                .collect(Collectors.toList());
-    }
-
-    public List<LeadInfoResponse> getAllFromCheckLead(List<String> innList, FileInfoEntity fileInfo) {
+    public List<LeadInfoResponse> getAllFromCheckLead(List<String> innList, Long fileId) {
 
         log.debug("*** Check duplicate in VTB");
 
@@ -81,7 +73,7 @@ public class VtbClientService {
             log.debug("*** Error check duplicate: {} {}", ex.getMessage(), ex);
             eventPublisher.publishEvent(new ImportEvent(this, "Ошибка проверки дубликатов ВТБ. " +
                     ex.getMessage(),
-                    EventType.LOG, fileInfo == null ? -1L : fileInfo.getId()));
+                    EventType.LOG, fileId));
             return Collections.emptyList();
         }
     }

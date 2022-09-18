@@ -10,6 +10,7 @@
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/fontawesome.min.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/solid.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.css}"/>
     <link rel="stylesheet" th:href="@{/css/main.css}"/>
 
 </head>
@@ -84,6 +85,17 @@
                     </th>
                 </tr>
                 <tr>
+                    <th><label for="bankName">Банк</label></th>
+                    <th>
+                        <select data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
+                                class="selectpicker w-100"
+                                name="bankName">
+                            <option th:each="item : ${banks}" th:value="${item}" th:text="${item.title}">
+                            </option>
+                        </select>
+                    </th>
+                </tr>
+                <tr>
                     <th></th>
                     <th style="text-align: right">
                         <button id="btn-add-project" class="btn-2">Добавить</button>
@@ -100,6 +112,7 @@
                 <tr>
                     <th>ID</th>
                     <th>Название</th>
+                    <th>Банк</th>
                     <th class="action-td"></th>
                 </tr>
                 </thead>
@@ -107,6 +120,7 @@
                 <tr th:each="item : ${data}">
                     <td th:text="${item.getId()}">id</td>
                     <td th:text="${item.getName()}">date</td>
+                    <td th:text="${item.getBank().title}">bank</td>
                     <td>
                         <button class="btn btn-delete" title="Удалить" th:id="${item.getId()}">
                             <i class="fa-solid fa-trash-can"></i>
@@ -146,9 +160,18 @@
 <script type="text/javascript" th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.js}"></script>
-<script type="text/javascript"
-        th:src="@{/webjars/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.ru.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('.selectpicker').multiselect({
+            nonSelectedText: 'Не выбрано',
+            nSelectedText: 'выбран(о)',
+            allSelectedText: 'Все выбрано',
+            resetText: 'Сбросить'
+        });
+    });
+</script>
 <script type="text/javascript" th:src="@{/js/webhook_success_status.js}"></script>
+
 </body>
 </html>

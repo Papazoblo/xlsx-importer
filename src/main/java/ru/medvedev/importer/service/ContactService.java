@@ -7,10 +7,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.ContactDto;
 import ru.medvedev.importer.dto.ContactStatistic;
-import ru.medvedev.importer.dto.WebhookStatusDto;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.ContactEntity;
+import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.WebhookStatusEntity;
+import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.ContactStatus;
 import ru.medvedev.importer.repository.ContactRepository;
 
@@ -21,7 +22,6 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
-import static org.apache.logging.log4j.util.Strings.isNotBlank;
 
 @Service
 @RequiredArgsConstructor
@@ -42,38 +42,35 @@ public class ContactService {
                 page.getPageable(), page.getTotalElements());
     }
 
-    public void changeWebhookStatus(String inn, String resultName) {
-        WebhookStatusDto webhookStatus = webhookStatusService.getByName(resultName);
-        repository.changeWebhookStatus(webhookStatus.getId(), inn);
+    public void changeWebhookStatus(String inn, WebhookSuccessStatusEntity webhookStatus) {
+        repository.changeWebhookStatus(webhookStatus.getId(), inn, webhookStatus.getBank().name());
     }
 
-    public List<ContactEntity> filteredContacts(List<ContactEntity> contacts, Long fileId) {
+    public List<ContactEntity> filteredContacts(List<ContactEntity> contacts, FileInfoBankEntity fileBank) {
         List<String> contactInn = contacts.stream()
-                .filter(entity -> isNotBlank(entity.getInn()))
                 .map(ContactEntity::getInn)
                 .collect(Collectors.toList());
-        Map<String, List<ContactEntity>> contactMap = repository.findAllByInnIn(contactInn).stream()
+        Map<String, List<ContactEntity>> contactMap = repository.findAllByInnInAndBank(contactInn, fileBank.getBank()).stream()
                 .collect(groupingBy(ContactEntity::getInn));
 
         //сохранение оригинальных контактов
         List<ContactEntity> originalContact = new ArrayList<>();
         List<ContactEntity> duplicatedContact = new ArrayList<>();
-        contacts.stream()
-                .filter(entity -> isNotBlank(entity.getInn()))
-                .forEach(contact -> {
-                    contact.setStatus(ContactStatus.ADDED);
-                    if (contactMap.get(contact.getInn()) == null) {
-                        originalContact.add(contact);
-                    } else {
-                        duplicatedContact.add(contact);
-                    }
-                });
+        contacts.forEach(contact -> {
+            ContactEntity newContact = contact.getClone();
+            newContact.setStatus(ContactStatus.ADDED);
+            if (contactMap.get(newContact.getInn()) == null) {
+                originalContact.add(newContact);
+            } else {
+                duplicatedContact.add(newContact);
+            }
+        });
 
         List<ContactEntity> savedOriginal = createNew(originalContact);
         List<ContactEntity> savedDuplicate = createNew(duplicatedContact);
 
-        contactFileInfoService.create(savedOriginal, fileId, true);
-        contactFileInfoService.create(savedDuplicate, fileId, false);
+        contactFileInfoService.create(savedOriginal, fileBank.getFileInfoId(), true);
+        contactFileInfoService.create(savedDuplicate, fileBank.getFileInfoId(), false);
         return originalContact;
     }
 

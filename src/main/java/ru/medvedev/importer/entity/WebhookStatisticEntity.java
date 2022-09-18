@@ -1,6 +1,7 @@
 package ru.medvedev.importer.entity;
 
 import lombok.Data;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.WebhookStatus;
 
 import javax.persistence.*;
@@ -19,6 +20,10 @@ public class WebhookStatisticEntity {
     @Column(name = "inn")
     private String inn;
 
+    @Column(name = "bank_name")
+    @Enumerated(EnumType.STRING)
+    private Bank bank;
+
     @Column(name = "phone")
     private String phone;
 
@@ -27,6 +32,9 @@ public class WebhookStatisticEntity {
 
     @Column(name = "name")
     private String name;
+
+    @Column(name = "email")
+    private String emal;
 
     @ManyToOne
     @JoinColumn(name = "webhook_status_id")

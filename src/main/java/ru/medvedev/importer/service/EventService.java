@@ -16,6 +16,7 @@ import ru.medvedev.importer.entity.EventEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.ContactStatus;
 import ru.medvedev.importer.enums.EventType;
+import ru.medvedev.importer.enums.FileSource;
 import ru.medvedev.importer.repository.EventRepository;
 import ru.medvedev.importer.service.telegram.notification.TelegramNotificatorPollingService;
 import ru.medvedev.importer.service.telegram.xlsxcollector.TelegramPollingService;
@@ -31,10 +32,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EventService {
 
-    public static final String NOTIFICATION_PATTERN = "*Невозможно загрузить контакт в ВТБ*\n*Причина*: `%s`\n\n*ИНН*: `%s`\n*Город*: `%s`\n*Имя*: `%s`";
-    private static final String MESSAGE_SIMPLE_PATTERN = "*Импорт с интерфейса* \n_%s_";
-    private static final String MESSAGE_PATTERN = "*%s* %s\n*Файл: %s*\n*Источник: %s*\n%s";
-    private static final String MESSAGE_STATISTIC_PATTERN = "*Статистика загрузки* %s\n*Файл: %s*\n*Источник: %s*\n%s: %d\n%s: %d\n%s: %d";
+    public static final String NOTIFICATION_PATTERN = "Невозможно загрузить контакт в `%s`\nПричина: `%s`\n\nИНН: `%s`\nГород: `%s`\nИмя: `%s`";
+    private static final String MESSAGE_SIMPLE_PATTERN = "%s";
+    private static final String MESSAGE_PATTERN = "*%s* %s\nФайл: `%s`\nИсточник: `%s`\n%s";
+    private static final String MESSAGE_STATISTIC_PATTERN = "Статистика загрузки `%s`\nФайл: `%s`\nИсточник: `%s`\n%s: `%d`\n%s: `%d`\n%s: `%d`";
 
     private final EventRepository repository;
     private final TelegramPollingService telegramPollingService;
@@ -96,6 +97,9 @@ public class EventService {
 
     private void printStatistic(Long chatId, FileInfoEntity fileInfo) {
         Map<ContactStatus, Long> mapStatistic = contactService.getContactStatisticByFileId(fileInfo.getId());
+        if (fileInfo.getSource() == FileSource.UI) {
+            return;
+        }
         telegramPollingService.sendMessage(String.format(MESSAGE_STATISTIC_PATTERN,
                 getCurDateTime(),
                 fileInfo.getName(),

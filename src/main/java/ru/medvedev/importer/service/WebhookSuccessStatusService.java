@@ -32,11 +32,12 @@ public class WebhookSuccessStatusService {
         return repository.findByName(name).orElse(null);
     }
 
-    public void create(String name) {
-        String trimName = name.trim();
+    public void create(WebhookSuccessStatusDto input) {
+        String trimName = input.getName().trim();
         if (!repository.existsByName(trimName)) {
             WebhookSuccessStatusEntity entity = new WebhookSuccessStatusEntity();
             entity.setName(trimName);
+            entity.setBank(input.getBank());
             repository.save(entity);
         }
     }

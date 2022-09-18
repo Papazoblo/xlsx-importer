@@ -8,6 +8,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.events.ProjectCodeResponseEvent;
+import ru.medvedev.importer.entity.FileInfoBankEntity;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.FileProcessingStep;
 import ru.medvedev.importer.enums.SystemVariable;
@@ -15,6 +17,7 @@ import ru.medvedev.importer.service.telegram.xlsxcollector.TelegramPollingServic
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,7 +27,7 @@ import static ru.medvedev.importer.enums.ChatState.PROJECT_CODE;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class InitializedNewFileService {
+public class InitializedNewTgFileService {
 
     private final FileInfoService fileInfoService;
     private final TelegramPollingService telegramService;
@@ -62,7 +65,11 @@ public class InitializedNewFileService {
             String[] splitValue = value.split(":");
             value = (splitValue.length == 2 ? splitValue[1] : splitValue[0]).trim();
             try {
-                file.setProjectId(String.valueOf(Long.parseLong(value)));
+                FileInfoBankEntity fileBank = new FileInfoBankEntity();
+                fileBank.setProjectId(Long.parseLong(value));
+                fileBank.setFileInfo(file);
+                fileBank.setBank(Bank.VTB);
+                file.setBankList(Collections.singletonList(fileBank));
                 file.setProcessingStep(FileProcessingStep.RESPONSE_COLUMN_NAME);
                 fileInfoService.save(file);
                 systemVariableService.save(SystemVariable.CHAT_STATE, NONE.name());

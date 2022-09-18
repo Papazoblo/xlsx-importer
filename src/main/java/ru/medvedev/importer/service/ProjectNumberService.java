@@ -38,7 +38,7 @@ public class ProjectNumberService {
         entity.setDate(LocalDate.parse(input.getDate(), DateTimeFormatter.ofPattern("dd.MM.yyyy")));
 
         if (repository.existsByDate(entity.getDate())) {
-            throw new BadRequestException("Такая дата уже есть в БД");
+            throw new BadRequestException("Проект для указанной даты уже установлен");
         }
         repository.save(entity);
     }

@@ -12,8 +12,17 @@ $(document).ready(function () {
 
         var result = new Map();
         var elements = $('select[name=ORG_TAGS], .SELECT');
-        var textProjectId = $('#textProjectId').val();
+        var projectIdElements = $('.projectId');
         var fileId = $('#fileId').val();
+        var bankProjectId = new Map();
+
+        for (var i = 0; i < projectIdElements.length; i++) {
+            var input = projectIdElements.get(i);
+            var bank = input.getAttribute('name');
+            if (input.value.length > 0) {
+                bankProjectId.set(bank, input.value);
+            }
+        }
 
         for (var i = 0; i < elements.length; i++) {
             var select = elements.get(i);
@@ -38,13 +47,18 @@ $(document).ready(function () {
         }
 
         if (result.get('USR_FIO') === undefined || result.get('ORG_INN') === undefined ||
-            result.get('USR_PHONE') === undefined || result.get('ORG_PHONE') === undefined || textProjectId.length <= 0) {
+            result.get('USR_PHONE') === undefined || result.get('ORG_PHONE') === undefined) {
             alert("Необходимо заполнить обязательные поля");
             return;
         }
 
+        if (bankProjectId.size === 0) {
+            alert("Необходимо указать хотя бы 1 проект");
+            return;
+        }
+
         var data = JSON.stringify({
-            "projectCode": textProjectId,
+            "banksProject": Object.fromEntries(bankProjectId),
             "fileId": fileId,
             "fieldLinks": Object.fromEntries(result),
             "orgTags": orgTagsInput,

@@ -86,6 +86,7 @@
                     <th>Организация</th>
                     <th>Регион</th>
                     <th>Дата добавления</th>
+                    <th>Банк</th>
                     <th>Статус</th>
                     <th>Вебхук</th>
                     <th>Оригинал</th>
@@ -100,6 +101,7 @@
                     <td th:text="${contact.getOrgName()}">orgName</td>
                     <td th:text="${contact.getRegion()}">region</td>
                     <td th:text="${contact.getCreateAt()}">createAt</td>
+                    <td th:text="${contact.getBank().title}">bank</td>
                     <td th:text="${contact.getStatus()}">status</td>
                     <td th:text="${contact.getWebhookStatus()}">webhookStatus</td>
                     <td th:text="${contact.getOriginal()}">original</td>

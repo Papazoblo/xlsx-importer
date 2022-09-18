@@ -1,13 +1,14 @@
 package ru.medvedev.importer.repository;
 
-import feign.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ru.medvedev.importer.dto.ContactStatistic;
 import ru.medvedev.importer.entity.ContactEntity;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.ContactStatus;
 
 import java.util.List;
@@ -15,7 +16,7 @@ import java.util.List;
 @Repository
 public interface ContactRepository extends JpaRepository<ContactEntity, Long> {
 
-    List<ContactEntity> findAllByInnIn(List<String> inn);
+    List<ContactEntity> findAllByInnInAndBank(List<String> inn, Bank bank);
 
     @Query(value = "select c.id " +
             "from contact c " +
@@ -43,8 +44,9 @@ public interface ContactRepository extends JpaRepository<ContactEntity, Long> {
     @Query(value = "update contact \n" +
             "set webhook_status_id = :webhookStatusId\n" +
             "where id = (select max(id) from contact c\n" +
-            "where c.webhook_status_id = -1 and c.inn = :inn)",
+            "where c.webhook_status_id = -1 and c.inn = :inn and c.bank_name = :bankName)",
             nativeQuery = true)
     void changeWebhookStatus(@Param("webhookStatusId") Long webhookStatusId,
-                             @Param("inn") String inn);
+                             @Param("inn") String inn,
+                             @Param("bankName") String bankName);
 }

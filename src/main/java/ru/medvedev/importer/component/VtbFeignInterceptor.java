@@ -3,7 +3,7 @@ package ru.medvedev.importer.component;
 import feign.RequestInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
-import ru.medvedev.importer.service.VtbAuthClientService;
+import ru.medvedev.importer.service.bankclientservice.VtbAuthClientService;
 
 import java.util.Optional;
 
