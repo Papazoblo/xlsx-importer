@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.FileProcessingStep;
 import ru.medvedev.importer.enums.FileSource;
@@ -26,9 +27,14 @@ public interface FileInfoRepository extends JpaRepository<FileInfoEntity, Long> 
     @Query(value = "select chat_id from file_info group by chat_id", nativeQuery = true)
     List<Long> getAllChatId();
 
-    @Query("select fi.projectId from FileInfoEntity fi where fi.source = :source " +
-            "and fi.status in :statuses and fi.projectId is not null order by fi.id DESC")
-    Optional<String> getLastUiProjectCode(FileSource source, List<FileStatus> statuses);
+    @Query("select fib " +
+            "from FileInfoEntity fi " +
+            "join FileInfoBankEntity fib on fib.fileInfoId = fi.id " +
+            "where fi.source = :source " +
+            "and fi.status in :statuses " +
+            "and fib.projectId is not null " +
+            "order by fi.id DESC")
+    List<FileInfoBankEntity> getLastUiProjectCode(FileSource source, List<FileStatus> statuses);
 
     @Modifying
     @Transactional

@@ -44,8 +44,8 @@ public class InitializedNewTgFileService {
             file.setProcessingStep(FileProcessingStep.WAIT_PROJECT_CODE_INITIALIZE);
             fileInfoService.save(file);
             List<String> buttons = new ArrayList<>();
-            fileInfoService.getLastTgFileProjectCode().ifPresent(s ->
-                    buttons.add("Последняя загрузка с интерфейса: " + s));
+            fileInfoService.getLastTgFileProjectCode().forEach(s ->
+                    buttons.add("Последняя загрузка с интерфейса " + s.getBank().getTitle() + ": " + s.getProjectId()));
             Optional.ofNullable(projectNumberService.getNumberByDate(LocalDate.now())).ifPresent(value ->
                     buttons.add("Проект для загрузки через бота: " + value));
             telegramService.sendRequestGetProjectCode(file.getName(), buttons);

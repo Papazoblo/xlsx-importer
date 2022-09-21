@@ -63,8 +63,15 @@ public class FileInfoService {
         return repository.findById(fileId).map(FileInfoEntity::getChatId).orElse(null);
     }
 
-    public Optional<String> getLastTgFileProjectCode() {
-        return repository.getLastUiProjectCode(TELEGRAM, Arrays.asList(FileStatus.SUCCESS, FileStatus.IN_PROCESS));
+    public List<FileInfoBankEntity> getLastTgFileProjectCode() {
+        List<FileInfoBankEntity> projects = repository.getLastUiProjectCode(TELEGRAM,
+                Arrays.asList(FileStatus.SUCCESS, FileStatus.IN_PROCESS));
+        if (!projects.isEmpty()) {
+            return projects.stream()
+                    .filter(fib -> fib.getFileInfoId().equals(projects.get(0).getFileInfoId()))
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
     }
 
     public Optional<FileInfoEntity> getNewUiFileToInitialize() {
