@@ -1,6 +1,7 @@
 package ru.medvedev.importer.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,7 +15,8 @@ import ru.medvedev.importer.enums.ContactStatus;
 import java.util.List;
 
 @Repository
-public interface ContactRepository extends JpaRepository<ContactEntity, Long> {
+public interface ContactRepository extends JpaRepository<ContactEntity, Long>,
+        JpaSpecificationExecutor<ContactEntity> {
 
     List<ContactEntity> findAllByInnInAndBank(List<String> inn, Bank bank);
 

@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.ContactDto;
+import ru.medvedev.importer.dto.ContactFilter;
 import ru.medvedev.importer.dto.ContactStatistic;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.ContactEntity;
@@ -14,6 +15,7 @@ import ru.medvedev.importer.entity.WebhookStatusEntity;
 import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.ContactStatus;
 import ru.medvedev.importer.repository.ContactRepository;
+import ru.medvedev.importer.specification.ContactSpecification;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,13 +35,17 @@ public class ContactService {
     private final ContactFileInfoService contactFileInfoService;
     private final WebhookStatusService webhookStatusService;
 
-    public Page<ContactDto> getPage(Pageable pageable) {
-        Page<ContactEntity> page = repository.findAll(pageable);
+    public Page<ContactDto> getPage(ContactFilter filter, Pageable pageable) {
+        Page<ContactEntity> page = repository.findAll(ContactSpecification.of(filter), pageable);
         Map<Long, Boolean> contactOriginalMap = contactFileInfoService.getOriginalsMap(page.getContent().stream()
                 .map(ContactEntity::getId).collect(Collectors.toSet()));
         return new PageImpl<>(page.getContent().stream()
                 .map(item -> ContactDto.of(item, contactOriginalMap.get(item.getId()))).collect(Collectors.toList()),
                 page.getPageable(), page.getTotalElements());
+    }
+
+    public List<ContactEntity> findAll(ContactFilter filter) {
+        return repository.findAll(ContactSpecification.of(filter));
     }
 
     public void changeWebhookStatus(String inn, WebhookSuccessStatusEntity webhookStatus) {

@@ -206,3 +206,16 @@ button.btn i.fa-trash-can {
     right: 50px;
     width: 160px;
 }
+
+.btn-export {
+    margin: 32px 0 0 8px;
+    background: #296f24;
+    color: white;
+}
+
+.btn-search {
+    background: #343a40;
+    margin-top: 32px;
+    margin-left: 4px;
+    color: white;
+}

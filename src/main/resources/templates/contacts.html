@@ -10,6 +10,7 @@
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/fontawesome.min.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/solid.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.css}"/>
     <link rel="stylesheet" th:href="@{/css/main.css}"/>
 
 </head>
@@ -74,6 +75,114 @@
 
 
 <main role="main" class="container">
+
+    <div th:class="row">
+        <div class="col-md-12">
+            <div th:class="row">
+                <div class="col-md-2">
+                    <label for="nameFilter">Имя</label>
+                    <input id="nameFilter" type="text" th:text="${filter.getName()}"/>
+                </div>
+                <div class="col-md-2">
+                    <label for="surnameFilter">Фамилия</label>
+                    <input id="surnameFilter" type="text" th:text="${filter.getSurname()}"/>
+                </div>
+                <div class="col-md-2">
+                    <label for="middleNameFilter">Отчество</label>
+                    <input id="middleNameFilter" type="text" th:text="${filter.getMiddleName()}"/>
+                </div>
+                <div class="col-md-3">
+                    <label for="phoneFilter">Телефон</label>
+                    <input id="phoneFilter" type="text" th:text="${filter.getPhone()}"/>
+                </div>
+                <div class="col-md-3">
+                    <label for="orgNameFilter">Организация</label>
+                    <input id="orgNameFilter" type="text" th:text="${filter.getOrgName()}"/>
+                </div>
+            </div>
+            <div th:class="row">
+                <div class="col-md-2">
+                    <label for="innFilter">ИНН</label>
+                    <input id="innFilter" type="text" class="onlyNumbers" th:text="${filter.getInn()}"/>
+                </div>
+                <div class="col-md-2">
+                    <label for="regionFilter">Регион</label>
+                    <input id="regionFilter" type="text" th:text="${filter.getRegion()}"/>
+                </div>
+                <div class="col-md-2">
+                    <label for="cityFilter">Город</label>
+                    <input id="cityFilter" type="text" th:text="${filter.getCity()}"/>
+                </div>
+                <div class="col-md-3">
+                    <label for="createDateFromFilter">Дата создания с</label>
+                    <div class="input-group date datepicker">
+                        <input id="createDateFromFilter" type="text" class="form-control"
+                               th:text="${filter.getDateFromString()}"/>
+                        <span class="input-group-append">
+                                <span class="input-group-text bg-white">
+                                    <i class="fa-solid fa-calendar"></i>
+                                </span>
+                            </span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="createDateToFilter">Дата создания по</label>
+                    <div class="input-group date datepicker">
+                        <input id="createDateToFilter" type="text" class="form-control"
+                               th:text="${filter.getDateToString()}"/>
+                        <span class="input-group-append">
+                                <span class="input-group-text bg-white">
+                                    <i class="fa-solid fa-calendar"></i>
+                                </span>
+                            </span>
+                    </div>
+                </div>
+            </div>
+            <div th:class="row">
+                <div class="col-md-2">
+                    <label for="ogrnFilter">ОГРН</label>
+                    <input id="ogrnFilter" type="text" class="onlyNumbers"/>
+                </div>
+                <div class="col-md-2">
+                    <label for="statusFilter">Статус</label>
+                    <select multiple data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
+                            class="selectpicker w-100 "
+                            id="statusFilter">
+                        <option th:each="status : ${statuses}" th:value="${status.name()}"
+                                th:text="${status.description}" th:selected="${filter.getStatus().contains(status)}">
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="bankFilter">Банк</label>
+                    <select multiple data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
+                            class="selectpicker w-100 "
+                            id="bankFilter">
+                        <option th:each="bank : ${banks}" th:value="${bank.name()}" th:text="${bank.title}"
+                                th:selected="${filter.getBank().contains(bank)}">
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="originalFilter">Оригинал</label>
+                    <select multiple data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
+                            class="selectpicker w-100 "
+                            id="originalFilter">
+                        <option value="true" th:selected="${filter.isInOriginal(true)}">Да</option>
+                        <option value="false" th:selected="${filter.isInOriginal(false)}">Нет</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-search" title="Найти">
+                        <i class="fa-solid fa-search"></i>
+                    </button>
+                    <button class="btn btn-export" title="Экспортировать">
+                        <i class="fa-solid fa-file-export"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div th:class="row">
         <div class="col-md-12">
             <table id="contacts" class="table table-bordered table-responsive-sm">
@@ -101,7 +210,7 @@
                     <td th:text="${contact.getOrgName()}">orgName</td>
                     <td th:text="${contact.getRegion()}">region</td>
                     <td th:text="${contact.getCreateAt()}">createAt</td>
-                    <td th:text="${contact.getBank().title}">bank</td>
+                    <td th:text="${contact.getBank() == null ? '' : contact.getBank().title}">bank</td>
                     <td th:text="${contact.getStatus()}">status</td>
                     <td th:text="${contact.getWebhookStatus()}">webhookStatus</td>
                     <td th:text="${contact.getOriginal()}">original</td>
@@ -114,13 +223,14 @@
     <nav aria-label="Page navigation" class="paging">
         <ul class="pagination" th:if="${contacts.totalPages > 1}">
             <li class="page-item" th:classappend="${!paging.isPrevEnabled()? 'disabled' : ''}">
-                <a class="page-link" th:href="@{'/contact?page=' + ${paging.pageNumber - 1}}"
+                <a class="page-link"
+                   th:href="@{'/contact' + ${filter.getUrlString()} + '&page=' + ${paging.pageNumber - 1}}"
                    tabindex="-1">Previous</a>
             </li>
             <th:block th:each="item : ${paging.getItems()}">
                 <li class="page-item" th:classappend="${item.index == paging.pageNumber? 'active' : ''}"
                     th:if="${item.pageItemType.name() == 'PAGE'}">
-                    <a class="page-link" th:href="@{'/contacts?page=' + ${item.index}}"
+                    <a class="page-link" th:href="@{'/contacts' + ${filter.getUrlString()} + '&page=' + ${item.index}}"
                        th:text="${item.index}"></a>
                 </li>
                 <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}">
@@ -128,7 +238,8 @@
                 </li>
             </th:block>
             <li class="page-item" th:classappend="${!paging.isNextEnabled()? 'disabled' : ''}">
-                <a class="page-link" th:href="@{'/contacts?page=' + ${paging.pageNumber + 1}}">Next</a>
+                <a class="page-link"
+                   th:href="@{'/contacts' + ${filter.getUrlString()} + '&page=' + ${paging.pageNumber + 1}}">Next</a>
             </li>
         </ul>
     </nav>
@@ -139,5 +250,29 @@
 <script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.js}"></script>
+<script type="text/javascript"
+        th:src="@{/webjars/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.ru.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/contacts.js}"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('.datepicker').datepicker({
+            format: 'dd.mm.yyyy',
+            language: 'ru',
+            startDate: '-0d'
+        });
+    });
+</script>
+<script>
+    $(document).ready(function () {
+        $('.selectpicker').multiselect({
+            nonSelectedText: 'Не выбрано',
+            nSelectedText: 'выбран(о)',
+            numberDisplayed: 1,
+            allSelectedText: 'Все выбрано',
+            resetText: 'Сбросить'
+        });
+    });
+</script>
 </body>
 </html>

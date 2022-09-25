@@ -7,6 +7,8 @@ import ru.medvedev.importer.enums.ContactStatus;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "contact")
@@ -63,6 +65,10 @@ public class ContactEntity {
 
     @Column(name = "create_at")
     private LocalDateTime createAt;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contact_id", insertable = false, updatable = false)
+    private List<ContactFileInfoEntity> contactFileInfoEntityList = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

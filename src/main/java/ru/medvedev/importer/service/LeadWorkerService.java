@@ -131,14 +131,14 @@ public class LeadWorkerService {
         Map<Bank, Integer> statisticMap = new HashMap<>();
         Map<String, List<XlsxRecordDto>> records = getValidInnListFromFile(fileInfo);
         fileInfo.getBankList().forEach(fileBank -> {
-            eventPublisher.publishEvent(new ImportEvent(this, "Началась загрузка в " + fileBank.getBank().getTitle(),
+            eventPublisher.publishEvent(new ImportEvent(this, "Началась загрузка в `" + fileBank.getBank().getTitle() + "`",
                     EventType.LOG_TG, fileInfo.getId()));
             List<ContactEntity> contacts = saveContacts(records, fileBank);
             List<String> positiveInn = checkDuplicatesInBank(new ArrayList<>(records.keySet()), fileBank);
             statisticMap.put(fileBank.getBank(), positiveInn.size());
             markAsRejectedVtbContact(contacts, positiveInn);
             splitToContactAndOrganization(records, positiveInn, fileBank);
-            eventPublisher.publishEvent(new ImportEvent(this, "Завершилась загрузка в " + fileBank.getBank().getTitle(),
+            eventPublisher.publishEvent(new ImportEvent(this, "Завершилась загрузка в `" + fileBank.getBank().getTitle() + "`",
                     EventType.LOG_TG, fileInfo.getId()));
         });
         eventPublisher.publishEvent(new ImportEvent(this, "Импорт завершён\n" +

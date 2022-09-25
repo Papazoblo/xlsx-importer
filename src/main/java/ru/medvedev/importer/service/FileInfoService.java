@@ -171,7 +171,7 @@ public class FileInfoService {
             entity.setTgFileId("");
             entity.setProcessingStep(IN_QUEUE);
             repository.save(entity);
-            eventPublisher.publishEvent(new ImportEvent(this, "Добавлен в систему через интерфейс и ждет указания столбцов для дальнейшей обратки",
+            eventPublisher.publishEvent(new ImportEvent(this, "Добавлен в систему и ждет указания столбцов для дальнейшей обратки",
                     EventType.LOG_TG, entity.getId()));
             log.debug("*** create file with hash {}", hash);
             return true;
