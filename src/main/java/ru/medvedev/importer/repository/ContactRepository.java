@@ -13,12 +13,15 @@ import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.ContactStatus;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ContactRepository extends JpaRepository<ContactEntity, Long>,
         JpaSpecificationExecutor<ContactEntity> {
 
     List<ContactEntity> findAllByInnInAndBank(List<String> inn, Bank bank);
+
+    Optional<ContactEntity> findFirstByInnOrderByIdDesc(String inn);
 
     @Query(value = "select c.id " +
             "from contact c " +

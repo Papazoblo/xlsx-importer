@@ -18,10 +18,7 @@ import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.events.InvalidFileEvent;
 import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
-import ru.medvedev.importer.enums.EventType;
-import ru.medvedev.importer.enums.FileProcessingStep;
-import ru.medvedev.importer.enums.FileSource;
-import ru.medvedev.importer.enums.FileStatus;
+import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.exception.BadRequestException;
 import ru.medvedev.importer.repository.FileInfoRepository;
 
@@ -35,8 +32,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
-import static ru.medvedev.importer.enums.FileProcessingStep.INITIALIZE;
-import static ru.medvedev.importer.enums.FileProcessingStep.IN_QUEUE;
+import static ru.medvedev.importer.enums.FileProcessingStep.*;
 import static ru.medvedev.importer.enums.FileSource.TELEGRAM;
 import static ru.medvedev.importer.enums.FileSource.UI;
 
@@ -63,12 +59,15 @@ public class FileInfoService {
         return repository.findById(fileId).map(FileInfoEntity::getChatId).orElse(null);
     }
 
-    public List<FileInfoBankEntity> getLastTgFileProjectCode() {
-        List<FileInfoBankEntity> projects = repository.getLastUiProjectCode(TELEGRAM,
+    public List<FileInfoBankEntity> getLastTgFileProjectCode(Bank bank) {
+        if (bank == null) {
+            return Collections.emptyList();
+        }
+        List<FileInfoBankEntity> projects = repository.getLastUiProjectCode(bank, TELEGRAM,
                 Arrays.asList(FileStatus.SUCCESS, FileStatus.IN_PROCESS));
         if (!projects.isEmpty()) {
             return projects.stream()
-                    .filter(fib -> fib.getFileInfoId().equals(projects.get(0).getFileInfoId()))
+                    .filter(fib -> !fib.getFileInfoId().equals(projects.get(0).getFileInfoId()))
                     .collect(Collectors.toList());
         }
         return Collections.emptyList();
@@ -78,8 +77,12 @@ public class FileInfoService {
         return repository.findFirstByProcessingStepAndSourceAndStatus(IN_QUEUE, UI, FileStatus.NEW);
     }
 
-    public Optional<FileInfoEntity> getTgFileToSetProjectCode() {
+    public Optional<FileInfoEntity> getTgFileToSelectBank() {
         return repository.findFirstByProcessingStepAndSourceAndStatus(INITIALIZE, TELEGRAM, FileStatus.IN_PROCESS);
+    }
+
+    public Optional<FileInfoEntity> getTgFileToSetProjectCode() {
+        return repository.findFirstByProcessingStepAndSourceAndStatus(BANK_INITIALIZED, TELEGRAM, FileStatus.IN_PROCESS);
     }
 
     public Optional<FileInfoEntity> getNewFileToProcessing() {
@@ -107,7 +110,12 @@ public class FileInfoService {
 
     public Optional<FileInfoEntity> getFileWaitProjectCode() {
         return repository.findByStatusAndSourceAndProcessingStepIn(FileStatus.IN_PROCESS, TELEGRAM,
-                Collections.singletonList(FileProcessingStep.WAIT_PROJECT_CODE_INITIALIZE));
+                Collections.singletonList(WAIT_PROJECT_CODE_INITIALIZE));
+    }
+
+    public Optional<FileInfoEntity> getFileWaitBankInitialize() {
+        return repository.findByStatusAndSourceAndProcessingStepIn(FileStatus.IN_PROCESS, TELEGRAM,
+                Collections.singletonList(WAIT_BANK_INITIALIZE));
     }
 
     public Optional<FileInfoEntity> getFileToProcessingBody() {
@@ -124,7 +132,7 @@ public class FileInfoService {
     public boolean create(Document document, Long chatId, File file, FileSource source) {
 
         String hash = hashFile(file.toPath());
-        if (repository.existsByHashAndStatusNot(hash, FileStatus.SUCCESS)) {
+        if (repository.existsByHashAndStatusNot(hash, FileStatus.ERROR)) {
             eventPublisher.publishEvent(new ImportEvent(this, "Файл `" + file.getName() + "` ранее был успешно обработан системой",
                     EventType.LOG_TG, -1L));
             log.debug("*** file with hash {} already exist", hash);

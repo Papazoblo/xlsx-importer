@@ -20,6 +20,7 @@ import ru.medvedev.importer.specification.ContactSpecification;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -48,6 +49,10 @@ public class ContactService {
         return repository.findAll(ContactSpecification.of(filter));
     }
 
+    public Optional<ContactEntity> findLastByInn(String inn) {
+        return repository.findFirstByInnOrderByIdDesc(inn);
+    }
+
     public void changeWebhookStatus(String inn, WebhookSuccessStatusEntity webhookStatus) {
         repository.changeWebhookStatus(webhookStatus.getId(), inn, webhookStatus.getBank().name());
     }
@@ -65,6 +70,7 @@ public class ContactService {
         contacts.forEach(contact -> {
             ContactEntity newContact = contact.getClone();
             newContact.setStatus(ContactStatus.ADDED);
+            newContact.setBank(fileBank.getBank());
             if (contactMap.get(newContact.getInn()) == null) {
                 originalContact.add(newContact);
             } else {

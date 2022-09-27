@@ -4,6 +4,7 @@ public enum WebhookStatus {
 
     FIXED,
     TRY_TO_CREATE_LEAD,
+    TRY_TO_CREATE_LEAD_CHECK,
     TRY_TO_CREATE_LEAD_SUCCESS,
     SUCCESS,
     REJECTED,

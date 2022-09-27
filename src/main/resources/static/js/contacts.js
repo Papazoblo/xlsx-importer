@@ -71,8 +71,9 @@ $(document).ready(function () {
 
     function formatDate(dateString) {
         if (dateString !== undefined && dateString.length > 0) {
-            var splitDate = dateString.split(".");
-            return splitDate[2] + "-" + splitDate[1] + "-" + splitDate[0];
+            var splitAll = dateString.split(" ");
+            var splitDate = splitAll[0].split(".");
+            return splitDate[2] + "-" + splitDate[1] + "-" + splitDate[0] + "T" + splitAll[1];
         }
         return "";
     }

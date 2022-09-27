@@ -23,6 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import static ru.medvedev.importer.enums.XlsxRequireField.*;
 
 @Service
@@ -104,8 +105,10 @@ public class HeaderProcessingService {
                             (fioIsExists && Stream.of(FIO).noneMatch(item -> item == field)))
                     .map(XlsxRequireField::getDescription)
                     .collect(Collectors.joining(", "));
-            eventPublisher.publishEvent(new ImportEvent(this, String.format("Столбец %s не найден в файле",
-                    fields), EventType.LOG_TG, fileId));
+            if (isNotBlank(fields.trim())) {
+                eventPublisher.publishEvent(new ImportEvent(this, String.format("Столбец %s не найден в файле",
+                        fields), EventType.LOG_TG, fileId));
+            }
         }
 
         //positionField.put(XlsxRequireField.TRASH, parseTrashColumns(row, positionField));

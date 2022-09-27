@@ -8,8 +8,6 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -59,10 +57,10 @@ public class ContactSpecification implements Specification<ContactEntity> {
                 predicates.add(builder.like(builder.lower(root.get("city")), "%" + value.toLowerCase() + "%")));
 
         Optional.ofNullable(filter.getCreateDateFrom()).ifPresent(value ->
-                predicates.add(builder.greaterThanOrEqualTo(root.get("createAt"), LocalDateTime.of(value, LocalTime.MIN))));
+                predicates.add(builder.greaterThanOrEqualTo(root.get("createAt"), value)));
 
         Optional.ofNullable(filter.getCreateDateTo()).ifPresent(value ->
-                predicates.add(builder.lessThanOrEqualTo(root.get("createAt"), LocalDateTime.of(value, LocalTime.MAX))));
+                predicates.add(builder.lessThanOrEqualTo(root.get("createAt"), value)));
 
         if (!filter.getStatus().isEmpty()) {
             predicates.add(builder.in(root.get("status")).value(filter.getStatus()));

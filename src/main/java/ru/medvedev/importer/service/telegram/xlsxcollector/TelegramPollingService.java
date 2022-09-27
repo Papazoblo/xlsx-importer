@@ -20,6 +20,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.medvedev.importer.component.TelegramXlsxCollectorProperty;
+import ru.medvedev.importer.dto.events.BankSelectResponseEvent;
 import ru.medvedev.importer.dto.events.CheckBotColumnResponseEvent;
 import ru.medvedev.importer.dto.events.ProjectCodeResponseEvent;
 import ru.medvedev.importer.entity.FileInfoEntity;
@@ -35,6 +36,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
+import static ru.medvedev.importer.enums.ChatState.BANK_SELECT;
 import static ru.medvedev.importer.enums.ChatState.PROJECT_CODE;
 import static ru.medvedev.importer.utils.StringUtils.transformTgMessage;
 
@@ -89,6 +91,8 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                             eventPublisher.publishEvent(new CheckBotColumnResponseEvent(this, messageText));
                         } else if (chatState == PROJECT_CODE) {
                             eventPublisher.publishEvent(new ProjectCodeResponseEvent(this, messageText));
+                        } else if (chatState == BANK_SELECT) {
+                            eventPublisher.publishEvent(new BankSelectResponseEvent(this, messageText));
                         }
                     });
                 }
@@ -158,14 +162,27 @@ public class TelegramPollingService extends TelegramLongPollingBot {
         log.info(transformTgMessage(message));
     }
 
-    public void sendRequestGetProjectCode(String fileName, List<String> buttons) {
+    public void sendRequestToSelectBank(String fileName, List<String> buttons) {
         SendMessage method = SendMessage.builder()
                 .chatId(String.valueOf(scanningChatId))
                 .parseMode(ParseMode.MARKDOWN)
-                .text(createGetTgGetProjectCodeMessage(fileName))
+                .text(selectBankRequestMessage(fileName))
                 .replyMarkup(ReplyKeyboardMarkup.builder()
                         .resizeKeyboard(true)
-                        .keyboard(createRequestGetColumnNameMessageKeyboard(buttons))
+                        .keyboard(createRequestGetColumnNameMessageKeyboard(buttons, 3))
+                        .build())
+                .build();
+        executeCommand(method);
+    }
+
+    public void sendRequestGetProjectCode(String bankName, String fileName, List<String> buttons) {
+        SendMessage method = SendMessage.builder()
+                .chatId(String.valueOf(scanningChatId))
+                .parseMode(ParseMode.MARKDOWN)
+                .text(createGetTgGetProjectCodeMessage(bankName, fileName))
+                .replyMarkup(ReplyKeyboardMarkup.builder()
+                        .resizeKeyboard(true)
+                        .keyboard(createRequestGetColumnNameMessageKeyboard(buttons, 1))
                         .build())
                 .build();
         executeCommand(method);
@@ -199,47 +216,47 @@ public class TelegramPollingService extends TelegramLongPollingBot {
 
     private static String createRequestGetColumnNameMessage(String fileName, List<String> requiredEmptyColumn,
                                                             List<String> columnLines) {
-        return String.format("*Файл: %s*\n*Все еще не указаны обязательные поля*: _%s_\n\n" +
-                        "*Какой это столбец?*\n_%s_", fileName,
+        return String.format("Файл: `%s`\nВсе еще не указаны обязательные поля: `%s`\n\n" +
+                        "Какой это столбец?\n`%s`", fileName,
                 String.join(", ", requiredEmptyColumn),
                 String.join("\n", columnLines));
     }
 
-    private static String createGetTgGetProjectCodeMessage(String fileName) {
-        return String.format("*Файл: %s*\nВыберите проект для загрузки контактов или укажите другой", fileName);
+    private static String createGetTgGetProjectCodeMessage(String bankName, String fileName) {
+        return String.format("Файл: `%s`\nВыберите проект для загрузки в `%s` или укажите другой", fileName, bankName);
+    }
+
+    private static String selectBankRequestMessage(String fileName) {
+        return String.format("Файл: `%s`\nВыберите банк для загрузки контактов", fileName);
     }
 
     private static String createRequestGetRequireColumnNameMessage(String fileName, String field) {
-        return String.format("*Файл: %s*\n*" +
-                "Не указано обязательное поле*: _%s_", fileName, field);
+        return String.format("Файл: `%s`\n" +
+                "Не указано обязательное поле: `%s`", fileName, field);
     }
 
-    private static List<KeyboardRow> createRequestGetColumnNameMessageKeyboard(List<String> buttons) {
+    private static List<KeyboardRow> createRequestGetColumnNameMessageKeyboard(List<String> buttons, int columnCount) {
         buttons.add("Отменить загрузку");
-        return buttons.stream()
-                .map(KeyboardButton::new)
-                .map(button -> {
-                    KeyboardRow row = new KeyboardRow();
-                    row.add(button);
-                    return row;
-                })
-                .collect(Collectors.toList());
+        return buildKeyboard(buttons, columnCount);
     }
 
     private static List<KeyboardRow> createRequestGetColumnNameMessageKeyboard() {
-        int buttonCountInRow = 3;
-        List<KeyboardButton> buttons = Arrays.stream(XlsxRequireField.values())
+        List<String> buttons = Arrays.stream(XlsxRequireField.values())
                 .filter(xlsxRequireField -> xlsxRequireField != XlsxRequireField.TRASH)
-                .map(xlsxRequireField -> new KeyboardButton(xlsxRequireField.getDescription()))
-                .sorted(Comparator.comparing(KeyboardButton::getText))
+                .map(XlsxRequireField::getDescription)
+                .sorted(Comparator.naturalOrder())
                 .collect(Collectors.toList());
-        buttons.add(new KeyboardButton("Пропустить"));
-        buttons.add(new KeyboardButton("Отменить загрузку"));
+        buttons.add("Пропустить");
+        buttons.add("Отменить загрузку");
+        return buildKeyboard(buttons, 3);
+    }
+
+    private static List<KeyboardRow> buildKeyboard(List<String> buttonNames, int columnCount) {
         List<KeyboardRow> rows = new ArrayList<>();
-        for (int i = 0; i < buttons.size(); i = i + buttonCountInRow) {
+        for (int i = 0; i < buttonNames.size(); i = i + columnCount) {
             KeyboardRow row = new KeyboardRow();
-            for (int j = i; j < Math.min(i + buttonCountInRow, buttons.size()); j++) {
-                row.add(buttons.get(j));
+            for (int j = i; j < Math.min(i + columnCount, buttonNames.size()); j++) {
+                row.add(buttonNames.get(j));
             }
             rows.add(row);
         }
@@ -247,24 +264,14 @@ public class TelegramPollingService extends TelegramLongPollingBot {
     }
 
     private static List<KeyboardRow> createRequestGetRequireColumnNameMessageMessageKeyboard(FileInfoEntity file) {
-        int buttonCountInRow = 3;
-
-        List<KeyboardButton> buttons = file.getColumnInfo().get().getColumnInfoMap().entrySet().stream()
-                .map(entry -> new KeyboardButton(entry.getKey() + ". " + entry.getValue().stream().limit(2)
+        List<String> buttons = file.getColumnInfo().get().getColumnInfoMap().entrySet().stream()
+                .map(entry -> String.format("%s. %s", entry.getKey(), entry.getValue().stream().limit(2)
                         .collect(Collectors.joining("\n"))))
                 .collect(Collectors.toList());
 
-        buttons.add(new KeyboardButton("Пропустить"));
-        buttons.add(new KeyboardButton("Отменить загрузку"));
-        List<KeyboardRow> rows = new ArrayList<>();
-        for (int i = 0; i < buttons.size(); i = i + buttonCountInRow) {
-            KeyboardRow row = new KeyboardRow();
-            for (int j = i; j < Math.min(i + buttonCountInRow, buttons.size()); j++) {
-                row.add(buttons.get(j));
-            }
-            rows.add(row);
-        }
-        return rows;
+        buttons.add("Пропустить");
+        buttons.add("Отменить загрузку");
+        return buildKeyboard(buttons, 3);
     }
 
     private void setCommandList() {

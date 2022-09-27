@@ -20,10 +20,13 @@ import ru.medvedev.importer.exception.FileProcessingException;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static ru.medvedev.importer.enums.CheckLeadStatus.NEGATIVE;
 import static ru.medvedev.importer.enums.CheckLeadStatus.POSITIVE;
+import static ru.medvedev.importer.enums.VtbOpeningRequestStatus.created;
+import static ru.medvedev.importer.enums.VtbOpeningRequestStatus.exported;
 
 @Service
 @RequiredArgsConstructor
@@ -46,7 +49,7 @@ public class VtbOpeningClientService implements BankClientService {
         } else {
             lead.setEmail(webhookLead.getEmails().get(0));
         }
-        lead.setFullName(webhookLead.getName());
+        lead.setFull_name(webhookLead.getName());
 
         try {
             ResponseEntity<VtbOpeningResponse> response = client.creteAddLeadRequest(lead);
@@ -103,7 +106,7 @@ public class VtbOpeningClientService implements BankClientService {
 
         for (; ; ) {
             try {
-                Thread.sleep(5000L);
+                Thread.sleep(10000L);
             } catch (InterruptedException e) {
                 log.debug("*** error thread sleep VtbOpeningClientService::getCheckLeadResult");
             }
@@ -125,7 +128,7 @@ public class VtbOpeningClientService implements BankClientService {
 
         for (; ; ) {
             try {
-                Thread.sleep(5000L);
+                Thread.sleep(10000L);
             } catch (InterruptedException e) {
                 log.debug("*** error thread sleep VtbOpeningClientService::getCreateLeadResult");
             }
@@ -134,10 +137,10 @@ public class VtbOpeningClientService implements BankClientService {
                 VtbOpeningCheckResultResponse result = response.getBody();
                 if (result.getStatus().equals("new") || VtbOpeningRequestStatus.valueOf(result.getStatus()) == VtbOpeningRequestStatus.inqueue) {
                     continue;
-                } else if (VtbOpeningRequestStatus.valueOf(result.getStatus()) == VtbOpeningRequestStatus.created) {
+                } else if (Stream.of(exported, created).anyMatch(status -> status == VtbOpeningRequestStatus.valueOf(result.getStatus()))) {
                     return true;
                 } else {
-                    throw new ErrorCreateVtbLeadException(result.getLabel(), -1L);
+                    throw new ErrorCreateVtbLeadException(result.getLabel() + ". Статус заявки: `" + result.getStatus() + "`", -1L);
                 }
             } else {
                 log.debug("*** error thread sleep VtbOpeningClientService::getCreateLeadResult [{}]", response.getStatusCode());

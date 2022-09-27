@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.ProjectNumberDto;
 import ru.medvedev.importer.entity.ProjectNumberEntity;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.exception.BadRequestException;
 import ru.medvedev.importer.repository.ProjectNumberRepository;
 
@@ -27,8 +28,8 @@ public class ProjectNumberService {
                 page.getPageable(), page.getTotalElements());
     }
 
-    public Long getNumberByDate(LocalDate date) {
-        return repository.findByDate(date).map(item -> Long.valueOf(item.getNumber()))
+    public Long getNumberByDate(Bank bank, LocalDate date) {
+        return repository.findByBankAndDate(bank, date).map(item -> Long.valueOf(item.getNumber()))
                 .orElse(null);
     }
 
@@ -36,9 +37,10 @@ public class ProjectNumberService {
         ProjectNumberEntity entity = new ProjectNumberEntity();
         entity.setNumber(input.getNumber());
         entity.setDate(LocalDate.parse(input.getDate(), DateTimeFormatter.ofPattern("dd.MM.yyyy")));
+        entity.setBank(input.getBank());
 
-        if (repository.existsByDate(entity.getDate())) {
-            throw new BadRequestException("Проект для указанной даты уже установлен");
+        if (repository.existsByDateAndBank(entity.getDate(), entity.getBank())) {
+            throw new BadRequestException("Проект для указанной даты и банка уже установлен");
         }
         repository.save(entity);
     }

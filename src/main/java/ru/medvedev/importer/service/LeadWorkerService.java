@@ -53,13 +53,20 @@ public class LeadWorkerService {
         webhookStatisticService.getByStatus(WebhookStatus.FIXED).forEach(item -> {
             BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
             //мы спрашиваем у ВТБ можем ли мы добавить лид
-            List<LeadInfoResponse> response = clientService.getPositiveFromCheckLead(Collections.singletonList(item.getInn()), null);
+            List<LeadInfoResponse> response = clientService.getAllFromCheckLead(Collections.singletonList(item.getInn()), null);
             //если ответ положительный, добавляем лид в ВТБ
-            if (!response.isEmpty()) {
+            if (response.stream().anyMatch(lead -> lead.getResponseCode() == CheckLeadStatus.POSITIVE)) {
                 log.debug("*** have a positive lead inn {} ", item.getInn());
                 webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.FIXED, WebhookStatus.TRY_TO_CREATE_LEAD);
             } else {
                 webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.FIXED, WebhookStatus.REJECTED);
+                eventPublisher.publishEvent(new NotificationEvent(this,
+                        String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
+                                String.format("Заявка отклонена (%s)", response.isEmpty() ? "Дубль" : response.get(0).getResponseCode()),
+                                item.getInn(),
+                                item.getCity(),
+                                item.getName()),
+                        EventType.LOG_TG));
             }
         });
     }
@@ -73,23 +80,33 @@ public class LeadWorkerService {
             leadDto.setCity(item.getCity());
             leadDto.setInn(item.getInn());
             leadDto.setPhones(item.getPhone());
-            leadDto.setEmails(isNotBlank(item.getEmal()) ? Collections.singletonList(item.getEmal()) : Collections.emptyList());
-            leadDto.setName(item.getName());
+            leadDto.setEmails(isNotBlank(item.getEmail()) ? Collections.singletonList(item.getEmail()) : Collections.emptyList());
+            Optional<ContactEntity> contactEntity = contactService.findLastByInn(item.getInn());
+            if (contactEntity.isPresent()) {
+                leadDto.setName(getFioStringFromContact(contactEntity.get()));
+            } else {
+                leadDto.setName(isBlank(item.getFullName()) ? item.getName() : item.getFullName());
+            }
             try {
+                if (item.getBank() == Bank.VTB_OPENING) {
+                    leadDto.setComment(item.getComment());
+                    webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.TRY_TO_CREATE_LEAD_CHECK);
+                }
                 if (clientService.createLead(leadDto)) {
-                    webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD, WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
+                    webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
+                    return;
                 } else {
                     eventPublisher.publishEvent(new NotificationEvent(this,
                             String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Непредвиденная ошибка", leadDto.getInn(), leadDto.getCity(), leadDto.getName()),
                             EventType.LOG_TG));
-                    webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD, WebhookStatus.ERROR);
                 }
             } catch (ErrorCreateVtbLeadException ex) {
                 eventPublisher.publishEvent(new NotificationEvent(this,
-                        String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), ex.getMessage(), leadDto.getInn(), leadDto.getCity(), leadDto.getName()),
+                        String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
+                                "Невозможно добавить. " + ex.getMessage(), leadDto.getInn(), leadDto.getCity(), leadDto.getName()),
                         EventType.LOG_TG));
-                webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD, WebhookStatus.ERROR);
             }
+            webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.ERROR);
         });
     }
 
@@ -104,6 +121,12 @@ public class LeadWorkerService {
                     lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {
                 log.debug("*** lead loaded in VTB {} ", item.getInn());
                 webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.SUCCESS);
+                eventPublisher.publishEvent(new NotificationEvent(this,
+                        String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
+                                item.getInn(),
+                                item.getCity(),
+                                item.getName()),
+                        EventType.LOG_TG));
             } else {
                 webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.ERROR);
             }
@@ -206,7 +229,7 @@ public class LeadWorkerService {
 
     private void splitToContactAndOrganization(Map<String, List<XlsxRecordDto>> recordsMap,
                                                List<String> inn, FileInfoBankEntity fileBank) {
-        List<CreateOrganizationDto> orgList = createOrganizationFromInn(recordsMap, inn);
+        List<CreateOrganizationDto> orgList = createOrganizationFromInn(fileBank, recordsMap, inn);
         sendOrganizationToSkorozvon(fileBank.getProjectId(), fileBank.getFileInfo().getOrgTags(), orgList);
     }
 
@@ -224,14 +247,15 @@ public class LeadWorkerService {
         }
     }
 
-    private List<CreateOrganizationDto> createOrganizationFromInn(Map<String, List<XlsxRecordDto>> records,
+    private List<CreateOrganizationDto> createOrganizationFromInn(FileInfoBankEntity bankEntity,
+                                                                  Map<String, List<XlsxRecordDto>> records,
                                                                   List<String> innList) {
 
         Map<String, CreateOrganizationDto> organizationMap = new HashMap<>();
 
         innList.forEach(item -> records.get(item).forEach(record -> {
             organizationMap.putIfAbsent(record.getOrgInn(),
-                    xlsxRecordToOrganization(record));
+                    xlsxRecordToOrganization(bankEntity, record));
             List<CreateLeadDto> leads = organizationMap.get(record.getOrgInn()).getLeads();
             if (leads.isEmpty()) {
                 leads.add(xlsxRecordToLead(record));
@@ -284,9 +308,9 @@ public class LeadWorkerService {
         return lead;
     }
 
-    private static CreateOrganizationDto xlsxRecordToOrganization(XlsxRecordDto recordDto) {
+    private static CreateOrganizationDto xlsxRecordToOrganization(FileInfoBankEntity bankEntity, XlsxRecordDto recordDto) {
         CreateOrganizationDto organization = new CreateOrganizationDto();
-        organization.setName(recordDto.getOrgName());
+        organization.setName(String.format("%s %s", bankEntity.getBank().getTitle(), recordDto.getOrgName()));
         organization.setPhones(Optional.ofNullable(recordDto.getPhone())
                 .map(phones -> addPhoneCountryCode(Collections.singletonList(phones))).orElse(null));
         organization.setEmails(Optional.ofNullable(recordDto.getEmail()).map(Arrays::asList).orElse(null));

@@ -4,6 +4,8 @@ package ru.medvedev.importer.enums;
 public enum FileProcessingStep {
 
     IN_QUEUE, //
+    WAIT_BANK_INITIALIZE,
+    BANK_INITIALIZED,
     WAIT_PROJECT_CODE_INITIALIZE,
     INITIALIZE,
     REQUEST_COLUMN_NAME,

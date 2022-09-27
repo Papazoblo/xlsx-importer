@@ -7,7 +7,7 @@ import lombok.Data;
 public class VtbOpeningCreateLead {
 
     @JsonProperty("full_name")
-    private String fullName;
+    private String full_name;
     private String inn;
     private String email;
     private String phone;

@@ -30,4 +30,11 @@ public class FileInfoBankEntity {
 
     @Column(name = "project_id")
     private Long projectId;
+
+    @PrePersist
+    public void prePersist() {
+        if (projectId == null) {
+            projectId = -1L;
+        }
+    }
 }

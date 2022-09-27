@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.FileProcessingStep;
 import ru.medvedev.importer.enums.FileSource;
 import ru.medvedev.importer.enums.FileStatus;
@@ -33,8 +34,10 @@ public interface FileInfoRepository extends JpaRepository<FileInfoEntity, Long> 
             "where fi.source = :source " +
             "and fi.status in :statuses " +
             "and fib.projectId is not null " +
+            "and fib.projectId <> -1 " +
+            "and fib.bank = :bank " +
             "order by fi.id DESC")
-    List<FileInfoBankEntity> getLastUiProjectCode(FileSource source, List<FileStatus> statuses);
+    List<FileInfoBankEntity> getLastUiProjectCode(Bank bank, FileSource source, List<FileStatus> statuses);
 
     @Modifying
     @Transactional

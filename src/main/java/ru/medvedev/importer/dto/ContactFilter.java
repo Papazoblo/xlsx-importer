@@ -1,11 +1,12 @@
 package ru.medvedev.importer.dto;
 
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.ContactStatus;
 
 import java.net.URISyntaxException;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,19 +28,21 @@ public class ContactFilter {
     private String city;
     private List<ContactStatus> status = new ArrayList<>();
     private List<Bank> bank = new ArrayList<>();
-    private LocalDate createDateFrom;
-    private LocalDate createDateTo;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    private LocalDateTime createDateFrom;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    private LocalDateTime createDateTo;
     private List<Boolean> original = new ArrayList<>();
 
     public String getDateFromString() {
         return Optional.ofNullable(createDateFrom).map(value ->
-                value.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+                value.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")))
                 .orElse("");
     }
 
     public String getDateToString() {
         return Optional.ofNullable(createDateTo).map(value ->
-                value.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+                value.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")))
                 .orElse("");
     }
 
@@ -66,9 +69,9 @@ public class ContactFilter {
         builder.append("&region=");
         builder.append(Optional.ofNullable(region).orElse(""));
         builder.append("&createDateTo=");
-        builder.append(Optional.ofNullable(createDateTo).map(LocalDate::toString).orElse(""));
+        builder.append(Optional.ofNullable(createDateTo).map(LocalDateTime::toString).orElse(""));
         builder.append("&createDateFrom=");
-        builder.append(Optional.ofNullable(createDateFrom).map(LocalDate::toString).orElse(""));
+        builder.append(Optional.ofNullable(createDateFrom).map(LocalDateTime::toString).orElse(""));
         builder.append("&status=");
         builder.append(status.stream().map(ContactStatus::name).collect(joining(",")));
         builder.append("&bank=");

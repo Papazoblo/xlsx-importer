@@ -1,6 +1,7 @@
 package ru.medvedev.importer.client;
 
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,7 +27,7 @@ public interface VtbOpeningApiClient {
     @GetMapping("${vtb-opening.url-check-inn}")
     ResponseEntity<VtbOpeningCheckInnResponse> getCheckLeadsResponse(@RequestParam("id") String id);
 
-    @PostMapping("${vtb-opening.url-add-request}")
+    @PostMapping(value = "${vtb-opening.url-add-request}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<VtbOpeningResponse> creteAddLeadRequest(@RequestBody VtbOpeningCreateLead request);
 
     @GetMapping("${vtb-opening.url-check-request-status}")

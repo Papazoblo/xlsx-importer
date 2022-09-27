@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import ru.medvedev.importer.dto.PagingDto;
 import ru.medvedev.importer.dto.ProjectNumberDto;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.service.ProjectNumberService;
 
 import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
@@ -31,6 +32,7 @@ public class ProjectNumberController {
         model.addAttribute("projectNumbers", resultPage);
         model.addAttribute("authority", getAuthorityList());
         model.addAttribute("paging", PagingDto.of(resultPage.getTotalPages(), page, size));
+        model.addAttribute("banks", Bank.values());
         return "project_number_setting";
     }
 

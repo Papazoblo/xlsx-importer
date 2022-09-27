@@ -8,4 +8,5 @@ public class CallResultDto {
 
     @JsonProperty("result_name")
     private String resultName;
+    private String comment;
 }

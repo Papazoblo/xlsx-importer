@@ -14,5 +14,6 @@ public class WebhookLeadDto {
     private String city;
     private String inn;
     private String name;
+    private String comment;
     private List<String> emails = new ArrayList<>();
 }

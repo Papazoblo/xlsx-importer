@@ -74,10 +74,16 @@ public class WebhookStatisticService {
         entity.setInn(webhook.getLead().getInn());
         entity.setBank(successStatus.getBank());
         entity.setStatus(status);
-        entity.setEmal(webhook.getLead().getEmails().isEmpty() ? null : webhook.getLead().getEmails().get(0));
+        entity.setEmail(webhook.getLead().getEmails().isEmpty() ? null : webhook.getLead().getEmails().get(0));
         entity.setPhone(webhook.getLead().getPhones());
         entity.setCity(webhook.getLead().getCity().trim());
         entity.setName(webhook.getLead().getName());
+        if (webhook.getContact() != null) {
+            entity.setFullName(webhook.getContact().getName());
+        }
+        if (webhook.getCallResult() != null) {
+            entity.setComment(webhook.getCallResult().getComment());
+        }
         entity.setSuccessStatus(webhookSuccessStatusService.getByName(webhook.getCallResult().getResultName()));
         repository.save(entity);
     }
@@ -87,5 +93,9 @@ public class WebhookStatisticService {
                 .stream()
                 .peek(item -> item.setStatus(newStatus))
                 .collect(Collectors.toList()));
+    }
+
+    public void updateStatisticStatus(Long id, WebhookStatus newStatus) {
+        repository.updateStatus(id, newStatus);
     }
 }

@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EventService {
 
-    public static final String NOTIFICATION_PATTERN = "Невозможно загрузить контакт в `%s`\nПричина: `%s`\n\nИНН: `%s`\nГород: `%s`\nИмя: `%s`";
+    public static final String NOTIFICATION_PATTERN = "Банк: `%s`\nСтатус: `%s`\n\nИНН: `%s`\nГород: `%s`\nИмя: `%s`";
     private static final String MESSAGE_SIMPLE_PATTERN = "%s";
     private static final String MESSAGE_PATTERN = "*%s* %s\nФайл: `%s`\nИсточник: `%s`\n%s";
     private static final String MESSAGE_STATISTIC_PATTERN = "Статистика загрузки `%s`\nФайл: `%s`\nИсточник: `%s`\n%s: `%d`\n%s: `%d`\n%s: `%d`";

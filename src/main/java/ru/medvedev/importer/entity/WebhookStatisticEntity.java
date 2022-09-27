@@ -33,8 +33,14 @@ public class WebhookStatisticEntity {
     @Column(name = "name")
     private String name;
 
+    @Column(name = "full_name")
+    private String fullName;
+
+    @Column(name = "comment_text")
+    private String comment;
+
     @Column(name = "email")
-    private String emal;
+    private String email;
 
     @ManyToOne
     @JoinColumn(name = "webhook_status_id")

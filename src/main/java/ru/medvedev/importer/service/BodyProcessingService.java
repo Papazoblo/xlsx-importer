@@ -23,7 +23,7 @@ import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.exception.FileProcessingException;
 import ru.medvedev.importer.exception.IllegalCellTypeException;
 import ru.medvedev.importer.exception.NumberProjectNotFoundException;
-import ru.medvedev.importer.service.bankclientservice.VtbClientService;
+import ru.medvedev.importer.service.bankclientservice.BankClientServiceFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -46,11 +46,10 @@ public class BodyProcessingService {
     private static final int REQUEST_BATCH_SIZE = 150;
     private static final Integer BATCH_SIZE = 100;
 
-    private final ProjectNumberService projectNumberService;
     private final FileInfoService fileInfoService;
     private final ContactService contactService;
-    private final VtbClientService vtbClientService;
     private final SkorozvonClientService skorozvonClientService;
+    private final BankClientServiceFactory bankClientServiceFactory;
     private final ApplicationEventPublisher eventPublisher;
     private final InnRegionService innRegionService;
     private final DownloadFilterService downloadFilterService;
@@ -264,9 +263,10 @@ public class BodyProcessingService {
 
         for (int i = 0; i < contacts.size(); i = i + REQUEST_BATCH_SIZE) {
             List<ContactEntity> contactSublist = contacts.subList(i, Math.min(i + REQUEST_BATCH_SIZE, contacts.size()));
-            vtbClientService.getAllFromCheckLead(contactSublist.stream()
-                    .map(ContactEntity::getInn)
-                    .collect(toList()), fileBank.getFileInfoId()).forEach(lead -> {
+            bankClientServiceFactory.getBankClientService(fileBank.getBank())
+                    .getAllFromCheckLead(contactSublist.stream()
+                            .map(ContactEntity::getInn)
+                            .collect(toList()), fileBank.getFileInfoId()).forEach(lead -> {
                 if (lead.getResponseCode() == CheckLeadStatus.POSITIVE) {
                     positiveLead.add(lead);
                 } else {
@@ -315,7 +315,7 @@ public class BodyProcessingService {
 
     private static CreateOrganizationDto xlsxRecordToOrganization(ContactEntity contact) {
         CreateOrganizationDto organization = new CreateOrganizationDto();
-        organization.setName(String.format("%s %s", getFioStringFromContact(contact), contact.getOrgName()));
+        organization.setName(String.format("%s %s %s", contact.getBank().getTitle(), getFioStringFromContact(contact), contact.getOrgName()));
         organization.setPhones(Collections.singletonList(contact.getPhone()));
         organization.setHomepage(String.format("https://api.whatsapp.com/send?phone=%s", contact.getPhone()));
         organization.setCity(contact.getCity());
