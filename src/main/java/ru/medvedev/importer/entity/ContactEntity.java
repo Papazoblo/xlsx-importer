@@ -63,6 +63,11 @@ public class ContactEntity {
     @JoinColumn(name = "webhook_status_id")
     private WebhookStatusEntity webhookStatus;
 
+    @ToString.Exclude
+    @ManyToOne
+    @JoinColumn(name = "file_info_bank_id")
+    private FileInfoBankEntity fileInfoBankDownload;
+
     @Column(name = "create_at")
     private LocalDateTime createAt;
 

@@ -14,11 +14,13 @@ import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.*;
+import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
 import ru.medvedev.importer.exception.InnListIsEmptyException;
 import ru.medvedev.importer.service.bankclientservice.BankClientService;
 import ru.medvedev.importer.service.bankclientservice.BankClientServiceFactory;
 
+import javax.naming.OperationNotSupportedException;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.groupingBy;
 import static org.apache.logging.log4j.util.Strings.isBlank;
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
+import static ru.medvedev.importer.enums.FileInfoBankStatus.IN_QUEUE;
 import static ru.medvedev.importer.service.EventService.NOTIFICATION_PATTERN;
 import static ru.medvedev.importer.utils.StringUtils.addPhoneCountryCode;
 import static ru.medvedev.importer.utils.StringUtils.getFioStringFromContact;
@@ -46,27 +49,85 @@ public class LeadWorkerService {
     private final ContactService contactService;
     private final ApplicationEventPublisher eventPublisher;
     private final DownloadFilterService downloadFilterService;
+    private final FileInfoBankService fileInfoBankService;
 
     @Scheduled(cron = "${cron.webhook-change-status}")
     public void fromStatusFixed() {
 
         webhookStatisticService.getByStatus(WebhookStatus.FIXED).forEach(item -> {
             BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
-            //мы спрашиваем у ВТБ можем ли мы добавить лид
-            List<LeadInfoResponse> response = clientService.getAllFromCheckLead(Collections.singletonList(item.getInn()), null);
-            //если ответ положительный, добавляем лид в ВТБ
-            if (response.stream().anyMatch(lead -> lead.getResponseCode() == CheckLeadStatus.POSITIVE)) {
-                log.debug("*** have a positive lead inn {} ", item.getInn());
-                webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.FIXED, WebhookStatus.TRY_TO_CREATE_LEAD);
-            } else {
-                webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.FIXED, WebhookStatus.REJECTED);
+            //мы спрашиваем у банка можем ли мы добавить лид
+            try {
+                CheckLeadResult result = clientService.getAllFromCheckLead(Collections.singletonList(item.getInn()), null);
+                if (item.getBank() == Bank.VTB_OPENING) {
+                    webhookStatisticService.updateStatisticStatusAndOpeningId(item.getId(),
+                            WebhookStatus.WAIT_CHECK_LEAD_AFTER_FIXED_RESPONSE, result.getAdditionalInfo());
+                } else {
+                    if (result.getLeadResponse().stream().anyMatch(lead ->
+                            lead.getResponseCode() == CheckLeadStatus.POSITIVE)) {
+                        log.debug("*** have a positive lead inn {} ", item.getInn());
+                        webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.FIXED,
+                                WebhookStatus.TRY_TO_CREATE_LEAD);
+                    } else {
+                        eventPublisher.publishEvent(new NotificationEvent(this,
+                                String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
+                                        String.format("Заявка отклонена (%s)", result.getLeadResponse().get(0)
+                                                .getResponseCode()),
+                                        item.getInn(),
+                                        item.getCity(),
+                                        item.getName()),
+                                EventType.LOG_TG));
+                        webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.FIXED, WebhookStatus.REJECTED);
+                    }
+                }
+            } catch (ErrorCheckLeadException ex) {
+
+                log.debug("*** Error check duplicate: {} {}", ex.getMessage(), ex);
+                eventPublisher.publishEvent(new ImportEvent(this, "Ошибка проверки дубликатов ВТБ. " +
+                        ex.getMessage(),
+                        EventType.LOG, null));
+                webhookStatisticService.updateStatisticStatusToError(item.getInn(), WebhookStatus.FIXED, ex.getMessage());
+            }
+        });
+    }
+
+    @Scheduled(cron = "${cron.webhook-check-status}")
+    public void fromStatusWaitCheckLeadAfterFixedResponse() {
+
+        webhookStatisticService.getByStatus(WebhookStatus.WAIT_CHECK_LEAD_AFTER_FIXED_RESPONSE).forEach(item -> {
+            BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
+            try {
+                CheckLeadResult result = clientService.getCheckLeadResult(item.getOpeningRequestId(), null);
+                if (result.getStatus()) {
+                    if (result.getLeadResponse().stream().anyMatch(lead ->
+                            lead.getResponseCode() == CheckLeadStatus.POSITIVE)) {
+                        log.debug("*** have a positive lead inn {} ", item.getInn());
+                        webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.TRY_TO_CREATE_LEAD);
+                    } else {
+                        eventPublisher.publishEvent(new NotificationEvent(this,
+                                String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
+                                        String.format("Заявка отклонена (%s)", result.getLeadResponse().get(0)
+                                                .getResponseCode()),
+                                        item.getInn(),
+                                        item.getCity(),
+                                        item.getName()),
+                                EventType.LOG_TG));
+                        webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.REJECTED);
+                    }
+                }
+            } catch (OperationNotSupportedException ex) {
+                webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.ERROR);
+            } catch (ErrorCheckLeadException ex) {
+
+                log.debug("*** Error check duplicate: {} {}", ex.getMessage(), ex);
                 eventPublisher.publishEvent(new NotificationEvent(this,
                         String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
-                                String.format("Заявка отклонена (%s)", response.isEmpty() ? "Дубль" : response.get(0).getResponseCode()),
+                                String.format("Ошибка обработки заявки (%s)", ex.getMessage()),
                                 item.getInn(),
                                 item.getCity(),
                                 item.getName()),
                         EventType.LOG_TG));
+                webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.ERROR);
             }
         });
     }
@@ -92,8 +153,14 @@ public class LeadWorkerService {
                     leadDto.setComment(item.getComment());
                     webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.TRY_TO_CREATE_LEAD_CHECK);
                 }
-                if (clientService.createLead(leadDto)) {
-                    webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
+                CreateLeadResult result = clientService.createLead(leadDto);
+                if (result.getStatus()) {
+                    if (item.getBank() == Bank.VTB_OPENING) {
+                        webhookStatisticService.updateStatisticStatusAndOpeningId(item.getId(),
+                                WebhookStatus.WAIT_CREATE_LEAD_RESPONSE, result.getAdditionalInfo());
+                    } else {
+                        webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
+                    }
                     return;
                 } else {
                     eventPublisher.publishEvent(new NotificationEvent(this,
@@ -110,25 +177,81 @@ public class LeadWorkerService {
         });
     }
 
+    @Scheduled(cron = "${cron.webhook-check-status}")
+    public void fromStatusWaitToCreateLeadResponse() {
+
+        webhookStatisticService.getByStatus(WebhookStatus.WAIT_CREATE_LEAD_RESPONSE).forEach(item -> {
+            BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
+            try {
+                if (clientService.getCreateLeadResult(item.getOpeningRequestId())) {
+                    webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
+                }
+            } catch (OperationNotSupportedException ex) {
+                log.debug("*** Operation not supported exception {}", item);
+            } catch (ErrorCreateVtbLeadException ex) {
+                eventPublisher.publishEvent(new NotificationEvent(this,
+                        String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
+                                "Невозможно добавить. " + ex.getMessage(),
+                                item.getInn(),
+                                item.getCity(),
+                                item.getName()),
+                        EventType.LOG_TG));
+            }
+            webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.ERROR);
+        });
+    }
+
     @Scheduled(cron = "${cron.webhook-change-status}")
     public void fromStatusTryToCreateLeadSuccess() {
 
         webhookStatisticService.getByStatus(WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS).forEach(item -> {
             BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
-            List<LeadInfoResponse> response = clientService.getAllFromCheckLead(Collections.singletonList(item.getInn()), null);
+            CheckLeadResult result = clientService.getAllFromCheckLead(Collections.singletonList(item.getInn()), null);
             //и проверям добавился лид или нет
-            if (response.stream().anyMatch(lead ->
-                    lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {
-                log.debug("*** lead loaded in VTB {} ", item.getInn());
-                webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.SUCCESS);
-                eventPublisher.publishEvent(new NotificationEvent(this,
-                        String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
-                                item.getInn(),
-                                item.getCity(),
-                                item.getName()),
-                        EventType.LOG_TG));
+            if (item.getBank() == Bank.VTB_OPENING) {
+                webhookStatisticService.updateStatisticStatusAndOpeningId(item.getId(),
+                        WebhookStatus.WAIT_CHECK_LEAD_AFTER_CREATE_RESPONSE, result.getAdditionalInfo());
             } else {
-                webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.ERROR);
+                if (result.getLeadResponse().stream().anyMatch(lead ->
+                        lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {
+                    log.debug("*** lead loaded in {} {} ", item.getBank(), item.getInn());
+                    webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.SUCCESS);
+                    eventPublisher.publishEvent(new NotificationEvent(this,
+                            String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
+                                    item.getInn(),
+                                    item.getCity(),
+                                    item.getName()),
+                            EventType.LOG_TG));
+                } else {
+                    webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.ERROR);
+                }
+            }
+        });
+    }
+
+    @Scheduled(cron = "${cron.webhook-check-status}")
+    public void fromStatusWaitCheckLeadAfterCreateResponse() {
+
+        webhookStatisticService.getByStatus(WebhookStatus.WAIT_CHECK_LEAD_AFTER_CREATE_RESPONSE).forEach(item -> {
+            BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
+
+            try {
+                CheckLeadResult result = clientService.getCheckLeadResult(item.getOpeningRequestId(), null);
+                if (result.getLeadResponse().stream().anyMatch(lead ->
+                        lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {
+                    log.debug("*** lead loaded in {} {} ", item.getBank(), item.getInn());
+                    webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.SUCCESS);
+                    eventPublisher.publishEvent(new NotificationEvent(this,
+                            String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
+                                    item.getInn(),
+                                    item.getCity(),
+                                    item.getName()),
+                            EventType.LOG_TG));
+                } else {
+                    webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.ERROR);
+                }
+            } catch (OperationNotSupportedException e) {
+                webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.ERROR);
             }
         });
     }
@@ -151,8 +274,26 @@ public class LeadWorkerService {
     //обработка файла загрженного с интерфейса
     public void processXlsxRecords(FileInfoEntity fileInfo) throws IOException {
 
+        eventPublisher.publishEvent(new ImportEvent(this, "Читаю файл и разбиваю контакты по банкам",
+                EventType.LOG_TG, fileInfo.getId()));
+        Map<String, List<XlsxRecordDto>> records = getValidInnListFromFile(fileInfo);
+        //запуск обработки по разным банкам
+        fileInfo.getBankList().forEach(fileBank -> {
+            saveContacts(records, fileBank);
+            fileInfoBankService.updateDownloadStatus(IN_QUEUE, fileBank.getId());
+        });
+        /*eventPublisher.publishEvent(new ImportEvent(this, "Импорт завершён\n" +
+                statisticMap.entrySet().stream()
+                        .map(entry -> entry.getKey().getTitle() + ": " + entry.getValue())
+                        .collect(Collectors.joining("\n")),
+                EventType.SUCCESS, fileInfo.getId()));*/
+    }
+
+    /*public void processXlsxRecords(FileInfoEntity fileInfo) throws IOException {
+
         Map<Bank, Integer> statisticMap = new HashMap<>();
         Map<String, List<XlsxRecordDto>> records = getValidInnListFromFile(fileInfo);
+        //запуск обработки по разным банкам
         fileInfo.getBankList().forEach(fileBank -> {
             eventPublisher.publishEvent(new ImportEvent(this, "Началась загрузка в `" + fileBank.getBank().getTitle() + "`",
                     EventType.LOG_TG, fileInfo.getId()));
@@ -169,7 +310,7 @@ public class LeadWorkerService {
                         .map(entry -> entry.getKey().getTitle() + ": " + entry.getValue())
                         .collect(Collectors.joining("\n")),
                 EventType.SUCCESS, fileInfo.getId()));
-    }
+    }*/
 
     private Map<String, List<XlsxRecordDto>> getValidInnListFromFile(FileInfoEntity fileInfo) throws IOException {
         List<String> innSkipFilter = (List<String>) downloadFilterService.getByName(DownloadFilter.INN).getFilter();
@@ -196,7 +337,6 @@ public class LeadWorkerService {
                     contact.setOrgName(record.getOrgName());
                     contact.setInn(record.getOrgInn());
                     contact.setRegion(isNotBlank(record.getRegion()) ? record.getRegion() : record.getOrgRegion());
-                    contact.setStatus(ContactStatus.ADDED);
                     contact.setName(fioSplit.length >= 2 ? fioSplit[1] : null);
                     contact.setSurname(fioSplit.length >= 1 ? fioSplit[0] : null);
                     contact.setMiddleName(fioSplit.length >= 3 ? fioSplit[2] : null);
@@ -288,7 +428,9 @@ public class LeadWorkerService {
         Set<String> result = new HashSet<>();
         for (int i = 0; i < innList.size(); i = i + BATCH_SIZE) {
             List<String> innSublist = innList.subList(i, Math.min(i + BATCH_SIZE, innList.size()));
-            result.addAll(bankClientService.getPositiveFromCheckLead(innSublist, fileBank.getFileInfoId()).stream().map(LeadInfoResponse::getInn)
+            result.addAll(bankClientService.getPositiveFromCheckLead(innSublist, fileBank.getFileInfoId())
+                    .getLeadResponse()
+                    .stream().map(LeadInfoResponse::getInn)
                     .collect(Collectors.toSet()));
         }
         return new ArrayList<>(result);

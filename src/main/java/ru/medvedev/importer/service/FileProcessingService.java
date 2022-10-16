@@ -48,6 +48,7 @@ public class FileProcessingService {
             try {
                 if (entity.getSource() == FileSource.UI) {
                     leadWorkerService.processXlsxRecords(entity);
+                    fileInfoService.changeStatus(entity, FileStatus.WAITING);
                 } else {
                     launchProcessTelegramFile(entity);
                 }

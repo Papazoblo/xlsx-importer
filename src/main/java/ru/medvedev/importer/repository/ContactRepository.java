@@ -54,4 +54,5 @@ public interface ContactRepository extends JpaRepository<ContactEntity, Long>,
     void changeWebhookStatus(@Param("webhookStatusId") Long webhookStatusId,
                              @Param("inn") String inn,
                              @Param("bankName") String bankName);
+
 }

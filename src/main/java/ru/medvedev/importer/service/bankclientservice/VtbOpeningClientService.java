@@ -7,24 +7,28 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.client.VtbOpeningApiClient;
+import ru.medvedev.importer.dto.CheckLeadResult;
+import ru.medvedev.importer.dto.CreateLeadResult;
 import ru.medvedev.importer.dto.WebhookLeadDto;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.request.VtbOpeningCheckInn;
 import ru.medvedev.importer.dto.request.VtbOpeningCreateLead;
-import ru.medvedev.importer.dto.response.*;
+import ru.medvedev.importer.dto.response.LeadInfoResponse;
+import ru.medvedev.importer.dto.response.VtbOpeningCheckInnResponse;
+import ru.medvedev.importer.dto.response.VtbOpeningCheckResultResponse;
+import ru.medvedev.importer.dto.response.VtbOpeningResponse;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.VtbOpeningInnStatus;
 import ru.medvedev.importer.enums.VtbOpeningRequestStatus;
+import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
-import ru.medvedev.importer.exception.FileProcessingException;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
-import static ru.medvedev.importer.enums.CheckLeadStatus.NEGATIVE;
-import static ru.medvedev.importer.enums.CheckLeadStatus.POSITIVE;
+import static ru.medvedev.importer.enums.CheckLeadStatus.*;
 import static ru.medvedev.importer.enums.VtbOpeningRequestStatus.created;
 import static ru.medvedev.importer.enums.VtbOpeningRequestStatus.exported;
 
@@ -36,7 +40,7 @@ public class VtbOpeningClientService implements BankClientService {
     private final VtbOpeningApiClient client;
     private final ApplicationEventPublisher eventPublisher;
 
-    public boolean createLead(WebhookLeadDto webhookLead) {
+    public CreateLeadResult createLead(WebhookLeadDto webhookLead) {
 
         log.debug("*** Create lead in VTB Opening");
 
@@ -56,21 +60,21 @@ public class VtbOpeningClientService implements BankClientService {
             if (response.getStatusCode() == HttpStatus.OK) {
                 String id = response.getBody().getId();
                 log.debug("*** createLeadRequest id = {}", id);
-                return getCreateLeadResult(id);
+                return CreateLeadResult.of(true, id);
             } else {
-                log.debug("*** VtbOpening error check lead status [{}]", response.getStatusCode());
+                log.debug("*** VtbOpening error create lead [{}]", response.getStatusCode());
+                return CreateLeadResult.of(false);
             }
-            return true;
         } catch (ErrorCreateVtbLeadException ex) {
             throw ex;
         } catch (Exception ex) {
             log.debug("*** ошибка добавления лида " + ex.getMessage(), ex);
-            return false;
+            return CreateLeadResult.of(false);
         }
     }
 
     @Override
-    public List<LeadInfoResponse> getAllFromCheckLead(List<String> innList, Long fileId) {
+    public CheckLeadResult getAllFromCheckLead(List<String> innList, Long fileId) {
 
         log.debug("*** Check duplicate in VTB Opening");
 
@@ -80,71 +84,66 @@ public class VtbOpeningClientService implements BankClientService {
             ResponseEntity<VtbOpeningResponse> response = client.createCheckLeadsRequest(request);
             if (response.getStatusCode() == HttpStatus.OK) {
                 String id = response.getBody().getId();
-                log.debug("*** checkInnRequest id = {}", id);
-                return getCheckLeadResult(id, fileId).stream()
+                return CheckLeadResult.of(true, id, innList.stream()
                         .map(item -> {
-                            LeadInfoResponse leadInfo = new LeadInfoResponse();
-                            leadInfo.setInn(item.getInn());
-                            leadInfo.setResponseCode(item.getInnStatus() == VtbOpeningInnStatus.success
-                                    ? POSITIVE : NEGATIVE);
-                            return leadInfo;
-                        }).collect(toList());
+                            LeadInfoResponse info = new LeadInfoResponse();
+                            info.setInn(item);
+                            info.setResponseCode(IN_CHECK);
+                            return info;
+                        })
+                        .collect(toList()));
             } else {
                 log.debug("*** VtbOpening error check lead status [{}]", response.getStatusCode());
-                return Collections.emptyList();
+                return CheckLeadResult.of(false, null, Collections.emptyList());
             }
         } catch (Exception ex) {
             log.debug("*** Error check duplicate: {} {}", ex.getMessage(), ex);
             eventPublisher.publishEvent(new ImportEvent(this, "Ошибка проверки дубликатов ВТБ Открытие. " +
                     ex.getMessage(),
                     EventType.LOG, fileId));
-            return Collections.emptyList();
+            return CheckLeadResult.of(false, null, Collections.emptyList());
         }
     }
 
-    private List<VtbOpeningCheckInnInfo> getCheckLeadResult(String id, Long fileId) {
+    @Override
+    public CheckLeadResult getCheckLeadResult(String id, Long fileId) {
 
-        for (; ; ) {
-            try {
-                Thread.sleep(10000L);
-            } catch (InterruptedException e) {
-                log.debug("*** error thread sleep VtbOpeningClientService::getCheckLeadResult");
-            }
-            ResponseEntity<VtbOpeningCheckInnResponse> response = client.getCheckLeadsResponse(id);
-            if (response.getStatusCode() == HttpStatus.OK) {
-                VtbOpeningCheckInnResponse result = response.getBody();
-                if (result.getStatus() == VtbOpeningRequestStatus.error) {
-                    throw new FileProcessingException(result.getMessage(), fileId);
-                } else if (result.getStatus() == VtbOpeningRequestStatus.done) {
-                    return result.getResult().getInns();
-                }
-            } else {
-                log.debug("*** error thread sleep VtbOpeningClientService::getCheckLeadResult [{}]", response.getStatusCode());
+        ResponseEntity<VtbOpeningCheckInnResponse> response = client.getCheckLeadsResponse(id);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            VtbOpeningCheckInnResponse result = response.getBody();
+            if (result.getStatus() == VtbOpeningRequestStatus.error) {
+                throw new ErrorCheckLeadException(result.getMessage(), fileId);
+            } else if (result.getStatus() == VtbOpeningRequestStatus.done) {
+                return CheckLeadResult.of(true, null, result.getResult().getInns().stream()
+                        .map(item -> {
+                            LeadInfoResponse leadInfo = new LeadInfoResponse();
+                            leadInfo.setInn(item.getInn());
+                            leadInfo.setResponseCode(item.getInnStatus() == VtbOpeningInnStatus.success
+                                    ? POSITIVE : NEGATIVE);
+                            return leadInfo;
+                        }).collect(toList()));
             }
         }
+        return CheckLeadResult.of(false);
     }
 
-    private boolean getCreateLeadResult(String id) {
-
-        for (; ; ) {
-            try {
-                Thread.sleep(10000L);
-            } catch (InterruptedException e) {
-                log.debug("*** error thread sleep VtbOpeningClientService::getCreateLeadResult");
-            }
-            ResponseEntity<VtbOpeningCheckResultResponse> response = client.getAddLeadResponse(id);
-            if (response.getStatusCode() == HttpStatus.OK) {
-                VtbOpeningCheckResultResponse result = response.getBody();
-                if (result.getStatus().equals("new") || VtbOpeningRequestStatus.valueOf(result.getStatus()) == VtbOpeningRequestStatus.inqueue) {
-                    continue;
-                } else if (Stream.of(exported, created).anyMatch(status -> status == VtbOpeningRequestStatus.valueOf(result.getStatus()))) {
-                    return true;
-                } else {
-                    throw new ErrorCreateVtbLeadException(result.getLabel() + ". Статус заявки: `" + result.getStatus() + "`", -1L);
-                }
+    @Override
+    public boolean getCreateLeadResult(String id) {
+        ResponseEntity<VtbOpeningCheckResultResponse> response = client.getAddLeadResponse(id);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            VtbOpeningCheckResultResponse result = response.getBody();
+            if (result.getStatus().equals("new") ||
+                    VtbOpeningRequestStatus.valueOf(result.getStatus()) == VtbOpeningRequestStatus.inqueue) {
+                return false;
+            } else if (Stream.of(exported, created).anyMatch(status ->
+                    status == VtbOpeningRequestStatus.valueOf(result.getStatus()))) {
+                return true;
             } else {
-                log.debug("*** error thread sleep VtbOpeningClientService::getCreateLeadResult [{}]", response.getStatusCode());
+                throw new ErrorCreateVtbLeadException(result.getLabel() + ". Статус заявки: `" + result.getStatus() + "`", -1L);
             }
+        } else {
+            log.debug("*** error thread sleep VtbOpeningClientService::getCreateLeadResult [{}]", response.getStatusCode());
+            return false;
         }
     }
 }

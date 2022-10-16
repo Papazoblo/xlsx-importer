@@ -5,7 +5,8 @@ $(document).ready(function () {
     });
 
     $('.btn-export').on('click', function () {
-        window.location.href = '/contacts/export?' + getJsonFilter();
+        //window.location = '/contacts/export?' + getJsonFilter();
+        window.open('/contacts/export?' + getJsonFilter())
     });
 
     function getJsonFilter() {

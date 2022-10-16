@@ -28,6 +28,12 @@ public interface WebhookStatisticRepository extends JpaRepository<WebhookStatist
     @Query("update WebhookStatisticEntity ws set ws.status = :newStatus where ws.id = :id")
     void updateStatus(Long id, WebhookStatus newStatus);
 
+    @Modifying
+    @Transactional
+    @Query("update WebhookStatisticEntity ws set ws.status = :newStatus, ws.openingRequestId = :requestId " +
+            "where ws.id = :id")
+    void updateStatusAndRequestId(Long id, WebhookStatus newStatus, String requestId);
+
     List<WebhookStatisticEntity> findAllByInnAndStatus(String inn, WebhookStatus status);
 
     List<WebhookStatisticEntity> findAllByStatus(WebhookStatus status);

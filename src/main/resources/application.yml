@@ -27,6 +27,10 @@ spring:
   datasource:
     jdbc-url: jdbc:postgresql://127.0.0.1:5432/xlsx_importer_db
     driver-class-name: org.postgresql.Driver
+  jpa:
+    properties:
+      hibernate:
+        enable_lazy_load_no_trans: true
   main:
     allow-bean-definition-overriding: true
   thymeleaf:
@@ -39,11 +43,16 @@ cron:
   fixed-rate-update-token: 1200000
   fixed-rate-check-xlsx-exists: 900000
   launch-file-processing: '0 * * * * *'
+  ending-file-processing: '30 * * * * *'
   webhook-statistic: '0 0 19 * * *'
   tg-column-header-request: '*/3 * * * * *'
   tg-initialized-new-file: '*/3 * * * * *'
   tg-file-body-processor: '*/3 * * * * *'
+  tg-file-send-to-check: '2 */1 * * * *'
+  tg-file-check-request-status: '14 */2 * * * *'
+  tg-file-send-to-skorozvon: '10 */1 * * * *'
   webhook-change-status: '17 */1 * * * *'
+  webhook-check-status: '20 */2 * * * *'
   auto-load: '0 0 3 * * *'
 
 telegram:

@@ -9,6 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import ru.medvedev.importer.dto.response.VtbOpeningErrorResponse;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
 
+import java.sql.Date;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
 @Slf4j
 @RequiredArgsConstructor
 public class VtbOpeningErrorDecoder implements ErrorDecoder {
@@ -37,7 +41,9 @@ public class VtbOpeningErrorDecoder implements ErrorDecoder {
         if (response.status() > 300) {
             log.debug("*** vtb-opening error {}", response.body());
             throw new RetryableException(response.status(), response.toString(),
-                    response.request().httpMethod(), null, response.request());
+                    response.request().httpMethod(),
+                    Date.from(LocalDateTime.now().plusMinutes(5).atZone(ZoneId.systemDefault()).toInstant()),
+                    response.request());
         }
 
         return errorDecoder.decode(s, response);

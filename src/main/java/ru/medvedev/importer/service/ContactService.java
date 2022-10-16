@@ -14,6 +14,7 @@ import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.WebhookStatusEntity;
 import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.ContactStatus;
+import ru.medvedev.importer.enums.FileSource;
 import ru.medvedev.importer.repository.ContactRepository;
 import ru.medvedev.importer.specification.ContactSpecification;
 
@@ -64,25 +65,30 @@ public class ContactService {
         Map<String, List<ContactEntity>> contactMap = repository.findAllByInnInAndBank(contactInn, fileBank.getBank()).stream()
                 .collect(groupingBy(ContactEntity::getInn));
 
-        //сохранение оригинальных контактов
         List<ContactEntity> originalContact = new ArrayList<>();
         List<ContactEntity> duplicatedContact = new ArrayList<>();
+
+        //сохранение оригинальных контактов
         contacts.forEach(contact -> {
             ContactEntity newContact = contact.getClone();
-            newContact.setStatus(ContactStatus.ADDED);
+            newContact.setStatus(ContactStatus.IN_CHECK);
             newContact.setBank(fileBank.getBank());
+            newContact.setFileInfoBankDownload(fileBank);
             if (contactMap.get(newContact.getInn()) == null) {
+                newContact.setStatus(ContactStatus.IN_CHECK);
                 originalContact.add(newContact);
             } else {
+                newContact.setStatus(fileBank.getFileInfo().getSource() == FileSource.TELEGRAM
+                        ? ContactStatus.REJECTED : ContactStatus.IN_CHECK);
                 duplicatedContact.add(newContact);
             }
         });
-
         List<ContactEntity> savedOriginal = createNew(originalContact);
         List<ContactEntity> savedDuplicate = createNew(duplicatedContact);
 
         contactFileInfoService.create(savedOriginal, fileBank.getFileInfoId(), true);
         contactFileInfoService.create(savedDuplicate, fileBank.getFileInfoId(), false);
+
         return originalContact;
     }
 

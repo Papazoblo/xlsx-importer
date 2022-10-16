@@ -89,6 +89,10 @@ public class FileInfoService {
         return repository.findFirstByStatusAndProcessingStepOrderByCreateAt(FileStatus.NEW, INITIALIZE);
     }
 
+    public Optional<FileInfoEntity> getWaitingFile() {
+        return repository.findByStatus(FileStatus.WAITING_CHECK);
+    }
+
     public Optional<FileInfoEntity> getFileInProcess() {
         return repository.findByStatusAndSource(FileStatus.IN_PROCESS, TELEGRAM);
     }
@@ -252,9 +256,8 @@ public class FileInfoService {
     }
 
     private void deleteFile(Long fileId) {
-        repository.findById(fileId).ifPresent(file -> {
-            new File(file.getPath()).delete();
-        });
+        repository.findById(fileId).ifPresent(file ->
+                new File(file.getPath()).delete());
     }
 
     @SneakyThrows

@@ -1,5 +1,6 @@
 package ru.medvedev.importer.specification;
 
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.data.jpa.domain.Specification;
 import ru.medvedev.importer.dto.ContactFilter;
 import ru.medvedev.importer.entity.ContactEntity;
@@ -29,32 +30,52 @@ public class ContactSpecification implements Specification<ContactEntity> {
 
         List<Predicate> predicates = new ArrayList<>();
 
-        Optional.ofNullable(filter.getOrgName()).ifPresent(value ->
-                predicates.add(builder.like(builder.lower(root.get("orgName")), "%" + value.toLowerCase() + "%")));
+        query.distinct(true);
 
-        Optional.ofNullable(filter.getName()).ifPresent(value ->
-                predicates.add(builder.like(builder.lower(root.get("name")), "%" + value.toLowerCase() + "%")));
+        Optional.ofNullable(filter.getOrgName())
+                .filter(Strings::isNotBlank)
+                .ifPresent(value ->
+                        predicates.add(builder.like(builder.lower(root.get("orgName")), "%" + value.toLowerCase() + "%")));
 
-        Optional.ofNullable(filter.getSurname()).ifPresent(value ->
-                predicates.add(builder.like(builder.lower(root.get("surname")), "%" + value.toLowerCase() + "%")));
+        Optional.ofNullable(filter.getName())
+                .filter(Strings::isNotBlank)
+                .ifPresent(value ->
+                        predicates.add(builder.like(builder.lower(root.get("name")), "%" + value.toLowerCase() + "%")));
 
-        Optional.ofNullable(filter.getMiddleName()).ifPresent(value ->
-                predicates.add(builder.like(builder.lower(root.get("middleName")), "%" + value.toLowerCase() + "%")));
+        Optional.ofNullable(filter.getSurname())
+                .filter(Strings::isNotBlank)
+                .ifPresent(value ->
+                        predicates.add(builder.like(builder.lower(root.get("surname")), "%" + value.toLowerCase() + "%")));
 
-        Optional.ofNullable(filter.getPhone()).ifPresent(value ->
-                predicates.add(builder.like(builder.lower(root.get("phone")), "%" + value.toLowerCase() + "%")));
+        Optional.ofNullable(filter.getMiddleName())
+                .filter(Strings::isNotBlank)
+                .ifPresent(value ->
+                        predicates.add(builder.like(builder.lower(root.get("middleName")), "%" + value.toLowerCase() + "%")));
 
-        Optional.ofNullable(filter.getInn()).ifPresent(value ->
-                predicates.add(builder.like(builder.lower(root.get("inn")), "%" + value.toLowerCase() + "%")));
+        Optional.ofNullable(filter.getPhone())
+                .filter(Strings::isNotBlank)
+                .ifPresent(value ->
+                        predicates.add(builder.like(builder.lower(root.get("phone")), "%" + value.toLowerCase() + "%")));
 
-        Optional.ofNullable(filter.getOgrn()).ifPresent(value ->
-                predicates.add(builder.like(builder.lower(root.get("ogrn")), "%" + value.toLowerCase() + "%")));
+        Optional.ofNullable(filter.getInn())
+                .filter(Strings::isNotBlank)
+                .ifPresent(value ->
+                        predicates.add(builder.like(builder.lower(root.get("inn")), "%" + value.toLowerCase() + "%")));
 
-        Optional.ofNullable(filter.getRegion()).ifPresent(value ->
-                predicates.add(builder.like(builder.lower(root.get("region")), "%" + value.toLowerCase() + "%")));
+        Optional.ofNullable(filter.getOgrn())
+                .filter(Strings::isNotBlank)
+                .ifPresent(value ->
+                        predicates.add(builder.like(builder.lower(root.get("ogrn")), "%" + value.toLowerCase() + "%")));
 
-        Optional.ofNullable(filter.getCity()).ifPresent(value ->
-                predicates.add(builder.like(builder.lower(root.get("city")), "%" + value.toLowerCase() + "%")));
+        Optional.ofNullable(filter.getRegion())
+                .filter(Strings::isNotBlank)
+                .ifPresent(value ->
+                        predicates.add(builder.like(builder.lower(root.get("region")), "%" + value.toLowerCase() + "%")));
+
+        Optional.ofNullable(filter.getCity())
+                .filter(Strings::isNotBlank)
+                .ifPresent(value ->
+                        predicates.add(builder.like(builder.lower(root.get("city")), "%" + value.toLowerCase() + "%")));
 
         Optional.ofNullable(filter.getCreateDateFrom()).ifPresent(value ->
                 predicates.add(builder.greaterThanOrEqualTo(root.get("createAt"), value)));

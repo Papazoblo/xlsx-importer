@@ -47,6 +47,8 @@ public interface FileInfoRepository extends JpaRepository<FileInfoEntity, Long> 
     Optional<FileInfoEntity> findByStatusAndSourceAndProcessingStepIn(FileStatus status, FileSource source,
                                                                       List<FileProcessingStep> processingStep);
 
+    Optional<FileInfoEntity> findByStatus(FileStatus status);
+
     Optional<FileInfoEntity> findByStatusAndSource(FileStatus status, FileSource source);
 
     Optional<FileInfoEntity> findFirstByProcessingStepAndSourceAndStatus(FileProcessingStep processingStep,

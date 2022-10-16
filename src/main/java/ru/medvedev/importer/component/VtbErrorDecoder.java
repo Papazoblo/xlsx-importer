@@ -14,6 +14,9 @@ import ru.medvedev.importer.enums.CheckLeadStatus;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
 
 import java.io.IOException;
+import java.sql.Date;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -67,7 +70,9 @@ public class VtbErrorDecoder implements ErrorDecoder {
         if (response.status() > 300) {
             log.debug("*** vtb error {}", response.body());
             throw new RetryableException(response.status(), response.toString(),
-                    response.request().httpMethod(), null, response.request());
+                    response.request().httpMethod(),
+                    Date.from(LocalDateTime.now().plusMinutes(5).atZone(ZoneId.systemDefault()).toInstant()),
+                    response.request());
         }
 
         return errorDecoder.decode(s, response);

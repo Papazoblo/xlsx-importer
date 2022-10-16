@@ -42,6 +42,9 @@ public class WebhookStatisticEntity {
     @Column(name = "email")
     private String email;
 
+    @Column(name = "error_message")
+    private String errorMessage;
+
     @ManyToOne
     @JoinColumn(name = "webhook_status_id")
     private WebhookSuccessStatusEntity successStatus;
@@ -49,6 +52,9 @@ public class WebhookStatisticEntity {
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private WebhookStatus status;
+
+    @Column(name = "opening_id")
+    private String openingRequestId;
 
     @Column(name = "create_at")
     private LocalDateTime createAt;

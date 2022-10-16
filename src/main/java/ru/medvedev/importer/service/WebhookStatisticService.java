@@ -28,7 +28,7 @@ import static java.util.stream.Collectors.*;
 public class WebhookStatisticService {
 
     private static final String STATISTIC_MESSAGE = "*Статистика отправленных заявок* \nс %s по %s\n%s";
-    private static final String STATISTIC_BANK_ITEM = "`%s`\nДобавленные: `%d`\nОтказано в добавлении: `%d`";
+    private static final String STATISTIC_BANK_ITEM = "`%s`\nДобавленные: `%d`\nОтказано в добавлении: `%d`\nОшибочные заявки: `%d`";
 
     @Value("${telegram.xlsx-collector.scanningChatId}")
     private Long scanningChatId;
@@ -61,7 +61,8 @@ public class WebhookStatisticService {
                     return String.format(STATISTIC_BANK_ITEM,
                             bankListEntry.getKey().getTitle(),
                             Optional.ofNullable(statistic.get(WebhookStatus.SUCCESS)).map(DailyContactStatistic::getCount).orElse(0L),
-                            Optional.ofNullable(statistic.get(WebhookStatus.REJECTED)).map(DailyContactStatistic::getCount).orElse(0L));
+                            Optional.ofNullable(statistic.get(WebhookStatus.REJECTED)).map(DailyContactStatistic::getCount).orElse(0L),
+                            Optional.ofNullable(statistic.get(WebhookStatus.ERROR)).map(DailyContactStatistic::getCount).orElse(0L));
                 }).collect(joining("\n"));
     }
 
@@ -95,7 +96,19 @@ public class WebhookStatisticService {
                 .collect(Collectors.toList()));
     }
 
+    public void updateStatisticStatusToError(String inn, WebhookStatus oldStatus, String message) {
+        repository.saveAll(repository.findAllByInnAndStatus(inn, oldStatus)
+                .stream()
+                .peek(item -> item.setStatus(WebhookStatus.ERROR))
+                .peek(item -> item.setErrorMessage(message))
+                .collect(Collectors.toList()));
+    }
+
     public void updateStatisticStatus(Long id, WebhookStatus newStatus) {
         repository.updateStatus(id, newStatus);
+    }
+
+    public void updateStatisticStatusAndOpeningId(Long id, WebhookStatus newStatus, String requestId) {
+        repository.updateStatusAndRequestId(id, newStatus, requestId);
     }
 }
