@@ -38,10 +38,10 @@ import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import static ru.medvedev.importer.enums.Bank.VTB;
 import static ru.medvedev.importer.enums.Bank.VTB_OPENING;
 import static ru.medvedev.importer.enums.FileInfoBankStatus.*;
-import static ru.medvedev.
+import static ru.medvedev.importer.enums.OpeningRequestStatus.*;
 import static ru.medvedev.importer.enums.OpeningRequestStatus.ERROR;
 import static ru.medvedev.importer.enums.OpeningRequestStatus.IN_QUEUE;
-importer.enums.OpeningRequestStatus.*;
+
 import static ru.medvedev.importer.utils.StringUtils.*;
 
 @Service
