@@ -38,10 +38,12 @@ import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import static ru.medvedev.importer.enums.Bank.VTB;
 import static ru.medvedev.importer.enums.Bank.VTB_OPENING;
 import static ru.medvedev.importer.enums.FileInfoBankStatus.*;
-import static ru.medvedev.importer.enums.OpeningRequestStatus.*;
+import static ru.medvedev.
 import static ru.medvedev.importer.enums.OpeningRequestStatus.ERROR;
 import static ru.medvedev.importer.enums.OpeningRequestStatus.IN_QUEUE;
-
+importer.enums.OpeningRequestStatus.*;
+import static ru.medvedev.importer.service.EventService.BANK_NAME_PATTERN;
+import static ru.medvedev.importer.service.EventService.STATISTIC_LINE_PATTERN;
 import static ru.medvedev.importer.utils.StringUtils.*;
 
 @Service
@@ -68,7 +70,7 @@ public class BodyProcessingService {
     public void sendRequestToTelegram() {
         fileInfoService.getFileToProcessingBody().ifPresent(file -> {
             eventPublisher.publishEvent(new ImportEvent(this, "Читаю файл и разбиваю контакты по банкам",
-                    EventType.LOG_TG, file.getId()));
+                    EventType.FILE_PROCESS, file.getId()));
 
             file.setProcessingStep(FileProcessingStep.READ_DATA);
             fileInfoService.save(file);
@@ -103,7 +105,7 @@ public class BodyProcessingService {
 
             eventPublisher.publishEvent(new ImportEvent(this, "Разбиваю контакты по группам в `" +
                     fib.getBank().getTitle() + "`",
-                    EventType.LOG_TG, fib.getFileInfoId()));
+                    EventType.FILE_PROCESS, fib.getFileInfoId()));
             try {
                 fileInfoBankService.updateDownloadStatus(FileInfoBankStatus.INN_CHECK, fib.getId());
                 List<ContactEntity> contacts = fib.getContacts().stream()
@@ -123,6 +125,9 @@ public class BodyProcessingService {
                                         .map(ContactEntity::getInn)
                                         .collect(toList()), fib.getFileInfoId());
                         openingRequest.setRequestId(result.getAdditionalInfo());
+                        if(!result.getStatus()) {
+                            openingRequest.setStatus(ERROR);
+                        }
                     }
                     //contactSublist.forEach(contact -> contact.setOpeningRequest(openingRequest));
                     openingRequest.setContacts(contactSublist);
@@ -161,9 +166,9 @@ public class BodyProcessingService {
         openingRequestService.getFirstByStatus(CHECKING);
         FileInfoBankEntity fib = request.getFileInfoBank();
 
-        eventPublisher.publishEvent(new ImportEvent(this, "Проверяю группу для `" +
+        /*eventPublisher.publishEvent(new ImportEvent(this, "Проверяю группу для `" +
                 fib.getBank().getTitle() + "`",
-                EventType.LOG_TG, fib.getFileInfoId()));
+                EventType.LOG_TG, fib.getFileInfoId()));*/
 
         try {
             BankClientService bankClientService = bankClientServiceFactory.getBankClientService(fib.getBank());
@@ -223,9 +228,8 @@ public class BodyProcessingService {
         openingRequestService.changeStatus(request.getId(), OpeningRequestStatus.DOWNLOADING);
         FileInfoBankEntity fib = request.getFileInfoBank();
 
-        eventPublisher.publishEvent(new ImportEvent(this, "Отправляю группу в скорозвон `" +
-                fib.getBank().getTitle() + "`",
-                EventType.LOG_TG, fib.getFileInfoId()));
+        eventPublisher.publishEvent(new ImportEvent(this, getFileStatisticString(fib.getFileInfoId()),
+                EventType.FILE_PROCESS, fib.getFileInfoId()));
         try {
             FileInfoEntity fileInfo = request.getFileInfoBank().getFileInfo();
 
@@ -471,7 +475,8 @@ public class BodyProcessingService {
 
     private static CreateOrganizationDto xlsxRecordToOrganization(ContactEntity contact) {
         CreateOrganizationDto organization = new CreateOrganizationDto();
-        organization.setName(String.format("%s %s %s", contact.getBank().getTitle(), getFioStringFromContact(contact), contact.getOrgName()));
+        String fioStringFromContact = getFioStringFromContact(contact);
+        organization.setName(String.format("%s %s %s", contact.getBank().getTitle(), contact.getOrgName().contains(fioStringFromContact) ? "" :fioStringFromContact, contact.getOrgName()));
         organization.setPhones(Collections.singletonList(contact.getPhone()));
         organization.setHomepage(String.format("https://api.whatsapp.com/send?phone=%s", contact.getPhone()));
         organization.setCity(contact.getCity());
@@ -479,5 +484,20 @@ public class BodyProcessingService {
         organization.setInn(contact.getInn());
         organization.setComment(contact.getOgrn());
         return organization;
+    }
+
+    private String getFileStatisticString(Long fileId) {
+        return openingRequestService.getStatisticByFileId(fileId).entrySet().stream()
+                .map(outEntry -> {
+                   StringBuilder sb = new StringBuilder();
+                   sb.append(String.format(BANK_NAME_PATTERN, outEntry.getKey().getTitle()));
+                   sb.append(String.format(STATISTIC_LINE_PATTERN, "Всего",
+                           outEntry.getValue().values().stream().mapToLong(l -> l).sum()));
+                   Arrays.stream(OpeningRequestStatus.values()).forEach(status ->
+                           sb.append(String.format(STATISTIC_LINE_PATTERN, status.getTitle(),
+                                   Optional.ofNullable(outEntry.getValue().get(status)).orElse(0))));
+                   return sb.toString();
+                })
+        .collect(joining("\n"));
     }
 }

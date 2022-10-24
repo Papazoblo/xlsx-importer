@@ -32,10 +32,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EventService {
 
-    public static final String NOTIFICATION_PATTERN = "Банк: `%s`\nСтатус: `%s`\n\nИНН: `%s`\nГород: `%s`\nИмя: `%s`";
+    public static final String BANK_NAME_PATTERN = "Банк: `%s`\n";
+    public static final String NOTIFICATION_PATTERN = BANK_NAME_PATTERN + "Статус: `%s`\n\nИНН: `%s`\nГород: `%s`\nИмя: `%s`";
+    public static final String STATISTIC_LINE_PATTERN = "%s: `%d`\n";
     private static final String MESSAGE_SIMPLE_PATTERN = "%s";
-    private static final String MESSAGE_PATTERN = "*%s* %s\nФайл: `%s`\nИсточник: `%s`\n%s";
-    private static final String MESSAGE_STATISTIC_PATTERN = "Статистика загрузки `%s`\nФайл: `%s`\nИсточник: `%s`\n%s: `%d`\n%s: `%d`\n%s: `%d`";
+    private static final String MESSAGE_HEADER_PATTERN = "*%s* %s\nФайл: `%s`\nИсточник: `%s`\n%s";
+    private static final String MESSAGE_STATISTIC_PATTERN = "Статистика загрузки `%s`\nФайл: `%s`\nИсточник: `%s`\n" + STATISTIC_LINE_PATTERN + STATISTIC_LINE_PATTERN + STATISTIC_LINE_PATTERN;
 
     private final EventRepository repository;
     private final TelegramPollingService telegramPollingService;
@@ -58,34 +60,35 @@ public class EventService {
     @EventListener(ImportEvent.class)
     public void create(ImportEvent event) {
         Optional.ofNullable(event.getFileId()).ifPresent(fileId -> {
-            Long chatId = fileInfoService.getChatIdByFile(fileId);
-            if (event.getEventType() != EventType.LOG && chatId != null) {
-                Optional<FileInfoEntity> fileInfoEntity = Optional.ofNullable(event.getFileId())
-                        .map(fileInfoService::getById);
-                fileInfoEntity.ifPresent(file -> {
-                    telegramPollingService.sendMessage(String.format(MESSAGE_PATTERN, event.getEventType().getDescription(),
-                            getCurDateTime(),
-                            file.getName(), file.getSource().getDescription(), event.getDescription()), chatId, event.isWithCancelButton());
+            if (event.getFileId() == -1) {
+                telegramPollingService.sendMessage(String.format(MESSAGE_SIMPLE_PATTERN, event.getDescription()),
+                        null, null, null, event.isWithCancelButton());
+            } else {
+                FileInfoEntity fileInfo = fileInfoService.getById(fileId);
+                if (event.getEventType() == EventType.FILE_PROCESS) {
+                    printFileProcessInfo(fileInfo, event);
+                } else if (event.getEventType() != EventType.LOG && fileInfo.getChatId() != null) {
+                    telegramPollingService.sendMessage(initHeaderMessage(fileInfo, event, event.getDescription()),
+                            null, fileInfo.getMessageId(), fileInfo.getChatId(), event.isWithCancelButton());
                     /*if (event.getEventType() == EventType.SUCCESS) {
                         printStatistic(chatId, file);
                     }*/
-                });
-            } else if (event.getFileId() == -1) {
-                telegramPollingService.sendMessage(String.format(MESSAGE_SIMPLE_PATTERN, event.getDescription()),
-                        null, event.isWithCancelButton());
+                }
             }
         });
 
-        EventEntity entity = new EventEntity();
-        entity.setDescription(event.getDescription());
-        entity.setType(event.getEventType());
-        entity.setFileId(event.getFileId());
-        repository.save(entity);
+        if (event.getEventType() != EventType.FILE_PROCESS) {
+            EventEntity entity = new EventEntity();
+            entity.setDescription(event.getDescription());
+            entity.setType(event.getEventType());
+            entity.setFileId(event.getFileId());
+            repository.save(entity);
 
-        if (event.getEventType() == EventType.ERROR) {
-            eventPublisher.publishEvent(new InvalidFileEvent(this, event.getFileId()));
-        } else if (event.getEventType() == EventType.SUCCESS) {
-            eventPublisher.publishEvent(new CompleteFileEvent(this, event.getFileId()));
+            if (event.getEventType() == EventType.ERROR) {
+                eventPublisher.publishEvent(new InvalidFileEvent(this, event.getFileId()));
+            } else if (event.getEventType() == EventType.SUCCESS) {
+                eventPublisher.publishEvent(new CompleteFileEvent(this, event.getFileId()));
+            }
         }
     }
 
@@ -93,6 +96,24 @@ public class EventService {
     public void sendNotification(NotificationEvent event) {
         notificationChatService.getAllChatId().forEach(chatId ->
                 telegramNotificatorPollingService.sendMessage(event.getDescription(), chatId));
+    }
+
+    private void printFileProcessInfo(FileInfoEntity file, ImportEvent event) {
+        String message = initHeaderMessage(file, event, event.getDescription());
+        if (file.getMessageId() != null) {
+            telegramPollingService.updateMessage(message, file.getMessageId(), file.getChatId(), false);
+        } else {
+            telegramPollingService.sendMessage(message, file.getId(), null, file.getChatId(), false);
+        }
+    }
+
+    private static String initHeaderMessage(FileInfoEntity fileInfo, ImportEvent event, String additional) {
+        return String.format(MESSAGE_HEADER_PATTERN,
+                event.getEventType().getDescription(),
+                getCurDateTime(),
+                fileInfo.getName(),
+                fileInfo.getSource().getDescription(),
+                additional);
     }
 
     private void printStatistic(Long chatId, FileInfoEntity fileInfo) {
@@ -109,7 +130,8 @@ public class EventService {
                 ContactStatus.DOWNLOADED.getDescription(),
                 Optional.ofNullable(mapStatistic.get(ContactStatus.DOWNLOADED)).orElse(0L),
                 ContactStatus.REJECTED.getDescription(),
-                Optional.ofNullable(mapStatistic.get(ContactStatus.REJECTED)).orElse(0L)), chatId, false);
+                Optional.ofNullable(mapStatistic.get(ContactStatus.REJECTED)).orElse(0L)),
+                null, null, chatId, false);
     }
 
     private static String getCurDateTime() {

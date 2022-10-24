@@ -87,6 +87,9 @@ public class FileInfoEntity {
     @Column(name = "org_tags")
     private String orgTags;
 
+    @Column(name = "message_id")
+    private Integer messageId;
+
     @OneToMany(mappedBy = "fileInfoEntity", fetch = FetchType.EAGER, orphanRemoval = true, cascade = CascadeType.ALL)
     private Set<FileRequestEmptyRequireFieldEntity> fileRequestEmptyRequireFieldEntities = new HashSet<>();
 

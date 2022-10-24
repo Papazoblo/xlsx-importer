@@ -20,6 +20,10 @@ logging:
     ru.medvedev.importer: DEBUG
 
 spring:
+  task:
+    scheduling:
+      pool:
+        size: 5
   servlet:
     multipart:
       max-file-size: 10MB
@@ -68,8 +72,8 @@ skorozvon:
   url: https://app.skorozvon.ru
 
 vtb:
-  url: https://epa.api.vtb.ru/openapi/smb/lecs
-  token-url: https://passport.api.vtb.ru/passport/oauth2/token
+  url: https://gw.api.vtb.ru:443/openapi/smb/lecs/lead-impers/v1
+  token-url: https://open.api.vtb.ru:443/passport/oauth2/token
 
 vtb-opening:
   url: https://openpartners.ru/api/v2/request

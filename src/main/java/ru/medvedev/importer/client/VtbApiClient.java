@@ -17,11 +17,11 @@ import ru.medvedev.importer.dto.response.CheckLeadResponse;
 })
 public interface VtbApiClient {
 
-    @PostMapping("/lead-impers/v1/check_leads")
+    @PostMapping("/check_leads")
     ResponseEntity<CheckLeadResponse> checkLeads(@RequestBody LeadRequest request,
                                                  @RequestHeader(name = "Authorization") String token);
 
-    @PostMapping("/lead-impers/v1/leads_impersonal")
+    @PostMapping("/leads_impersonal")
     AddLeadResponse addLead(@RequestBody LeadRequest request,
                             @RequestHeader(name = "Authorization") String token);
 }

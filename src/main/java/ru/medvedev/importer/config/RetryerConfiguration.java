@@ -9,6 +9,6 @@ public class RetryerConfiguration {
 
     @Bean
     public Retryer retryer() {
-        return new Retryer.Default(100, 60000, 10);
+        return new Retryer.Default(100, 60000, 5);
     }
 }

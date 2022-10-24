@@ -44,6 +44,11 @@ public interface FileInfoRepository extends JpaRepository<FileInfoEntity, Long> 
     @Query("update FileInfoEntity fi set fi.status = :status where fi.id = :id")
     void changeStatus(@Param("id") Long id, @Param("status") FileStatus status);
 
+    @Modifying
+    @Transactional
+    @Query("update FileInfoEntity fi set fi.messageId = :messageId where fi.id = :id")
+    void updateMessageId(@Param("id") Long id, @Param("messageId") Integer messageId);
+
     Optional<FileInfoEntity> findByStatusAndSourceAndProcessingStepIn(FileStatus status, FileSource source,
                                                                       List<FileProcessingStep> processingStep);
 

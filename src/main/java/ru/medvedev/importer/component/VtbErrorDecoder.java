@@ -32,6 +32,10 @@ public class VtbErrorDecoder implements ErrorDecoder {
 
         if (response.status() == 401) {
             properties.clearToken();
+            throw new RetryableException(response.status(), response.toString(),
+                    response.request().httpMethod(),
+                    Date.from(LocalDateTime.now().plusMinutes(2).atZone(ZoneId.systemDefault()).toInstant()),
+                    response.request());
         }
 
         if (response.status() == 400) {
@@ -58,6 +62,10 @@ public class VtbErrorDecoder implements ErrorDecoder {
                         leadRequest.setLeads(leads);
 
                         response.request().requestTemplate().body(objectMapper.writeValueAsString(leadRequest));
+                        throw new RetryableException(response.status(), response.toString(),
+                                response.request().httpMethod(),
+                                null,
+                                response.request());
                     }
                 } else if (response.request().url().contains("/leads_impersonal")) {
                     throw new ErrorCreateVtbLeadException(responseBody.getMoreInformation(), -1L);
@@ -67,11 +75,11 @@ public class VtbErrorDecoder implements ErrorDecoder {
             }
         }
 
-        if (response.status() > 300) {
+        if (response.status() >= 500) {
             log.debug("*** vtb error {}", response.body());
             throw new RetryableException(response.status(), response.toString(),
                     response.request().httpMethod(),
-                    Date.from(LocalDateTime.now().plusMinutes(5).atZone(ZoneId.systemDefault()).toInstant()),
+                    Date.from(LocalDateTime.now().plusMinutes(2).atZone(ZoneId.systemDefault()).toInstant()),
                     response.request());
         }
 

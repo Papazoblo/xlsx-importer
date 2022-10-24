@@ -16,6 +16,7 @@ import ru.medvedev.importer.dto.XlsxImportInfo;
 import ru.medvedev.importer.dto.events.CompleteFileEvent;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.events.InvalidFileEvent;
+import ru.medvedev.importer.dto.events.SaveMessageIdEvent;
 import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.*;
@@ -253,6 +254,11 @@ public class FileInfoService {
     public void completeFileEventListener(CompleteFileEvent event) {
         repository.changeStatus(event.getFileId(), FileStatus.SUCCESS);
         deleteFile(event.getFileId());
+    }
+
+    @EventListener(SaveMessageIdEvent.class)
+    public void saveMessageIdEventListener(SaveMessageIdEvent event) {
+        repository.updateMessageId(event.getFileId(), event.getMessageId());
     }
 
     private void deleteFile(Long fileId) {

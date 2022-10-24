@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.ContactDto;
 import ru.medvedev.importer.dto.ContactFilter;
 import ru.medvedev.importer.dto.ContactStatistic;
-import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.entity.ContactEntity;
 import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.WebhookStatusEntity;
@@ -69,20 +68,30 @@ public class ContactService {
         List<ContactEntity> duplicatedContact = new ArrayList<>();
 
         //сохранение оригинальных контактов
-        contacts.forEach(contact -> {
-            ContactEntity newContact = contact.getClone();
-            newContact.setStatus(ContactStatus.IN_CHECK);
-            newContact.setBank(fileBank.getBank());
-            newContact.setFileInfoBankDownload(fileBank);
-            if (contactMap.get(newContact.getInn()) == null) {
-                newContact.setStatus(ContactStatus.IN_CHECK);
-                originalContact.add(newContact);
-            } else {
-                newContact.setStatus(fileBank.getFileInfo().getSource() == FileSource.TELEGRAM
-                        ? ContactStatus.REJECTED : ContactStatus.IN_CHECK);
-                duplicatedContact.add(newContact);
-            }
-        });
+        contacts.stream()
+                .filter(contact -> checkLength(contact.getOrgName(), 1000)
+                        && checkLength(contact.getName(), 100)
+                        && checkLength(contact.getSurname(), 100)
+                        && checkLength(contact.getMiddleName(), 100)
+                        && checkLength(contact.getPhone(), 20)
+                        && checkLength(contact.getInn(), 20)
+                        && checkLength(contact.getOgrn(), 20)
+                        && checkLength(contact.getRegion(), 500)
+                        && checkLength(contact.getCity(), 1000))
+                .forEach(contact -> {
+                    ContactEntity newContact = contact.clone();
+                    newContact.setStatus(ContactStatus.IN_CHECK);
+                    newContact.setBank(fileBank.getBank());
+                    newContact.setFileInfoBankDownload(fileBank);
+                    if (contactMap.get(newContact.getInn()) == null) {
+                        newContact.setStatus(ContactStatus.IN_CHECK);
+                        originalContact.add(newContact);
+                    } else {
+                        newContact.setStatus(fileBank.getFileInfo().getSource() == FileSource.TELEGRAM
+                                ? ContactStatus.REJECTED : ContactStatus.IN_CHECK);
+                        duplicatedContact.add(newContact);
+                    }
+                });
         List<ContactEntity> savedOriginal = createNew(originalContact);
         List<ContactEntity> savedDuplicate = createNew(duplicatedContact);
 
@@ -92,25 +101,14 @@ public class ContactService {
         return originalContact;
     }
 
+    private boolean checkLength(String value, int length) {
+        return value == null || value.length() <= length;
+    }
+
     private List<ContactEntity> createNew(List<ContactEntity> contacts) {
         WebhookStatusEntity webhookStatus = webhookStatusService.getById(-1L);
         contacts.forEach(item -> item.setWebhookStatus(webhookStatus));
         return repository.saveAll(contacts);
-    }
-
-    public void changeContactStatus(List<LeadInfoResponse> leads, Long fileId, ContactStatus status) {
-        for (int i = 0; i < leads.size(); i += BATCH_SIZE) {
-            List<String> innList = leads.subList(i, Math.min(i + BATCH_SIZE, leads.size())).stream()
-                    .map(LeadInfoResponse::getInn).collect(Collectors.toList());
-            List<Long> contactIds = repository.findContactIdByInn(fileId, innList);
-            repository.changeContactStatusById(status, contactIds);
-        }
-    }
-
-    public void changeContactStatus(List<ContactEntity> contacts, ContactStatus status) {
-        repository.saveAll(contacts.stream()
-                .peek(contact -> contact.setStatus(status))
-                .collect(Collectors.toList()));
     }
 
     public Map<ContactStatus, Long> getContactStatisticByFileId(Long fileId) {

@@ -43,7 +43,7 @@ public class WebhookStatisticService {
                 LocalDateTime.now().minusDays(1).format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")),
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")),
                 getCountByPrevDay());
-        telegramPollingService.sendMessage(message, scanningChatId, false);
+        telegramPollingService.sendMessage(message, null, null, scanningChatId, false);
     }
 
     public String getCountByPrevDay() {

@@ -25,7 +25,7 @@ public class VtbOpeningErrorDecoder implements ErrorDecoder {
     public Exception decode(String s, Response response) {
 
         if (response.status() == 400) {
-            log.debug("*** vtb-opening error {}", response.body());
+            log.debug("*** vtb-opening bad request {}", response.body());
             if (response.request().url().contains("/status") || response.request().url().contains("/add")) {
                 VtbOpeningErrorResponse responseDto;
                 try {
@@ -38,11 +38,11 @@ public class VtbOpeningErrorDecoder implements ErrorDecoder {
             }
         }
 
-        if (response.status() > 300) {
+        if (response.status() >= 500) {
             log.debug("*** vtb-opening error {}", response.body());
             throw new RetryableException(response.status(), response.toString(),
                     response.request().httpMethod(),
-                    Date.from(LocalDateTime.now().plusMinutes(5).atZone(ZoneId.systemDefault()).toInstant()),
+                    Date.from(LocalDateTime.now().plusMinutes(2).atZone(ZoneId.systemDefault()).toInstant()),
                     response.request());
         }
 

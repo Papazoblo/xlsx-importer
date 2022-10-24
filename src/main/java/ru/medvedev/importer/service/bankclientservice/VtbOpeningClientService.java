@@ -94,14 +94,14 @@ public class VtbOpeningClientService implements BankClientService {
                         .collect(toList()));
             } else {
                 log.debug("*** VtbOpening error check lead status [{}]", response.getStatusCode());
-                return CheckLeadResult.of(false, null, Collections.emptyList());
+                return CheckLeadResult.of(false, "blank", Collections.emptyList());
             }
         } catch (Exception ex) {
             log.debug("*** Error check duplicate: {} {}", ex.getMessage(), ex);
             eventPublisher.publishEvent(new ImportEvent(this, "Ошибка проверки дубликатов ВТБ Открытие. " +
                     ex.getMessage(),
                     EventType.LOG, fileId));
-            return CheckLeadResult.of(false, null, Collections.emptyList());
+            return CheckLeadResult.of(false, "blank", Collections.emptyList());
         }
     }
 

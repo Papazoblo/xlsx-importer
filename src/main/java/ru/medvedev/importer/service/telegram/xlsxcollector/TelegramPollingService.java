@@ -11,6 +11,7 @@ import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -19,10 +20,13 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
+import org.telegram.telegrambots.meta.updateshandlers.SentCallback;
 import ru.medvedev.importer.component.TelegramXlsxCollectorProperty;
 import ru.medvedev.importer.dto.events.BankSelectResponseEvent;
 import ru.medvedev.importer.dto.events.CheckBotColumnResponseEvent;
 import ru.medvedev.importer.dto.events.ProjectCodeResponseEvent;
+import ru.medvedev.importer.dto.events.SaveMessageIdEvent;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.ChatState;
 import ru.medvedev.importer.enums.FileSource;
@@ -101,13 +105,23 @@ public class TelegramPollingService extends TelegramLongPollingBot {
             if (message != null) {
                 Long chatId = message.getChatId();
                 if (!chatId.equals(scanningChatId)) {
-                    sendMessage("Permission access denied", chatId, false);
+                    sendMessage("Permission access denied", null, null, chatId, false);
                     return;
                 }
                 Optional.ofNullable(message.getDocument()).ifPresent(document ->
                         downloadFile(document, chatId));
             }
         });
+    }
+
+    public void updateMessage(String message, Integer messageId, Long chatId, boolean withCancelButton) {
+        EditMessageText method = EditMessageText.builder()
+                .chatId(String.valueOf(chatId == null ? scanningChatId : chatId))
+                .messageId(messageId)
+                .parseMode(ParseMode.MARKDOWN)
+                .text(message)
+                .build();
+        executeAnyCommand(method);
     }
 
     private void downloadFile(Document document, Long chatId) {
@@ -144,13 +158,14 @@ public class TelegramPollingService extends TelegramLongPollingBot {
         return fileInfo;
     }
 
-    public void sendMessage(String message, Long idChat, boolean withCancelButton) {
+    public void sendMessage(String message, Long fileId, Integer messageToReply, Long chatId, boolean withCancelButton) {
         KeyboardRow keyboardRow = new KeyboardRow();
         keyboardRow.add(new KeyboardButton("Отменить загрузку"));
         SendMessage method = SendMessage.builder()
-                .chatId(String.valueOf(idChat == null ? scanningChatId : idChat))
+                .chatId(String.valueOf(chatId == null ? scanningChatId : chatId))
                 .parseMode(ParseMode.MARKDOWN)
                 .text(message)
+                .replyToMessageId(messageToReply)
                 .replyMarkup(!withCancelButton
                         ? null
                         : ReplyKeyboardMarkup.builder()
@@ -158,7 +173,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                         .keyboard(Collections.singleton(keyboardRow))
                         .build())
                 .build();
-        executeCommand(method);
+        executeCommand(method, fileId);
         log.info(transformTgMessage(message));
     }
 
@@ -172,7 +187,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                         .keyboard(createRequestGetColumnNameMessageKeyboard(buttons, 3))
                         .build())
                 .build();
-        executeCommand(method);
+        executeCommand(method, null);
     }
 
     public void sendRequestGetProjectCode(String bankName, String fileName, List<String> buttons) {
@@ -185,7 +200,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                         .keyboard(createRequestGetColumnNameMessageKeyboard(buttons, 1))
                         .build())
                 .build();
-        executeCommand(method);
+        executeCommand(method, null);
     }
 
     public void sendRequestGetColumnName(String fileName, List<String> requiredEmptyColumn, List<String> columnLines) {
@@ -198,7 +213,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                         .keyboard(createRequestGetColumnNameMessageKeyboard())
                         .build())
                 .build();
-        executeCommand(method);
+        executeCommand(method, null);
     }
 
     public void sendRequestGetRequireColumn(FileInfoEntity file, String requireField) {
@@ -211,7 +226,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                         .keyboard(createRequestGetRequireColumnNameMessageMessageKeyboard(file))
                         .build())
                 .build();
-        executeCommand(method);
+        executeCommand(method, file.getId());
     }
 
     private static String createRequestGetColumnNameMessage(String fileName, List<String> requiredEmptyColumn,
@@ -278,10 +293,10 @@ public class TelegramPollingService extends TelegramLongPollingBot {
         SetMyCommands.SetMyCommandsBuilder commandsBuilder = SetMyCommands.builder();
         commandsBuilder.commands(Collections.singletonList(BotCommand.builder().command("/start")
                 .description("/start").build()));
-        executeCommand(commandsBuilder.build());
+        executeAnyCommand(commandsBuilder.build());
     }
 
-    private void executeCommand(BotApiMethod<?> method) {
+    private void executeAnyCommand(BotApiMethod<?> method) {
         try {
             execute(method);
         } catch (TelegramApiException e) {
@@ -290,5 +305,24 @@ public class TelegramPollingService extends TelegramLongPollingBot {
         }
     }
 
+    private void executeCommand(BotApiMethod<Message> method, Long fileId) {
+        sendApiMethodAsync(method, new SentCallback<Message>() {
+            @Override
+            public void onResult(BotApiMethod<Message> method, Message response) {
+                Optional.ofNullable(fileId).ifPresent(id ->
+                        eventPublisher.publishEvent(new SaveMessageIdEvent(this,
+                        response.getMessageId(), fileId)));
+            }
 
+            @Override
+            public void onError(BotApiMethod<Message> method, TelegramApiRequestException apiException) {
+                log.debug(apiException);
+            }
+
+            @Override
+            public void onException(BotApiMethod<Message> method, Exception exception) {
+                log.debug(exception);
+            }
+        });
+    }
 }

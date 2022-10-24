@@ -8,8 +8,6 @@ import ru.medvedev.importer.component.VtbProperties;
 import ru.medvedev.importer.dto.request.LoginRequest;
 import ru.medvedev.importer.dto.response.LoginResponse;
 
-import java.net.URI;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -21,10 +19,10 @@ public class VtbAuthClientService {
     public String login() {
         LoginRequest request = new LoginRequest();
         request.setGrant_type("client_credentials");
-        request.setClient_id(properties.getClientId());
+        request.setClient_id(String.format("%s%s", properties.getClientId(), properties.getDomen()));
         request.setClient_secret(properties.getClientSecret());
 
-        LoginResponse response = client.login(URI.create(properties.getTokenUrl()), request);
+        LoginResponse response = client.login(request);
         properties.setAccessToken(response.getAccessToken());
         return response.getAccessToken();
     }

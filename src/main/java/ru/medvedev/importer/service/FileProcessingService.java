@@ -43,7 +43,7 @@ public class FileProcessingService {
         fileInfoService.getNewFileToProcessing().ifPresent(entity -> {
             log.debug("*** launch file processing [{}, id = {}]", entity.getName(), entity.getId());
             eventPublisher.publishEvent(new ImportEvent(this, "Взят в обработку",
-                    EventType.LOG_TG, entity.getId(), true));
+                    EventType.FILE_PROCESS, entity.getId(), true));
             entity = fileInfoService.changeStatus(entity, FileStatus.IN_PROCESS);
             try {
                 if (entity.getSource() == FileSource.UI) {

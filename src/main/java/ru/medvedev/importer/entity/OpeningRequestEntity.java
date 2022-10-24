@@ -7,6 +7,7 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Data
 @Entity
@@ -43,7 +44,9 @@ public class OpeningRequestEntity {
     @PrePersist
     public void prePersist() {
         this.lastCheck = LocalDateTime.now();
-        this.status = OpeningRequestStatus.IN_QUEUE;
+        if (status == null) {
+            this.status = OpeningRequestStatus.IN_QUEUE;
+        }
     }
 
     @PreUpdate
@@ -52,7 +55,7 @@ public class OpeningRequestEntity {
     }
 
     public Integer incRetryRequestCount() {
-        this.retryRequestCount++;
+        this.retryRequestCount = (Optional.ofNullable(retryRequestCount).map(value -> value + 1).orElse(1));
         return retryRequestCount;
     }
 }

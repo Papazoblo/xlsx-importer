@@ -13,7 +13,7 @@ import java.util.List;
 @Entity
 @Table(name = "contact")
 @Data
-public class ContactEntity {
+public class ContactEntity implements Cloneable {
 
     @Id
     @SequenceGenerator(name = "contact_seq_gen", sequenceName = "contact_seq_id", allocationSize = 1)
@@ -80,7 +80,8 @@ public class ContactEntity {
         createAt = LocalDateTime.now();
     }
 
-    public ContactEntity getClone() {
+    @Override
+    public ContactEntity clone() {
         ContactEntity entity = new ContactEntity();
         entity.setOrgName(this.orgName);
         entity.setName(this.name);
