@@ -101,7 +101,7 @@ public class BodyProcessingService {
         //запуск обработки по разным банкам
         fileInfoBankService.getByDownloadStatus(FileInfoBankStatus.IN_QUEUE).ifPresent(fib -> {
 
-            eventPublisher.publishEvent(new ImportEvent(this, "Разбиваю контакты по пачкам в `" +
+            eventPublisher.publishEvent(new ImportEvent(this, "Разбиваю контакты по группам в `" +
                     fib.getBank().getTitle() + "`",
                     EventType.LOG_TG, fib.getFileInfoId()));
             try {
@@ -146,116 +146,127 @@ public class BodyProcessingService {
         });
     }
 
-    @Scheduled(cron = "${cron.tg-file-check-request-status}")
-    public void checkRequestStatus() {
+    @Scheduled(cron = "${cron.check-request-status-vtb}")
+    public void checkRequestStatusVtb() {
+        openingRequestService.getFirstByStatusAndBank(IN_QUEUE, VTB).ifPresent(this::checkRequestStatus);
+    }
+
+    @Scheduled(cron = "${cron.check-request-status-opening}")
+    public void checkRequestStatusOpening() {
+        openingRequestService.getFirstByStatusAndBank(IN_QUEUE, VTB_OPENING).ifPresent(this::checkRequestStatus);
+    }
+
+    private void checkRequestStatus(OpeningRequestEntity request) {
         //запуск обработки по разным банкам
-        openingRequestService.getFirstByStatus(IN_QUEUE).ifPresent(request -> {
-            openingRequestService.getFirstByStatus(CHECKING);
-            FileInfoBankEntity fib = request.getFileInfoBank();
+        openingRequestService.getFirstByStatus(CHECKING);
+        FileInfoBankEntity fib = request.getFileInfoBank();
 
-            eventPublisher.publishEvent(new ImportEvent(this, "Проверяю пачку для `" +
-                    fib.getBank().getTitle() + "`",
-                    EventType.LOG_TG, fib.getFileInfoId()));
+        eventPublisher.publishEvent(new ImportEvent(this, "Проверяю группу для `" +
+                fib.getBank().getTitle() + "`",
+                EventType.LOG_TG, fib.getFileInfoId()));
 
-            try {
-                BankClientService bankClientService = bankClientServiceFactory.getBankClientService(fib.getBank());
+        try {
+            BankClientService bankClientService = bankClientServiceFactory.getBankClientService(fib.getBank());
 
-                if (fib.getBank() == VTB_OPENING) {
-                    CheckLeadResult result = bankClientService.getCheckLeadResult(request.getRequestId(), fib.getFileInfoId());
-                    if (result.getStatus()) {
-                        //openingRequestService.changeStatus(request.getId(), OpeningRequestStatus.SUCCESS_CHECK);
-
-                        result.getLeadResponse().forEach(lead -> request.getContacts().forEach(contact -> {
-                            if (contact.getInn().equals(lead.getInn())) {
-                                contact.setStatus(lead.getResponseCode() == CheckLeadStatus.POSITIVE
-                                        ? ContactStatus.DOWNLOADED : ContactStatus.REJECTED);
-                            }
-                        }));
-                        request.setStatus(SUCCESS_CHECK);
-                    } else {
-                        //openingRequestService.changeStatus(request.getId(), OpeningRequestStatus.IN_QUEUE);
-                        request.setStatus(IN_QUEUE);
-                    }
-                } else {
-                    CheckLeadResult result = bankClientService.getAllFromCheckLead(request.getContacts().stream()
-                            .map(ContactEntity::getInn)
-                            .collect(toList()), fib.getFileInfoId());
-                    request.getContacts().forEach(contact -> result.getLeadResponse().forEach(lead -> {
+            if (fib.getBank() == VTB_OPENING) {
+                CheckLeadResult result = bankClientService.getCheckLeadResult(request.getRequestId(), fib.getFileInfoId());
+                if (result.getStatus()) {
+                    result.getLeadResponse().forEach(lead -> request.getContacts().forEach(contact -> {
                         if (contact.getInn().equals(lead.getInn())) {
                             contact.setStatus(lead.getResponseCode() == CheckLeadStatus.POSITIVE
                                     ? ContactStatus.DOWNLOADED : ContactStatus.REJECTED);
                         }
                     }));
                     request.setStatus(SUCCESS_CHECK);
+                } else {
+                    request.setStatus(IN_QUEUE);
                 }
-            } catch (FileProcessingException | OperationNotSupportedException ex) {
-                log.debug("*** Error check lead exception", ex);
-                eventPublisher.publishEvent(new ImportEvent(this, ex.getMessage(), EventType.LOG,
-                        fib.getFileInfoId()));
-                request.setStatus(ERROR);
-            } catch (Exception ex) {
-                log.debug("Error check lead exception", ex);
-                eventPublisher.publishEvent(new ImportEvent(this, Optional.ofNullable(ex.getMessage())
-                        .orElse("Непредвиденная ошибка\n" + ex.getClass()), EventType.LOG,
-                        fib.getFileInfoId()));
-                request.setStatus(ERROR);
+            } else {
+                CheckLeadResult result = bankClientService.getAllFromCheckLead(request.getContacts().stream()
+                        .map(ContactEntity::getInn)
+                        .collect(toList()), fib.getFileInfoId());
+                request.getContacts().forEach(contact -> result.getLeadResponse().forEach(lead -> {
+                    if (contact.getInn().equals(lead.getInn())) {
+                        contact.setStatus(lead.getResponseCode() == CheckLeadStatus.POSITIVE
+                                ? ContactStatus.DOWNLOADED : ContactStatus.REJECTED);
+                    }
+                }));
+                request.setStatus(SUCCESS_CHECK);
             }
-            openingRequestService.save(request);
-        });
+        } catch (FileProcessingException | OperationNotSupportedException ex) {
+            log.debug("*** Error check lead exception", ex);
+            eventPublisher.publishEvent(new ImportEvent(this, ex.getMessage(), EventType.LOG,
+                    fib.getFileInfoId()));
+            request.setStatus(ERROR);
+        } catch (Exception ex) {
+            log.debug("Error check lead exception", ex);
+            eventPublisher.publishEvent(new ImportEvent(this, Optional.ofNullable(ex.getMessage())
+                    .orElse("Непредвиденная ошибка\n" + ex.getClass()), EventType.LOG,
+                    fib.getFileInfoId()));
+            request.setStatus(ERROR);
+        }
+        if (request.getStatus() == ERROR) {
+            if (request.incRetryRequestCount() <= 3) {
+                request.setStatus(IN_QUEUE);
+            }
+        }
+        openingRequestService.save(request);
+        if (request.getStatus() == SUCCESS_CHECK) {
+            sendToSkorozvon(request);
+        }
     }
 
-
-    @Scheduled(cron = "${cron.tg-file-send-to-skorozvon}")
-    public void sendToSkorozvon() {
+    //@Scheduled(cron = "${cron.tg-file-send-to-skorozvon}")
+    public void sendToSkorozvon(OpeningRequestEntity request) {
         //запуск обработки по разным банкам
-        openingRequestService.getFirstByStatus(OpeningRequestStatus.SUCCESS_CHECK).ifPresent(request -> {
-            openingRequestService.changeStatus(request.getId(), OpeningRequestStatus.DOWNLOADING);
-            FileInfoBankEntity fib = request.getFileInfoBank();
+        //openingRequestService.getFirstByStatus(OpeningRequestStatus.SUCCESS_CHECK).ifPresent(request -> {
+        openingRequestService.changeStatus(request.getId(), OpeningRequestStatus.DOWNLOADING);
+        FileInfoBankEntity fib = request.getFileInfoBank();
 
-            eventPublisher.publishEvent(new ImportEvent(this, "Отправляю пачку в скорозвон `" +
-                    fib.getBank().getTitle() + "`",
-                    EventType.LOG_TG, fib.getFileInfoId()));
-            try {
-                FileInfoEntity fileInfo = request.getFileInfoBank().getFileInfo();
+        eventPublisher.publishEvent(new ImportEvent(this, "Отправляю группу в скорозвон `" +
+                fib.getBank().getTitle() + "`",
+                EventType.LOG_TG, fib.getFileInfoId()));
+        try {
+            FileInfoEntity fileInfo = request.getFileInfoBank().getFileInfo();
 
-                if (fib.getProjectId() == null) {
-                    throw new NumberProjectNotFoundException("Не указан номер проекта", fileInfo.getId());
-                }
-
-                List<CreateOrganizationDto> orgList = request.getContacts().stream()
-                        .filter(contact -> contact.getStatus() == ContactStatus.DOWNLOADED)
-                        .collect(groupingBy(ContactEntity::getInn)).values()
-                        .stream()
-                        .map(contactList -> {
-                            CreateOrganizationDto orgDto = xlsxRecordToOrganization(contactList.get(0));
-                            contactList.forEach(contact -> orgDto.getLeads().add(xlsxRecordToLead(contact)));
-                            return orgDto;
-                        }).collect(toList());
-
-                skorozvonClientService.createMultiple(fib.getProjectId(),
-                        orgList,
-                        Collections.singletonList(fileInfo.getName()));
-
-                openingRequestService.changeStatus(request.getId(), OpeningRequestStatus.DOWNLOADED);
-            } catch (FileProcessingException ex) {
-                log.debug("Error send to skorozvon: {}", ex.getMessage());
-                eventPublisher.publishEvent(new ImportEvent(this, ex.getMessage(), EventType.LOG,
-                        ex.getFileId()));
-                openingRequestService.changeStatus(request.getId(), ERROR);
-            } catch (Exception ex) {
-                log.debug("Error send to skorozvon", ex);
-                eventPublisher.publishEvent(new ImportEvent(this, Optional.ofNullable(ex.getMessage())
-                        .orElse("Непредвиденная ошибка\n" + ex.getClass()), EventType.LOG,
-                        fib.getFileInfoId()));
-                openingRequestService.changeStatus(request.getId(), ERROR);
+            if (fib.getProjectId() == null) {
+                throw new NumberProjectNotFoundException("Не указан номер проекта", fileInfo.getId());
             }
-        });
+
+            List<CreateOrganizationDto> orgList = request.getContacts().stream()
+                    .filter(contact -> contact.getStatus() == ContactStatus.DOWNLOADED)
+                    .collect(groupingBy(ContactEntity::getInn)).values()
+                    .stream()
+                    .map(contactList -> {
+                        CreateOrganizationDto orgDto = xlsxRecordToOrganization(contactList.get(0));
+                        contactList.forEach(contact -> orgDto.getLeads().add(xlsxRecordToLead(contact)));
+                        return orgDto;
+                    }).collect(toList());
+
+            skorozvonClientService.createMultiple(fib.getProjectId(),
+                    orgList,
+                    Collections.singletonList(fileInfo.getName()));
+
+            openingRequestService.changeStatus(request.getId(), OpeningRequestStatus.DOWNLOADED);
+        } catch (FileProcessingException ex) {
+            log.debug("Error send to skorozvon: {}", ex.getMessage());
+            eventPublisher.publishEvent(new ImportEvent(this, ex.getMessage(), EventType.LOG,
+                    ex.getFileId()));
+            openingRequestService.changeStatus(request.getId(), ERROR);
+        } catch (Exception ex) {
+            log.debug("Error send to skorozvon", ex);
+            eventPublisher.publishEvent(new ImportEvent(this, Optional.ofNullable(ex.getMessage())
+                    .orElse("Непредвиденная ошибка\n" + ex.getClass()), EventType.LOG,
+                    fib.getFileInfoId()));
+            openingRequestService.changeStatus(request.getId(), ERROR);
+        }
+        //});
     }
 
     @Scheduled(cron = "${cron.ending-file-processing}")
     public void endingFileProcessing() {
 
-        fileInfoService.getWaitingFile().ifPresent(file -> {
+        fileInfoService.getWaitingFile().forEach(file -> {
             log.debug("*** try ending file processing [{}, id = {}]", file.getName(), file.getId());
 
             file.getBankList().forEach(fib -> {
@@ -275,15 +286,10 @@ public class BodyProcessingService {
                 file.setStatus(FileStatus.SUCCESS);
             }
 
-            fileInfoService.save(file);
             if (file.getStatus() == FileStatus.SUCCESS) {
-                Map<Bank, Integer> statisticMap = file.getBankList().stream()
-                        .collect(toMap(FileInfoBankEntity::getBank, item -> item.getOpeningRequests().stream()
-                                .filter(request -> request.getStatus() == DOWNLOADED)
-                                .mapToInt(request -> request.getContacts().size())
-                                .sum()));
+
                 eventPublisher.publishEvent(new ImportEvent(this, "Обработка заверщена\n" +
-                        statisticMap.entrySet().stream()
+                        fileInfoBankService.getDownloadStatistic(file.getId()).entrySet().stream()
                                 .map(entry -> entry.getKey().getTitle() + ": " + entry.getValue())
                                 .collect(Collectors.joining("\n")),
                         EventType.SUCCESS, file.getId()));

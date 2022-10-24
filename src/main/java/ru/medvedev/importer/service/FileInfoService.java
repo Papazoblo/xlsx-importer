@@ -89,8 +89,8 @@ public class FileInfoService {
         return repository.findFirstByStatusAndProcessingStepOrderByCreateAt(FileStatus.NEW, INITIALIZE);
     }
 
-    public Optional<FileInfoEntity> getWaitingFile() {
-        return repository.findByStatus(FileStatus.WAITING_CHECK);
+    public List<FileInfoEntity> getWaitingFile() {
+        return repository.findAllByStatus(FileStatus.WAITING_CHECK);
     }
 
     public Optional<FileInfoEntity> getFileInProcess() {

@@ -6,14 +6,22 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ru.medvedev.importer.entity.OpeningRequestEntity;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.OpeningRequestStatus;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface OpeningRequestRepository extends JpaRepository<OpeningRequestEntity, Long> {
 
-    Optional<OpeningRequestEntity> findFirstByStatus(OpeningRequestStatus status);
+    Optional<OpeningRequestEntity> findFirstByStatusOrderByLastCheckAsc(OpeningRequestStatus status);
+
+    @Query(value = "select r from OpeningRequestEntity r " +
+            "where r.status = :status and r.fileInfoBank.bank = :bank " +
+            "order by r.lastCheck asc ")
+    List<OpeningRequestEntity> findFirstByStatusAndBank(OpeningRequestStatus status,
+                                                        Bank bank);
 
     @Modifying
     @Transactional

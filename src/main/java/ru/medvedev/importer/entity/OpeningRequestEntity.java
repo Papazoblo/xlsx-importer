@@ -4,6 +4,7 @@ import lombok.Data;
 import ru.medvedev.importer.enums.OpeningRequestStatus;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,10 +34,25 @@ public class OpeningRequestEntity {
     @OneToMany(fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
     private List<ContactEntity> contacts = new ArrayList<>();
 
+    @Column(name = "last_check")
+    public LocalDateTime lastCheck;
+
+    @Column(name = "retry_request_count")
+    public Integer retryRequestCount;
 
     @PrePersist
     public void prePersist() {
+        this.lastCheck = LocalDateTime.now();
         this.status = OpeningRequestStatus.IN_QUEUE;
     }
 
+    @PreUpdate
+    public void preUpdate() {
+        this.lastCheck = LocalDateTime.now();
+    }
+
+    public Integer incRetryRequestCount() {
+        this.retryRequestCount++;
+        return retryRequestCount;
+    }
 }

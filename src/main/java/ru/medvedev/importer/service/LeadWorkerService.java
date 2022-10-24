@@ -181,11 +181,12 @@ public class LeadWorkerService {
     public void fromStatusWaitToCreateLeadResponse() {
 
         webhookStatisticService.getByStatus(WebhookStatus.WAIT_CREATE_LEAD_RESPONSE).forEach(item -> {
-            BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
             try {
+                BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
                 if (clientService.getCreateLeadResult(item.getOpeningRequestId())) {
                     webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
                 }
+                return;
             } catch (OperationNotSupportedException ex) {
                 log.debug("*** Operation not supported exception {}", item);
             } catch (ErrorCreateVtbLeadException ex) {
@@ -282,11 +283,6 @@ public class LeadWorkerService {
             saveContacts(records, fileBank);
             fileInfoBankService.updateDownloadStatus(IN_QUEUE, fileBank.getId());
         });
-        /*eventPublisher.publishEvent(new ImportEvent(this, "Импорт завершён\n" +
-                statisticMap.entrySet().stream()
-                        .map(entry -> entry.getKey().getTitle() + ": " + entry.getValue())
-                        .collect(Collectors.joining("\n")),
-                EventType.SUCCESS, fileInfo.getId()));*/
     }
 
     /*public void processXlsxRecords(FileInfoEntity fileInfo) throws IOException {
@@ -344,9 +340,9 @@ public class LeadWorkerService {
                     contact.setPhone(isNotBlank(record.getPhone()) ? record.getPhone() : record.getOrgPhone());
                     contact.setBank(fileBank.getBank());
 
-                    if (isBlank(contact.getOrgName())) {
+                   /* if (isBlank(contact.getOrgName())) {
                         contact.setOrgName(getFioStringFromContact(contact));
-                    }
+                    }*/
                     return contact;
                 }).collect(Collectors.toList());
         return contactService.filteredContacts(contacts, fileBank);

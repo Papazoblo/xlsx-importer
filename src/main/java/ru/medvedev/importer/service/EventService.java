@@ -66,9 +66,9 @@ public class EventService {
                     telegramPollingService.sendMessage(String.format(MESSAGE_PATTERN, event.getEventType().getDescription(),
                             getCurDateTime(),
                             file.getName(), file.getSource().getDescription(), event.getDescription()), chatId, event.isWithCancelButton());
-                    if (event.getEventType() == EventType.SUCCESS) {
+                    /*if (event.getEventType() == EventType.SUCCESS) {
                         printStatistic(chatId, file);
-                    }
+                    }*/
                 });
             } else if (event.getFileId() == -1) {
                 telegramPollingService.sendMessage(String.format(MESSAGE_SIMPLE_PATTERN, event.getDescription()),
