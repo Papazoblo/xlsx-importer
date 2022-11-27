@@ -7,7 +7,7 @@ import ru.medvedev.importer.config.RetryerConfiguration;
 import ru.medvedev.importer.dto.request.LoginRequest;
 import ru.medvedev.importer.dto.response.LoginResponse;
 
-@FeignClient(value = "vtbAuth", url = "${vtb.token-url}", configuration = {
+@FeignClient(value = "vtbAuth", name = "vtbAuth", url = "${vtb.token-url}", configuration = {
         RetryerConfiguration.class
 })
 public interface VtbAuthClient {

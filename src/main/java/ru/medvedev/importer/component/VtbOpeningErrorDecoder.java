@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ru.medvedev.importer.dto.response.VtbOpeningErrorResponse;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
+import ru.medvedev.importer.exception.TimeOutException;
 
 import java.sql.Date;
 import java.time.LocalDateTime;
@@ -36,6 +37,10 @@ public class VtbOpeningErrorDecoder implements ErrorDecoder {
                 throw new ErrorCreateVtbLeadException(responseDto.getDescription(), -1L);
 
             }
+        }
+
+        if(response.status() == 408) {
+            throw new TimeOutException(s);
         }
 
         if (response.status() >= 500) {

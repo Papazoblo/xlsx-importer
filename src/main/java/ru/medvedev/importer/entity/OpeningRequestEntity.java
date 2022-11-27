@@ -45,7 +45,7 @@ public class OpeningRequestEntity {
     public void prePersist() {
         this.lastCheck = LocalDateTime.now();
         if (status == null) {
-            this.status = OpeningRequestStatus.IN_QUEUE;
+            this.status = OpeningRequestStatus.CREATING;
         }
     }
 

@@ -17,6 +17,7 @@ import ru.medvedev.importer.dto.response.CheckLeadBadRequestResponse;
 import ru.medvedev.importer.dto.response.CheckLeadResponse;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
+import ru.medvedev.importer.exception.TimeOutException;
 
 import javax.naming.OperationNotSupportedException;
 import java.io.IOException;
@@ -49,7 +50,7 @@ public class VtbClientService implements BankClientService {
         try {
             client.addLead(request, BEARER + properties.getAccessToken());
             return CreateLeadResult.of(true);
-        } catch (ErrorCreateVtbLeadException ex) {
+        } catch (TimeOutException | ErrorCreateVtbLeadException ex) {
             throw ex;
         } catch (Exception ex) {
             log.debug("*** ошибка добавления лида " + ex.getMessage(), ex);
@@ -72,6 +73,8 @@ public class VtbClientService implements BankClientService {
             ResponseEntity<CheckLeadResponse> response = client.checkLeads(leadRequest,
                     BEARER + properties.getAccessToken());
             return CheckLeadResult.of(true, null, response.getBody().getLeads());
+        } catch (TimeOutException ex) {
+            throw ex;
         } catch (Exception ex) {
             CheckLeadBadRequestResponse responseBody = new CheckLeadBadRequestResponse();
             responseBody.setMoreInformation("Ошибка проверки на дубликат");

@@ -12,6 +12,7 @@ import ru.medvedev.importer.dto.request.LeadRequest;
 import ru.medvedev.importer.dto.response.CheckLeadBadRequestResponse;
 import ru.medvedev.importer.enums.CheckLeadStatus;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
+import ru.medvedev.importer.exception.TimeOutException;
 
 import java.io.IOException;
 import java.sql.Date;
@@ -73,6 +74,10 @@ public class VtbErrorDecoder implements ErrorDecoder {
             } catch (IOException e) {
                 log.debug("*** error updating check lead request", e);
             }
+        }
+
+        if(response.status() == 408) {
+            throw new TimeOutException(s);
         }
 
         if (response.status() >= 500) {

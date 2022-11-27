@@ -12,7 +12,7 @@ import ru.medvedev.importer.dto.request.LeadRequest;
 import ru.medvedev.importer.dto.response.AddLeadResponse;
 import ru.medvedev.importer.dto.response.CheckLeadResponse;
 
-@FeignClient(value = "vtbApi", url = "${vtb.url}", configuration = {
+@FeignClient(value = "vtbApi", name = "vtbApi", url = "${vtb.url}", configuration = {
         RetryerConfiguration.class, VtbErrorDecoder.class, VtbFeignInterceptor.class
 })
 public interface VtbApiClient {

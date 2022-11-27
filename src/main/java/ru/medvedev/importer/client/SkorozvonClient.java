@@ -11,7 +11,7 @@ import ru.medvedev.importer.dto.request.ImportLeadRequest;
 import ru.medvedev.importer.dto.response.ImportLeadResponse;
 import ru.medvedev.importer.dto.response.LoginResponse;
 
-@FeignClient(value = "skorozvon", url = "${skorozvon.url}", configuration = {
+@FeignClient(value = "skorozvon", name = "skorozvon", url = "${skorozvon.url}", configuration = {
         RetryerConfiguration.class, SkorozvonFeignInterceptor.class, SkorozvonErrorDecoder.class
 })
 public interface SkorozvonClient {

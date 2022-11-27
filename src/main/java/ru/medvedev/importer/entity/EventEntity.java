@@ -6,6 +6,8 @@ import ru.medvedev.importer.enums.EventType;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
+import static org.hibernate.internal.util.StringHelper.isBlank;
+
 @Table(name = "event")
 @Entity
 @Data
@@ -32,5 +34,8 @@ public class EventEntity {
     @PrePersist
     public void prePersist() {
         createAt = LocalDateTime.now();
+        if(isBlank(description)) {
+            description = "UNKNOWN";
+        }
     }
 }

@@ -15,6 +15,7 @@ import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
+import ru.medvedev.importer.exception.TimeOutException;
 import ru.medvedev.importer.service.bankclientservice.BankClientService;
 import ru.medvedev.importer.service.bankclientservice.BankClientServiceFactory;
 
@@ -77,6 +78,9 @@ public class LeadWorkerService {
                         webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.FIXED, WebhookStatus.REJECTED);
                     }
                 }
+            } catch (TimeOutException ex) {
+                log.debug("*** FROM FIXED STATUS TIMEOUT ERROR " + item.getInn());
+                webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.FIXED);
             } catch (ErrorCheckLeadException ex) {
 
                 log.debug("*** Error check duplicate: {} {}", ex.getMessage(), ex);
@@ -112,6 +116,9 @@ public class LeadWorkerService {
                         webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.REJECTED);
                     }
                 }
+            } catch (TimeOutException ex) {
+                log.debug("*** FROM WAIT CHECK LEAD STATUS TIMEOUT ERROR " + item.getInn());
+                webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.WAIT_CHECK_LEAD_AFTER_FIXED_RESPONSE);
             } catch (OperationNotSupportedException ex) {
                 webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.ERROR);
             } catch (ErrorCheckLeadException ex) {
@@ -164,6 +171,10 @@ public class LeadWorkerService {
                             String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Непредвиденная ошибка", leadDto.getInn(), leadDto.getCity(), leadDto.getName()),
                             EventType.LOG_TG));
                 }
+            } catch (TimeOutException ex) {
+                log.debug("*** CREATE LEAD TIMEOUT ERROR " + item.getInn());
+                webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.TRY_TO_CREATE_LEAD);
+                return;
             } catch (ErrorCreateVtbLeadException ex) {
                 eventPublisher.publishEvent(new NotificationEvent(this,
                         String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
@@ -183,6 +194,10 @@ public class LeadWorkerService {
                 if (clientService.getCreateLeadResult(item.getOpeningRequestId())) {
                     webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
                 }
+                return;
+            } catch (TimeOutException ex) {
+                log.debug("*** FROM STATUS WAIT TO CREATE LEAD TIMEOUT ERROR " + item.getInn());
+                webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.WAIT_CREATE_LEAD_RESPONSE);
                 return;
             } catch (OperationNotSupportedException ex) {
                 log.debug("*** Operation not supported exception {}", item);
@@ -204,25 +219,30 @@ public class LeadWorkerService {
 
         webhookStatisticService.getByStatus(WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS).forEach(item -> {
             BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
-            CheckLeadResult result = clientService.getAllFromCheckLead(Collections.singletonList(item.getInn()), null);
-            //и проверям добавился лид или нет
-            if (item.getBank() == Bank.VTB_OPENING) {
-                webhookStatisticService.updateStatisticStatusAndOpeningId(item.getId(),
-                        WebhookStatus.WAIT_CHECK_LEAD_AFTER_CREATE_RESPONSE, result.getAdditionalInfo());
-            } else {
-                if (result.getLeadResponse().stream().anyMatch(lead ->
-                        lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {
-                    log.debug("*** lead loaded in {} {} ", item.getBank(), item.getInn());
-                    webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.SUCCESS);
-                    eventPublisher.publishEvent(new NotificationEvent(this,
-                            String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
-                                    item.getInn(),
-                                    item.getCity(),
-                                    item.getName()),
-                            EventType.LOG_TG));
+            try {
+                CheckLeadResult result = clientService.getAllFromCheckLead(Collections.singletonList(item.getInn()), null);
+                //и проверям добавился лид или нет
+                if (item.getBank() == Bank.VTB_OPENING) {
+                    webhookStatisticService.updateStatisticStatusAndOpeningId(item.getId(),
+                            WebhookStatus.WAIT_CHECK_LEAD_AFTER_CREATE_RESPONSE, result.getAdditionalInfo());
                 } else {
-                    webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.ERROR);
+                    if (result.getLeadResponse().stream().anyMatch(lead ->
+                            lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {
+                        log.debug("*** lead loaded in {} {} ", item.getBank(), item.getInn());
+                        webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.SUCCESS);
+                        eventPublisher.publishEvent(new NotificationEvent(this,
+                                String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
+                                        item.getInn(),
+                                        item.getCity(),
+                                        item.getName()),
+                                EventType.LOG_TG));
+                    } else {
+                        webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.ERROR);
+                    }
                 }
+            } catch (TimeOutException ex) {
+                log.debug("*** FROM STATUS TRY TO CREATE LEAD TIMEOUT ERROR " + item.getInn());
+                webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
             }
         });
     }
@@ -248,6 +268,9 @@ public class LeadWorkerService {
                 } else {
                     webhookStatisticService.updateStatisticStatus(item.getInn(), WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS, WebhookStatus.ERROR);
                 }
+            } catch (TimeOutException ex) {
+                log.debug("*** FROM STATUS WAIT CHECK LEAD TIMEOUT ERROR " + item.getInn());
+                webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.WAIT_CHECK_LEAD_AFTER_CREATE_RESPONSE);
             } catch (OperationNotSupportedException e) {
                 webhookStatisticService.updateStatisticStatus(item.getId(), WebhookStatus.ERROR);
             }

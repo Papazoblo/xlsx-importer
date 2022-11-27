@@ -9,7 +9,7 @@ import ru.medvedev.importer.dto.request.LoginRequest;
 import ru.medvedev.importer.dto.request.RefreshRequest;
 import ru.medvedev.importer.dto.response.LoginResponse;
 
-@FeignClient(value = "skorozvonAuth", url = "${skorozvon.url}", configuration = {
+@FeignClient(value = "skorozvonAuth", name = "skorozvonAuth", url = "${skorozvon.url}", configuration = {
         RetryerConfiguration.class
 })
 public interface SkorozvonAuthClient {

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum OpeningRequestStatus {
 
+    CREATING("Создание"),
     IN_QUEUE("Ожидают"),
     CHECKING("Проверяются"),
     SUCCESS_CHECK("Проверены"),

@@ -10,8 +10,16 @@ server:
 feign:
   client:
     config:
-      default:
+      vtbOpeningApi:
         loggerLevel: full
+      vtbAuth:
+        loggerLevel: full
+      vtbApi:
+        loggerLevel: full
+      skorozvon:
+        loggerLevel: basic
+      skorozvonAuth:
+        loggerLevel: basic
 
 logging:
   file:
@@ -53,6 +61,7 @@ cron:
   tg-initialized-new-file: '*/3 * * * * *'
   tg-file-body-processor: '*/3 * * * * *'
   tg-file-send-to-check: '2 */1 * * * *'
+  creating-request: '5 */1 * * * *'
   check-request-status-vtb: '*/35 * * * * *'
   check-request-status-opening: '*/35 * * * * *'
   tg-file-send-to-skorozvon: '10 */1 * * * *'

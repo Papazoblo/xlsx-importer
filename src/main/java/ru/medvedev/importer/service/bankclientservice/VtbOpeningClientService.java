@@ -22,6 +22,7 @@ import ru.medvedev.importer.enums.VtbOpeningInnStatus;
 import ru.medvedev.importer.enums.VtbOpeningRequestStatus;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
+import ru.medvedev.importer.exception.TimeOutException;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,7 +43,7 @@ public class VtbOpeningClientService implements BankClientService {
 
     public CreateLeadResult createLead(WebhookLeadDto webhookLead) {
 
-        log.debug("*** Create lead in VTB Opening");
+        log.debug("*** Create lead in Opening");
 
         VtbOpeningCreateLead lead = new VtbOpeningCreateLead();
         lead.setCity(webhookLead.getCity());
@@ -65,7 +66,7 @@ public class VtbOpeningClientService implements BankClientService {
                 log.debug("*** VtbOpening error create lead [{}]", response.getStatusCode());
                 return CreateLeadResult.of(false);
             }
-        } catch (ErrorCreateVtbLeadException ex) {
+        } catch (TimeOutException | ErrorCreateVtbLeadException ex) {
             throw ex;
         } catch (Exception ex) {
             log.debug("*** ошибка добавления лида " + ex.getMessage(), ex);
@@ -76,7 +77,7 @@ public class VtbOpeningClientService implements BankClientService {
     @Override
     public CheckLeadResult getAllFromCheckLead(List<String> innList, Long fileId) {
 
-        log.debug("*** Check duplicate in VTB Opening");
+        log.debug("*** Check duplicate in Opening");
 
         VtbOpeningCheckInn request = new VtbOpeningCheckInn();
         request.setInns(innList);
@@ -96,6 +97,8 @@ public class VtbOpeningClientService implements BankClientService {
                 log.debug("*** VtbOpening error check lead status [{}]", response.getStatusCode());
                 return CheckLeadResult.of(false, "blank", Collections.emptyList());
             }
+        } catch (TimeOutException ex) {
+            throw ex;
         } catch (Exception ex) {
             log.debug("*** Error check duplicate: {} {}", ex.getMessage(), ex);
             eventPublisher.publishEvent(new ImportEvent(this, "Ошибка проверки дубликатов ВТБ Открытие. " +

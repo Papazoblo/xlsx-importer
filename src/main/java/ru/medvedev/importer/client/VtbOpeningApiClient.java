@@ -16,7 +16,7 @@ import ru.medvedev.importer.dto.response.VtbOpeningCheckInnResponse;
 import ru.medvedev.importer.dto.response.VtbOpeningCheckResultResponse;
 import ru.medvedev.importer.dto.response.VtbOpeningResponse;
 
-@FeignClient(value = "vtbOpeningApi", url = "${vtb-opening.url}", configuration = {
+@FeignClient(value = "vtbOpeningApi", name = "vtbOpeningApi", url = "${vtb-opening.url}", configuration = {
         RetryerConfiguration.class, VtbOpeningErrorDecoder.class, VtbOpeningFeignInterceptor.class
 })
 public interface VtbOpeningApiClient {
