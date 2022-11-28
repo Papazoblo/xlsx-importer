@@ -1,6 +1,5 @@
 package ru.medvedev.importer.component;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Response;
 import feign.RetryableException;
@@ -10,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import ru.medvedev.importer.dto.LeadDto;
 import ru.medvedev.importer.dto.request.LeadRequest;
 import ru.medvedev.importer.dto.response.CheckLeadBadRequestResponse;
+import ru.medvedev.importer.dto.response.CheckLeadResponse;
 import ru.medvedev.importer.enums.CheckLeadStatus;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
@@ -43,32 +43,34 @@ public class VtbErrorDecoder implements ErrorDecoder {
 
             try {
                 ObjectMapper objectMapper = new ObjectMapper();
-                CheckLeadBadRequestResponse responseBody = objectMapper.readValue(response.body().asInputStream(), CheckLeadBadRequestResponse.class);
-                responseBody.setMoreInformation(String.format("[%s]", responseBody.getMoreInformation().replace("<BackErr> ", "")));
                 if (response.request().url().contains("/check_leads")) {
-                    if (responseBody.getMoreInformation().contains("INVALID_INN")) {
-                        List<LeadDto> leads = objectMapper.readValue(responseBody.getMoreInformation(), new TypeReference<List<LeadDto>>() {
-                        })
-                                .stream()
-                                .filter(lead -> {
-                                    if (lead.getResponseCode() != CheckLeadStatus.INVALID_INN) {
-                                        return true;
-                                    }
-                                    log.debug("*** INVALID_INN {}", lead.getInn());
-                                    return false;
-                                })
-                                .peek(lead -> lead.setResponseCode(null))
-                                .collect(Collectors.toList());
-                        LeadRequest leadRequest = new LeadRequest();
-                        leadRequest.setLeads(leads);
+                    CheckLeadResponse responseBody = objectMapper.readValue(response.body().asInputStream(), CheckLeadResponse.class);
+                    List<LeadDto> leads = responseBody.getLeads()
+                            .stream()
+                            .filter(lead -> {
+                                if (lead.getResponseCode() != CheckLeadStatus.INVALID_INN) {
+                                    return true;
+                                }
+                                log.debug("*** INVALID_INN {}", lead.getInn());
+                                return false;
+                            })
+                            .map(lead -> {
+                                LeadDto newLead = new LeadDto();
+                                newLead.setInn(lead.getInn());
+                                return newLead;
+                            })
+                            .collect(Collectors.toList());
+                    LeadRequest leadRequest = new LeadRequest();
+                    leadRequest.setLeads(leads);
 
-                        response.request().requestTemplate().body(objectMapper.writeValueAsString(leadRequest));
-                        throw new RetryableException(response.status(), response.toString(),
-                                response.request().httpMethod(),
-                                null,
-                                response.request());
-                    }
+                    response.request().requestTemplate().body(objectMapper.writeValueAsString(leadRequest));
+                    throw new RetryableException(response.status(), response.toString(),
+                            response.request().httpMethod(),
+                            null,
+                            response.request());
                 } else if (response.request().url().contains("/leads_impersonal")) {
+                    CheckLeadBadRequestResponse responseBody = objectMapper.readValue(response.body().asInputStream(), CheckLeadBadRequestResponse.class);
+                    responseBody.setMoreInformation(String.format("[%s]", responseBody.getMoreInformation().replace("<BackErr> ", "")));
                     throw new ErrorCreateVtbLeadException(responseBody.getMoreInformation(), -1L);
                 }
             } catch (IOException e) {
@@ -76,7 +78,7 @@ public class VtbErrorDecoder implements ErrorDecoder {
             }
         }
 
-        if(response.status() == 408) {
+        if (response.status() == 408) {
             throw new TimeOutException(s);
         }
 
