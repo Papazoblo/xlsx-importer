@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-public class VtbOpeningCreateLead {
+public class OpeningCreateLead {
 
     @JsonProperty("full_name")
     private String full_name;

@@ -1,11 +1,11 @@
 package ru.medvedev.importer.dto;
 
 import ru.medvedev.importer.enums.Bank;
-import ru.medvedev.importer.enums.OpeningRequestStatus;
+import ru.medvedev.importer.enums.RequestStatus;
 
 public interface RequestStatisticProjection {
 
-    OpeningRequestStatus getStatus();
+    RequestStatus getStatus();
 
     Bank getBank();
 

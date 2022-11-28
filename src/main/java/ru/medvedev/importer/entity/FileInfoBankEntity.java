@@ -42,7 +42,7 @@ public class FileInfoBankEntity {
     private List<ContactEntity> contacts = new ArrayList<>();
 
     @OneToMany(mappedBy = "fileInfoBank", fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
-    private List<OpeningRequestEntity> openingRequests = new ArrayList<>();
+    private List<RequestEntity> openingRequests = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

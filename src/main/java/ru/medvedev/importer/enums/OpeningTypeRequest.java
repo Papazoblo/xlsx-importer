@@ -1,6 +1,6 @@
 package ru.medvedev.importer.enums;
 
-public enum VtbOpeningTypeRequest {
+public enum OpeningTypeRequest {
 
     CREATE_LEAD,
     CHECK_INN

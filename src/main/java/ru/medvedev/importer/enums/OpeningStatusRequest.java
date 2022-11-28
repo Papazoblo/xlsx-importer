@@ -1,6 +1,6 @@
 package ru.medvedev.importer.enums;
 
-public enum VtbOpeningStatusRequest {
+public enum OpeningStatusRequest {
 
     OPENED,
     ERROR,

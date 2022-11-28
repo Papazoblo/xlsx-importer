@@ -1,7 +1,7 @@
 package ru.medvedev.importer.entity;
 
 import lombok.Data;
-import ru.medvedev.importer.enums.OpeningRequestStatus;
+import ru.medvedev.importer.enums.RequestStatus;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -12,7 +12,7 @@ import java.util.Optional;
 @Data
 @Entity
 @Table(name = "opening_request")
-public class OpeningRequestEntity {
+public class RequestEntity {
 
     @Id
     @SequenceGenerator(name = "openingRequestSeqIdGen", sequenceName = "opening_request_seq_id",
@@ -25,7 +25,7 @@ public class OpeningRequestEntity {
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
-    private OpeningRequestStatus status;
+    private RequestStatus status;
 
     @ManyToOne
     @JoinColumn(name = "file_info_bank_id")
@@ -45,7 +45,7 @@ public class OpeningRequestEntity {
     public void prePersist() {
         this.lastCheck = LocalDateTime.now();
         if (status == null) {
-            this.status = OpeningRequestStatus.CREATING;
+            this.status = RequestStatus.CREATING;
         }
     }
 

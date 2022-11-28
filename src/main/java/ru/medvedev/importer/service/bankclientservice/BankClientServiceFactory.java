@@ -9,14 +9,14 @@ import ru.medvedev.importer.enums.Bank;
 public class BankClientServiceFactory {
 
     private final VtbClientService vtbClientService;
-    private final VtbOpeningClientService vtbOpeningClientService;
+    private final OpeningClientService openingClientService;
 
     public BankClientService getBankClientService(Bank bank) {
         switch (bank) {
             case VTB:
                 return vtbClientService;
             case VTB_OPENING:
-                return vtbOpeningClientService;
+                return openingClientService;
         }
         return null;
     }

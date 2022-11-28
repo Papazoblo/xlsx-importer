@@ -40,9 +40,9 @@ import static ru.medvedev.importer.enums.Bank.VTB;
 import static ru.medvedev.importer.enums.Bank.VTB_OPENING;
 import static ru.medvedev.importer.enums.FileInfoBankStatus.*;
 import static ru.medvedev.
-import static ru.medvedev.importer.enums.OpeningRequestStatus.ERROR;
-import static ru.medvedev.importer.enums.OpeningRequestStatus.IN_QUEUE;
-importer.enums.OpeningRequestStatus.*;
+import static ru.medvedev.importer.enums.RequestStatus.ERROR;
+import static ru.medvedev.importer.enums.RequestStatus.IN_QUEUE;
+importer.enums.RequestStatus.*;
 import static ru.medvedev.importer.service.EventService.BANK_NAME_PATTERN;
 import static ru.medvedev.importer.service.EventService.STATISTIC_LINE_PATTERN;
 import static ru.medvedev.importer.utils.StringUtils.*;
@@ -64,7 +64,7 @@ public class BodyProcessingService {
     private final DownloadFilterService downloadFilterService;
     private final ObjectMapper objectMapper;
     private final FileInfoBankService fileInfoBankService;
-    private final OpeningRequestService openingRequestService;
+    private final RequestService requestService;
 
     private final Set<String> regionCodes = new HashSet<>();
 
@@ -117,7 +117,7 @@ public class BodyProcessingService {
                 for (int i = 0; i < contacts.size(); i = i + BATCH_SIZE) {
                     List<ContactEntity> contactSublist = contacts.subList(i, Math.min(i + BATCH_SIZE, contacts.size()));
 
-                    OpeningRequestEntity openingRequest = new OpeningRequestEntity();
+                    RequestEntity openingRequest = new RequestEntity();
                     openingRequest.setFileInfoBank(fib);
                     /*if (fib.getBank() == VTB) {
                         openingRequest.setRequestId("blank");
@@ -155,7 +155,7 @@ public class BodyProcessingService {
 
     @Scheduled(cron = "${cron.creating-request}")
     public void creatingRequest() {
-        openingRequestService.getFirstByStatus(CREATING).ifPresent(request -> {
+        requestService.getFirstByStatus(CREATING).ifPresent(request -> {
             FileInfoBankEntity fib = request.getFileInfoBank();
             try {
                 BankClientService bankClientService = bankClientServiceFactory.getBankClientService(fib.getBank());
@@ -199,21 +199,21 @@ public class BodyProcessingService {
                     request.setStatus(IN_QUEUE);
                 }
             }
-            openingRequestService.save(request);
+            requestService.save(request);
         });
     }
 
     @Scheduled(cron = "${cron.check-request-status-vtb}")
     public void checkRequestStatusVtb() {
-        openingRequestService.getFirstByStatusAndBank(IN_QUEUE, VTB).ifPresent(this::checkRequestStatus);
+        requestService.getFirstByStatusAndBank(IN_QUEUE, VTB).ifPresent(this::checkRequestStatus);
     }
 
     @Scheduled(cron = "${cron.check-request-status-opening}")
     public void checkRequestStatusOpening() {
-        openingRequestService.getFirstByStatusAndBank(IN_QUEUE, VTB_OPENING).ifPresent(this::checkRequestStatus);
+        requestService.getFirstByStatusAndBank(IN_QUEUE, VTB_OPENING).ifPresent(this::checkRequestStatus);
     }
 
-    private void checkRequestStatus(OpeningRequestEntity request) {
+    private void checkRequestStatus(RequestEntity request) {
         //запуск обработки по разным банкам
         //openingRequestService.getFirstByStatus(CHECKING);
         FileInfoBankEntity fib = request.getFileInfoBank();
@@ -271,7 +271,7 @@ public class BodyProcessingService {
                 request.setStatus(IN_QUEUE);
             }
         }
-        openingRequestService.save(request);
+        requestService.save(request);
         /*if (request.getStatus() == SUCCESS_CHECK) {
             sendToSkorozvon(request);
         }*/
@@ -280,8 +280,8 @@ public class BodyProcessingService {
     @Scheduled(cron = "${cron.tg-file-send-to-skorozvon}")
     public void sendToSkorozvon(/*OpeningRequestEntity request*/) {
         //запуск обработки по разным банкам
-        openingRequestService.getFirstByStatus(OpeningRequestStatus.SUCCESS_CHECK).ifPresent(request -> {
-            openingRequestService.changeStatus(request.getId(), OpeningRequestStatus.DOWNLOADING);
+        requestService.getFirstByStatus(RequestStatus.SUCCESS_CHECK).ifPresent(request -> {
+            requestService.changeStatus(request.getId(), RequestStatus.DOWNLOADING);
             FileInfoBankEntity fib = request.getFileInfoBank();
 
             eventPublisher.publishEvent(new ImportEvent(this, getFileStatisticString(fib.getFileInfoId()),
@@ -307,7 +307,7 @@ public class BodyProcessingService {
                         orgList,
                         Collections.singletonList(fileInfo.getName()));
 
-                openingRequestService.changeStatus(request.getId(), OpeningRequestStatus.DOWNLOADED);
+                requestService.changeStatus(request.getId(), RequestStatus.DOWNLOADED);
             } catch (TimeOutException ex) {
                 if (request.incRetryRequestCount() <= MAX_TRY_RESEND) {
                     log.debug("Timeout error send to skorozvon: {}", ex.getMessage());
@@ -318,18 +318,18 @@ public class BodyProcessingService {
                     eventPublisher.publishEvent(new ImportEvent(this, ex.getMessage(), EventType.LOG,
                             request.getFileInfoBank().getFileInfoId()));
                 }
-                openingRequestService.save(request);
+                requestService.save(request);
             } catch (FileProcessingException ex) {
                 log.debug("Error send to skorozvon: {}", ex.getMessage());
                 eventPublisher.publishEvent(new ImportEvent(this, ex.getMessage(), EventType.LOG,
                         ex.getFileId()));
-                openingRequestService.changeStatus(request.getId(), ERROR);
+                requestService.changeStatus(request.getId(), ERROR);
             } catch (Exception ex) {
                 log.debug("Error send to skorozvon", ex);
                 eventPublisher.publishEvent(new ImportEvent(this, Optional.ofNullable(ex.getMessage())
                         .orElse("Непредвиденная ошибка\n" + ex.getClass()), EventType.LOG,
                         fib.getFileInfoId()));
-                openingRequestService.changeStatus(request.getId(), ERROR);
+                requestService.changeStatus(request.getId(), ERROR);
             }
         });
     }
@@ -546,7 +546,7 @@ public class BodyProcessingService {
         String fioStringFromContact = getFioStringFromContact(contact);
         organization.setName(String.format("%s %s %s", contact.getBank().getTitle(), contact.getOrgName().contains(fioStringFromContact) ? "" : fioStringFromContact, contact.getOrgName()));
         organization.setPhones(Collections.singletonList(contact.getPhone()));
-        organization.setHomepage(String.format("https://api.whatsapp.com/send?phone=%s", contact.getPhone()));
+        organization.setHomepage(String.format("https://wa.me/%s", contact.getPhone()));
         organization.setCity(contact.getCity());
         organization.setRegion(contact.getRegion());
         organization.setInn(contact.getInn());
@@ -555,13 +555,13 @@ public class BodyProcessingService {
     }
 
     private String getFileStatisticString(Long fileId) {
-        return openingRequestService.getStatisticByFileId(fileId).entrySet().stream()
+        return requestService.getStatisticByFileId(fileId).entrySet().stream()
                 .map(outEntry -> {
                     StringBuilder sb = new StringBuilder();
                     sb.append(String.format(BANK_NAME_PATTERN, outEntry.getKey().getTitle()));
                     sb.append(String.format(STATISTIC_LINE_PATTERN, "Всего",
                             outEntry.getValue().values().stream().mapToLong(l -> l).sum()));
-                    Arrays.stream(OpeningRequestStatus.values()).forEach(status ->
+                    Arrays.stream(RequestStatus.values()).forEach(status ->
                             sb.append(String.format(STATISTIC_LINE_PATTERN, status.getTitle(),
                                     Optional.ofNullable(outEntry.getValue().get(status)).orElse(0))));
                     return sb.toString();

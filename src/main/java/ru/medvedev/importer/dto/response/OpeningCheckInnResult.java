@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class VtbOpeningCheckInnResult {
+public class OpeningCheckInnResult {
 
-    private List<VtbOpeningCheckInnInfo> inns = new ArrayList<>();
+    private List<OpeningCheckInnInfo> inns = new ArrayList<>();
 }

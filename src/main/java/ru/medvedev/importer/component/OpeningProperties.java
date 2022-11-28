@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Data
 @ConfigurationProperties(prefix = "vtb-opening")
-public class VtbOpeningProperties {
+public class OpeningProperties {
 
     private String apiKey;
 }

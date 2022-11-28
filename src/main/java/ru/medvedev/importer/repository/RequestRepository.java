@@ -6,23 +6,23 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ru.medvedev.importer.dto.RequestStatisticProjection;
-import ru.medvedev.importer.entity.OpeningRequestEntity;
+import ru.medvedev.importer.entity.RequestEntity;
 import ru.medvedev.importer.enums.Bank;
-import ru.medvedev.importer.enums.OpeningRequestStatus;
+import ru.medvedev.importer.enums.RequestStatus;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface OpeningRequestRepository extends JpaRepository<OpeningRequestEntity, Long> {
+public interface RequestRepository extends JpaRepository<RequestEntity, Long> {
 
-    Optional<OpeningRequestEntity> findFirstByStatusOrderByLastCheckAsc(OpeningRequestStatus status);
+    Optional<RequestEntity> findFirstByStatusOrderByLastCheckAsc(RequestStatus status);
 
-    @Query(value = "select r from OpeningRequestEntity r " +
+    @Query(value = "select r from RequestEntity r " +
             "where r.status = :status and r.fileInfoBank.bank = :bank " +
             "order by r.lastCheck asc ")
-    List<OpeningRequestEntity> findFirstByStatusAndBank(OpeningRequestStatus status,
-                                                        Bank bank);
+    List<RequestEntity> findFirstByStatusAndBank(RequestStatus status,
+                                                 Bank bank);
 
     @Query(value = "select fib.bank as bank, r.status as status, r.count as count\n" +
             "from opening_request r\n" +
@@ -33,6 +33,6 @@ public interface OpeningRequestRepository extends JpaRepository<OpeningRequestEn
 
     @Modifying
     @Transactional
-    @Query("update OpeningRequestEntity r set r.status = :newStatus where r.id = :id")
-    void updateStatusById(Long id, OpeningRequestStatus newStatus);
+    @Query("update RequestEntity r set r.status = :newStatus where r.id = :id")
+    void updateStatusById(Long id, RequestStatus newStatus);
 }

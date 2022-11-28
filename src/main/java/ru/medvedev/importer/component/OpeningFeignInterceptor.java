@@ -5,10 +5,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 
 @RequiredArgsConstructor
-public class VtbOpeningFeignInterceptor {
+public class OpeningFeignInterceptor {
 
     private static final String HEADER_NAME = "X-Auth-Token";
-    private final VtbOpeningProperties parameter;
+    private final OpeningProperties parameter;
 
     @Bean
     public RequestInterceptor requestInterceptor() {

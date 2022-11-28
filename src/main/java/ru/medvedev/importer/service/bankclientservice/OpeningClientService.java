@@ -6,20 +6,20 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import ru.medvedev.importer.client.VtbOpeningApiClient;
+import ru.medvedev.importer.client.OpeningApiClient;
 import ru.medvedev.importer.dto.CheckLeadResult;
 import ru.medvedev.importer.dto.CreateLeadResult;
 import ru.medvedev.importer.dto.WebhookLeadDto;
 import ru.medvedev.importer.dto.events.ImportEvent;
-import ru.medvedev.importer.dto.request.VtbOpeningCheckInn;
-import ru.medvedev.importer.dto.request.VtbOpeningCreateLead;
+import ru.medvedev.importer.dto.request.OpeningCheckInn;
+import ru.medvedev.importer.dto.request.OpeningCreateLead;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
-import ru.medvedev.importer.dto.response.VtbOpeningCheckInnResponse;
-import ru.medvedev.importer.dto.response.VtbOpeningCheckResultResponse;
-import ru.medvedev.importer.dto.response.VtbOpeningResponse;
+import ru.medvedev.importer.dto.response.OpeningCheckInnResponse;
+import ru.medvedev.importer.dto.response.OpeningCheckResultResponse;
+import ru.medvedev.importer.dto.response.OpeningResponse;
 import ru.medvedev.importer.enums.EventType;
-import ru.medvedev.importer.enums.VtbOpeningInnStatus;
-import ru.medvedev.importer.enums.VtbOpeningRequestStatus;
+import ru.medvedev.importer.enums.OpeningInnStatus;
+import ru.medvedev.importer.enums.OpeningRequestStatus;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
@@ -30,22 +30,22 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static ru.medvedev.importer.enums.CheckLeadStatus.*;
-import static ru.medvedev.importer.enums.VtbOpeningRequestStatus.created;
-import static ru.medvedev.importer.enums.VtbOpeningRequestStatus.exported;
+import static ru.medvedev.importer.enums.OpeningRequestStatus.created;
+import static ru.medvedev.importer.enums.OpeningRequestStatus.exported;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class VtbOpeningClientService implements BankClientService {
+public class OpeningClientService implements BankClientService {
 
-    private final VtbOpeningApiClient client;
+    private final OpeningApiClient client;
     private final ApplicationEventPublisher eventPublisher;
 
     public CreateLeadResult createLead(WebhookLeadDto webhookLead) {
 
         log.debug("*** Create lead in Opening");
 
-        VtbOpeningCreateLead lead = new VtbOpeningCreateLead();
+        OpeningCreateLead lead = new OpeningCreateLead();
         lead.setCity(webhookLead.getCity());
         lead.setInn(webhookLead.getInn());
         lead.setPhone(webhookLead.getPhones());
@@ -57,7 +57,7 @@ public class VtbOpeningClientService implements BankClientService {
         lead.setFull_name(webhookLead.getName());
 
         try {
-            ResponseEntity<VtbOpeningResponse> response = client.creteAddLeadRequest(lead);
+            ResponseEntity<OpeningResponse> response = client.creteAddLeadRequest(lead);
             if (response.getStatusCode() == HttpStatus.OK) {
                 String id = response.getBody().getId();
                 log.debug("*** createLeadRequest id = {}", id);
@@ -79,10 +79,10 @@ public class VtbOpeningClientService implements BankClientService {
 
         log.debug("*** Check duplicate in Opening");
 
-        VtbOpeningCheckInn request = new VtbOpeningCheckInn();
+        OpeningCheckInn request = new OpeningCheckInn();
         request.setInns(innList);
         try {
-            ResponseEntity<VtbOpeningResponse> response = client.createCheckLeadsRequest(request);
+            ResponseEntity<OpeningResponse> response = client.createCheckLeadsRequest(request);
             if (response.getStatusCode() == HttpStatus.OK) {
                 String id = response.getBody().getId();
                 return CheckLeadResult.of(true, id, innList.stream()
@@ -111,17 +111,17 @@ public class VtbOpeningClientService implements BankClientService {
     @Override
     public CheckLeadResult getCheckLeadResult(String id, Long fileId) {
 
-        ResponseEntity<VtbOpeningCheckInnResponse> response = client.getCheckLeadsResponse(id);
+        ResponseEntity<OpeningCheckInnResponse> response = client.getCheckLeadsResponse(id);
         if (response.getStatusCode() == HttpStatus.OK) {
-            VtbOpeningCheckInnResponse result = response.getBody();
-            if (result.getStatus() == VtbOpeningRequestStatus.error) {
+            OpeningCheckInnResponse result = response.getBody();
+            if (result.getStatus() == OpeningRequestStatus.error) {
                 throw new ErrorCheckLeadException(result.getMessage(), fileId);
-            } else if (result.getStatus() == VtbOpeningRequestStatus.done) {
+            } else if (result.getStatus() == OpeningRequestStatus.done) {
                 return CheckLeadResult.of(true, null, result.getResult().getInns().stream()
                         .map(item -> {
                             LeadInfoResponse leadInfo = new LeadInfoResponse();
                             leadInfo.setInn(item.getInn());
-                            leadInfo.setResponseCode(item.getInnStatus() == VtbOpeningInnStatus.success
+                            leadInfo.setResponseCode(item.getInnStatus() == OpeningInnStatus.success
                                     ? POSITIVE : NEGATIVE);
                             return leadInfo;
                         }).collect(toList()));
@@ -132,14 +132,14 @@ public class VtbOpeningClientService implements BankClientService {
 
     @Override
     public boolean getCreateLeadResult(String id) {
-        ResponseEntity<VtbOpeningCheckResultResponse> response = client.getAddLeadResponse(id);
+        ResponseEntity<OpeningCheckResultResponse> response = client.getAddLeadResponse(id);
         if (response.getStatusCode() == HttpStatus.OK) {
-            VtbOpeningCheckResultResponse result = response.getBody();
+            OpeningCheckResultResponse result = response.getBody();
             if (result.getStatus().equals("new") ||
-                    VtbOpeningRequestStatus.valueOf(result.getStatus()) == VtbOpeningRequestStatus.inqueue) {
+                    OpeningRequestStatus.valueOf(result.getStatus()) == OpeningRequestStatus.inqueue) {
                 return false;
             } else if (Stream.of(exported, created).anyMatch(status ->
-                    status == VtbOpeningRequestStatus.valueOf(result.getStatus()))) {
+                    status == OpeningRequestStatus.valueOf(result.getStatus()))) {
                 return true;
             } else {
                 throw new ErrorCreateVtbLeadException(result.getLabel() + ". Статус заявки: `" + result.getStatus() + "`", -1L);

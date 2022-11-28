@@ -1,6 +1,6 @@
 package ru.medvedev.importer.enums;
 
-public enum VtbOpeningInnStatus {
+public enum OpeningInnStatus {
     success,
     fail,
     error

@@ -6,7 +6,7 @@ import feign.RetryableException;
 import feign.codec.ErrorDecoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import ru.medvedev.importer.dto.response.VtbOpeningErrorResponse;
+import ru.medvedev.importer.dto.response.OpeningErrorResponse;
 import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
 
@@ -16,7 +16,7 @@ import java.time.ZoneId;
 
 @Slf4j
 @RequiredArgsConstructor
-public class VtbOpeningErrorDecoder implements ErrorDecoder {
+public class OpeningErrorDecoder implements ErrorDecoder {
 
     private final ErrorDecoder errorDecoder = new Default();
 
@@ -28,9 +28,9 @@ public class VtbOpeningErrorDecoder implements ErrorDecoder {
         if (response.status() == 400) {
             log.debug("*** vtb-opening bad request {}", response.body());
             if (response.request().url().contains("/status") || response.request().url().contains("/add")) {
-                VtbOpeningErrorResponse responseDto;
+                OpeningErrorResponse responseDto;
                 try {
-                    responseDto = objectMapper.readValue(response.body().asInputStream(), VtbOpeningErrorResponse.class);
+                    responseDto = objectMapper.readValue(response.body().asInputStream(), OpeningErrorResponse.class);
                 } catch (Exception ex) {
                     throw new ErrorCreateVtbLeadException("Невозможно распарсить ответ", -1L);
                 }
