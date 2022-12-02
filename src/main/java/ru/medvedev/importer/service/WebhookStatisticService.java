@@ -16,10 +16,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.*;
 
@@ -66,8 +64,8 @@ public class WebhookStatisticService {
                 }).collect(joining("\n"));
     }
 
-    public List<WebhookStatisticEntity> getByStatus(WebhookStatus status) {
-        return repository.findAllByStatus(status);
+    public Optional<WebhookStatisticEntity> getByStatus(WebhookStatus status) {
+        return repository.findFirstByStatusOOrderByUpdateAtDesc(status);
     }
 
     public void addStatistic(WebhookStatus status, WebhookDto webhook, WebhookSuccessStatusEntity successStatus) {
@@ -89,7 +87,7 @@ public class WebhookStatisticService {
         repository.save(entity);
     }
 
-    public void updateStatisticStatus(String inn, WebhookStatus oldStatus, WebhookStatus newStatus) {
+    /*public void updateStatisticStatus(String inn, WebhookStatus oldStatus, WebhookStatus newStatus) {
         repository.saveAll(repository.findAllByInnAndStatus(inn, oldStatus)
                 .stream()
                 .peek(item -> item.setStatus(newStatus))
@@ -102,13 +100,14 @@ public class WebhookStatisticService {
                 .peek(item -> item.setStatus(WebhookStatus.ERROR))
                 .peek(item -> item.setErrorMessage(message))
                 .collect(Collectors.toList()));
-    }
+    }*/
 
-    public void updateStatisticStatus(Long id, WebhookStatus newStatus) {
-        repository.updateStatus(id, newStatus);
+    public void save(WebhookStatisticEntity entity) {
+        repository.save(entity);
     }
-
-    public void updateStatisticStatusAndOpeningId(Long id, WebhookStatus newStatus, String requestId) {
-        repository.updateStatusAndRequestId(id, newStatus, requestId);
-    }
+/*
+    public WebhookStatisticEntity updateStatisticStatusAndOpeningId(WebhookStatisticEntity entity, WebhookStatus newStatus, String requestId) {
+        entity.setOpeningRequestId(requestId);
+        return updateStatisticStatus(entity, newStatus);
+    }*/
 }

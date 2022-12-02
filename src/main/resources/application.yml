@@ -65,7 +65,9 @@ cron:
   check-request-status-vtb: '*/35 * * * * *'
   check-request-status-opening: '*/35 * * * * *'
   tg-file-send-to-skorozvon: '10 */1 * * * *'
-  webhook-change-status: '17 */1 * * * *'
+  webhook-from-fixed-status: '17 */1 * * * *'
+  webhook-from-try-to-create-status: '30 */1 * * * *'
+  webhook-from-create-success-status: '45 */1 * * * *'
   webhook-check-status: '20 */2 * * * *'
   auto-load: '0 0 3 * * *'
 

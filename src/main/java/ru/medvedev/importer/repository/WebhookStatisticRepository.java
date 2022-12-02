@@ -11,6 +11,7 @@ import ru.medvedev.importer.enums.WebhookStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface WebhookStatisticRepository extends JpaRepository<WebhookStatisticEntity, Long> {
@@ -36,5 +37,5 @@ public interface WebhookStatisticRepository extends JpaRepository<WebhookStatist
 
     List<WebhookStatisticEntity> findAllByInnAndStatus(String inn, WebhookStatus status);
 
-    List<WebhookStatisticEntity> findAllByStatus(WebhookStatus status);
+    Optional<WebhookStatisticEntity> findFirstByStatusOOrderByUpdateAtDesc(WebhookStatus status);
 }

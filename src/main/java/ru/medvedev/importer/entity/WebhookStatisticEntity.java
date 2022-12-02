@@ -59,8 +59,17 @@ public class WebhookStatisticEntity {
     @Column(name = "create_at")
     private LocalDateTime createAt;
 
+    @Column(name = "update_at")
+    private LocalDateTime updateAt;
+
     @PrePersist
     public void prePersist() {
         this.createAt = LocalDateTime.now();
+        this.updateAt = createAt;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updateAt = LocalDateTime.now();
     }
 }
