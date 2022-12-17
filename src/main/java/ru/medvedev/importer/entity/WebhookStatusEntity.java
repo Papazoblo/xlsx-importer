@@ -16,4 +16,15 @@ public class WebhookStatusEntity {
 
     @Column(name = "name")
     private String name;
+
+//    @Column(name = "type")
+//    @Enumerated(EnumType.STRING)
+//    private WebhookType type;
+//
+//    @PrePersist
+//    public void perPersist() {
+//        if(type == null) {
+//            this.type = WebhookType.MINOR;
+//        }
+//    }
 }

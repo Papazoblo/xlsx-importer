@@ -5,6 +5,7 @@ import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.FileSource;
 import ru.medvedev.importer.exception.BadRequestException;
 
@@ -34,19 +35,19 @@ public class XlsxStorageService {
         checkIsExist();
     }*/
 
-    public void upload(MultipartFile file) throws IOException {
+    public FileInfoEntity upload(MultipartFile file) throws IOException {
         if (isBlank(file.getOriginalFilename()) || !file.getOriginalFilename().contains(".xlsx")
                 || !file.getOriginalFilename().contains(".xls")) {
             throw new BadRequestException("Неверный формат файла");
         }
         //deleteIfExist();
-        saveFile(file);
+        return saveFile(file);
     }
 
-    private void saveFile(MultipartFile file) throws IOException {
+    private FileInfoEntity saveFile(MultipartFile file) throws IOException {
         File newFile = new File(uploadDir + "/" + System.currentTimeMillis() + "_" + file.getOriginalFilename());
         FileUtils.writeByteArrayToFile(newFile, file.getBytes());
-        fileInfoService.create(file, scanningChatId, newFile, FileSource.UI);
+        return fileInfoService.create(file, scanningChatId, newFile, FileSource.UI);
     }/*
 
     public void deleteIfExist() {

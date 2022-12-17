@@ -104,8 +104,17 @@ label[for='enableWhatsAppLink'] {
     cursor: pointer;
 }
 
-#btnSendFile.btn-2, #parseXlsx.btn-2 {
+#parseXlsx.btn-2 {
     width: 55% !important;
+}
+
+#btnSendFile.btn-2 {
+    width: 75% !important;
+}
+
+label[for=autoImport] {
+    margin-bottom: 0 !important;
+    margin-left: 1.5rem;
 }
 
 .custom-file-label::after {

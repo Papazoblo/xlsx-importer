@@ -7,7 +7,8 @@ import lombok.RequiredArgsConstructor;
 public enum FileSource {
 
     TELEGRAM("Телеграм"),
-    UI("Интерфейс");
+    UI("Интерфейс"),
+    UI_REDOWNLOAD("Интерфейс(повторная загрузка)");
 
     @Getter
     private final String description;

@@ -43,7 +43,7 @@ public class EventService {
     private final TelegramPollingService telegramPollingService;
     private final TelegramNotificatorPollingService telegramNotificatorPollingService;
     private final FileInfoService fileInfoService;
-    private final ContactService contactService;
+    private final ContactNewService contactService;
     private final ApplicationEventPublisher eventPublisher;
     private final NotificationChatService notificationChatService;
 

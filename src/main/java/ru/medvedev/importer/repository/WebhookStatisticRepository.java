@@ -37,5 +37,5 @@ public interface WebhookStatisticRepository extends JpaRepository<WebhookStatist
 
     List<WebhookStatisticEntity> findAllByInnAndStatus(String inn, WebhookStatus status);
 
-    Optional<WebhookStatisticEntity> findFirstByStatusOOrderByUpdateAtDesc(WebhookStatus status);
+    Optional<WebhookStatisticEntity> findFirstByStatusOrderByUpdateAtDesc(WebhookStatus status);
 }

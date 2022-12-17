@@ -70,7 +70,9 @@ public class VtbErrorDecoder implements ErrorDecoder {
                             response.request());
                 } else if (response.request().url().contains("/leads_impersonal")) {
                     CheckLeadBadRequestResponse responseBody = objectMapper.readValue(response.body().asInputStream(), CheckLeadBadRequestResponse.class);
-                    responseBody.setMoreInformation(String.format("[%s]", responseBody.getMoreInformation().replace("<BackErr> ", "")));
+                    responseBody.setMoreInformation(responseBody.getLeads().stream()
+                            .map(item -> String.format("%s: %s", item.getInn(), item.getResponseCodeDescription()))
+                            .collect(Collectors.joining("\n")));
                     throw new ErrorCreateVtbLeadException(responseBody.getMoreInformation(), -1L);
                 }
             } catch (IOException e) {

@@ -6,9 +6,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.DailyContactStatistic;
 import ru.medvedev.importer.dto.WebhookDto;
+import ru.medvedev.importer.dto.WebhookSuccessFilter;
 import ru.medvedev.importer.entity.WebhookStatisticEntity;
 import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.WebhookStatus;
+import ru.medvedev.importer.enums.WebhookType;
 import ru.medvedev.importer.repository.WebhookStatisticRepository;
 import ru.medvedev.importer.service.telegram.xlsxcollector.TelegramPollingService;
 
@@ -65,7 +67,7 @@ public class WebhookStatisticService {
     }
 
     public Optional<WebhookStatisticEntity> getByStatus(WebhookStatus status) {
-        return repository.findFirstByStatusOOrderByUpdateAtDesc(status);
+        return repository.findFirstByStatusOrderByUpdateAtDesc(status);
     }
 
     public void addStatistic(WebhookStatus status, WebhookDto webhook, WebhookSuccessStatusEntity successStatus) {
@@ -83,7 +85,10 @@ public class WebhookStatisticService {
         if (webhook.getCallResult() != null) {
             entity.setComment(webhook.getCallResult().getComment());
         }
-        entity.setSuccessStatus(webhookSuccessStatusService.getByName(webhook.getCallResult().getResultName()));
+        WebhookSuccessFilter filter = new WebhookSuccessFilter();
+        filter.setName(webhook.getCallResult().getResultName());
+        filter.setType(WebhookType.CREATE_REQUEST);
+        entity.setSuccessStatus(webhookSuccessStatusService.getByName(filter));
         repository.save(entity);
     }
 

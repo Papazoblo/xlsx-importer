@@ -3,17 +3,18 @@ package ru.medvedev.importer.specification;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.data.jpa.domain.Specification;
 import ru.medvedev.importer.dto.ContactFilter;
-import ru.medvedev.importer.entity.ContactEntity;
+import ru.medvedev.importer.entity.ContactBankActualityEntity;
+import ru.medvedev.importer.entity.ContactNewEntity;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import javax.persistence.criteria.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class ContactSpecification implements Specification<ContactEntity> {
+import static ru.medvedev.importer.enums.Bank.VTB;
+import static ru.medvedev.importer.enums.Bank.VTB_OPENING;
+
+public class ContactSpecification implements Specification<ContactNewEntity> {
 
     private final ContactFilter filter;
 
@@ -26,7 +27,7 @@ public class ContactSpecification implements Specification<ContactEntity> {
     }
 
     @Override
-    public Predicate toPredicate(Root<ContactEntity> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
+    public Predicate toPredicate(Root<ContactNewEntity> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
 
         List<Predicate> predicates = new ArrayList<>();
 
@@ -77,13 +78,7 @@ public class ContactSpecification implements Specification<ContactEntity> {
                 .ifPresent(value ->
                         predicates.add(builder.like(builder.lower(root.get("city")), "%" + value.toLowerCase() + "%")));
 
-        Optional.ofNullable(filter.getCreateDateFrom()).ifPresent(value ->
-                predicates.add(builder.greaterThanOrEqualTo(root.get("createAt"), value)));
-
-        Optional.ofNullable(filter.getCreateDateTo()).ifPresent(value ->
-                predicates.add(builder.lessThanOrEqualTo(root.get("createAt"), value)));
-
-        if (!filter.getStatus().isEmpty()) {
+        /*if (!filter.getStatus().isEmpty()) {
             predicates.add(builder.in(root.get("status")).value(filter.getStatus()));
         }
 
@@ -94,6 +89,57 @@ public class ContactSpecification implements Specification<ContactEntity> {
         if (!filter.getOriginal().isEmpty()) {
             predicates.add(builder.in(root.join("contactFileInfoEntityList").get("original"))
                     .value(filter.getOriginal()));
+        }*/
+
+        Optional.ofNullable(filter.getCreateDateFrom()).ifPresent(value ->
+                predicates.add(builder.greaterThanOrEqualTo(root.get("createAt"), value)));
+
+        Optional.ofNullable(filter.getCreateDateTo()).ifPresent(value ->
+                predicates.add(builder.lessThanOrEqualTo(root.get("createAt"), value)));
+
+        Join<ContactNewEntity, ContactBankActualityEntity> contactActualityJoin = root.join("actualityList", JoinType.LEFT);
+
+        List<Predicate> subPredicate = new ArrayList<>();
+        if (!filter.getOpeningActuality().isEmpty() || !filter.getOpeningWebhook().isEmpty()) {
+
+            List<Predicate> bankPredicate = new ArrayList<>();
+
+            if (!filter.getOpeningActuality().isEmpty()) {
+                bankPredicate.add(builder.in(contactActualityJoin.get("actuality")).value(filter.getOpeningActuality()));
+            }
+
+            if (!filter.getOpeningWebhook().isEmpty()) {
+                bankPredicate.add(builder.in(contactActualityJoin.get("webhookStatusId")).value(filter.getOpeningWebhook()));
+            }
+
+            bankPredicate.add(builder.equal(contactActualityJoin.get("bank"), VTB_OPENING));
+
+            if (bankPredicate.size() > 1) {
+                subPredicate.add(builder.and(bankPredicate.toArray(new Predicate[0])));
+            }
+        }
+
+        if (!filter.getVtbActuality().isEmpty() || !filter.getVtbWebhook().isEmpty()) {
+
+            List<Predicate> bankPredicate = new ArrayList<>();
+
+            if (!filter.getVtbActuality().isEmpty()) {
+                bankPredicate.add(builder.in(contactActualityJoin.get("actuality")).value(filter.getVtbActuality()));
+            }
+
+            if (!filter.getVtbWebhook().isEmpty()) {
+                bankPredicate.add(builder.in(contactActualityJoin.get("webhookStatusId")).value(filter.getVtbWebhook()));
+            }
+
+            bankPredicate.add(builder.equal(contactActualityJoin.get("bank"), VTB));
+
+            if (bankPredicate.size() > 1) {
+                subPredicate.add(builder.and(bankPredicate.toArray(new Predicate[0])));
+            }
+        }
+
+        if (!subPredicate.isEmpty()) {
+            predicates.add(builder.or(subPredicate.toArray(new Predicate[0])));
         }
 
         if (predicates.isEmpty()) {

@@ -8,23 +8,18 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import ru.medvedev.importer.dto.AutoLinkXlsxFieldDto;
 import ru.medvedev.importer.dto.WebhookDto;
 import ru.medvedev.importer.dto.XlsxImportInfo;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.SkorozvonField;
 import ru.medvedev.importer.exception.BadRequestException;
-import ru.medvedev.importer.service.FileInfoService;
-import ru.medvedev.importer.service.LeadWorkerService;
-import ru.medvedev.importer.service.XlsxParserService;
-import ru.medvedev.importer.service.XlsxStorageService;
+import ru.medvedev.importer.service.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
 
@@ -38,6 +33,7 @@ public class ImportController {
     private final XlsxStorageService xlsxStorageService;
     private final LeadWorkerService leadWorkerService;
     private final FileInfoService fileInfoService;
+    private final AutoLinkXlsxFieldService autoLinkXlsxFieldService;
 
     @GetMapping("/xlsx/import")
     public String importXlsx(Model model) {
@@ -46,18 +42,31 @@ public class ImportController {
             if (fileInfoOptional.isPresent()) {
                 FileInfoEntity fileInfo = fileInfoOptional.get();
                 File file = new File(fileInfo.getPath());
+
+                List<String> headers = xlsxParserService.readColumnHeaders(fileInfo, file);
+                Map<SkorozvonField, AutoLinkXlsxFieldDto> fieldNameVariantMap = autoLinkXlsxFieldService.getAll();
+                Map<SkorozvonField, Set<Integer>> mapSelectedField = new HashMap<>();
+                Arrays.stream(SkorozvonField.values()).forEach(skorozvonField -> {
+                    if (fieldNameVariantMap.containsKey(skorozvonField)) {
+                        mapSelectedField.put(skorozvonField, fieldNameVariantMap.get(skorozvonField).getColumns());
+                    } else {
+                        mapSelectedField.put(skorozvonField, Collections.emptySet());
+                    }
+                });
+
                 model.addAttribute("callProjectId", "");
                 model.addAttribute("fileExist", file.exists());
                 model.addAttribute("fileName", fileInfo.getName());
                 model.addAttribute("fileId", fileInfo.getId());
-                model.addAttribute("headers", file.exists() ? xlsxParserService.readColumnHeaders(fileInfo, file)
-                        : Collections.emptyList());
+                model.addAttribute("headers", file.exists() ? headers : Collections.emptyList());
+                model.addAttribute("fieldNameGroup", mapSelectedField);
             } else {
                 model.addAttribute("callProjectId", "");
                 model.addAttribute("fileExist", false);
                 model.addAttribute("fileName", "Не найден");
                 model.addAttribute("fileId", -1L);
                 model.addAttribute("headers", Collections.emptyList());
+                model.addAttribute("fieldNameGroup", Collections.emptyMap());
             }
         } catch (Exception ex) {
             log.info("Error read xlsx", ex);

@@ -31,9 +31,12 @@ public class RequestEntity {
     @JoinColumn(name = "file_info_bank_id")
     private FileInfoBankEntity fileInfoBank;
 
-    @JoinColumn(name = "opening_request_id")
+    /*@JoinColumn(name = "opening_request_id")
     @OneToMany(fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
-    private List<ContactEntity> contacts = new ArrayList<>();
+    private List<ContactEntity> contacts = new ArrayList<>();*/
+
+    @OneToMany(mappedBy = "request", fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
+    private List<ContactDownloadInfoEntity> contactDownloadInfo = new ArrayList<>();
 
     @Column(name = "last_check")
     public LocalDateTime lastCheck;

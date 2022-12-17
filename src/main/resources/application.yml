@@ -56,20 +56,22 @@ cron:
   fixed-rate-check-xlsx-exists: 900000
   launch-file-processing: '0 * * * * *'
   ending-file-processing: '30 * * * * *'
-  webhook-statistic: '0 0 19 * * *'
+  webhook-statistic: '0 20 18 * * *'
   tg-column-header-request: '*/3 * * * * *'
   tg-initialized-new-file: '*/3 * * * * *'
   tg-file-body-processor: '*/3 * * * * *'
   tg-file-send-to-check: '2 */1 * * * *'
-  creating-request: '5 */1 * * * *'
+  creating-request-vtb: '45 * * * * *'
+  creating-request-opening: '40 * * * * *'
   check-request-status-vtb: '*/35 * * * * *'
-  check-request-status-opening: '*/35 * * * * *'
-  tg-file-send-to-skorozvon: '10 */1 * * * *'
+  check-request-status-opening: '*/30 * * * * *'
+  tg-file-send-to-skorozvon: '*/30 * * * * *'
   webhook-from-fixed-status: '17 */1 * * * *'
   webhook-from-try-to-create-status: '30 */1 * * * *'
   webhook-from-create-success-status: '45 */1 * * * *'
   webhook-check-status: '20 */2 * * * *'
   auto-load: '0 0 3 * * *'
+  logs-archive-delete: '0 0 2 * * *'
 
 telegram:
   xlsx-collector:

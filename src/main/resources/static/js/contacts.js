@@ -24,6 +24,10 @@ $(document).ready(function () {
         var status = [];
         var bank = [];
         var original = [];
+        var vtbWebhook = [];
+        var openingWebhook = [];
+        var vtbActuality = [];
+        var openingActuality = [];
 
         var options = $('#bankFilter')[0].selectedOptions;
         for (let j = 0; j < options.length; j++) {
@@ -46,6 +50,34 @@ $(document).ready(function () {
             }
         }
 
+        options = $('#vtbWebhook')[0].selectedOptions;
+        for (let j = 0; j < options.length; j++) {
+            if (options[j] !== undefined) {
+                vtbWebhook.push(options[j].value);
+            }
+        }
+
+        options = $('#openingWebhook')[0].selectedOptions;
+        for (let j = 0; j < options.length; j++) {
+            if (options[j] !== undefined) {
+                openingWebhook.push(options[j].value);
+            }
+        }
+
+        options = $('#vtbActuality')[0].selectedOptions;
+        for (let j = 0; j < options.length; j++) {
+            if (options[j] !== undefined) {
+                vtbActuality.push(options[j].value);
+            }
+        }
+
+        options = $('#openingActuality')[0].selectedOptions;
+        for (let j = 0; j < options.length; j++) {
+            if (options[j] !== undefined) {
+                openingActuality.push(options[j].value);
+            }
+        }
+
         return new URLSearchParams({
             "name": name,
             "surname": surname,
@@ -60,7 +92,11 @@ $(document).ready(function () {
             "ogrn": ogrn,
             "status": status,
             "bank": bank,
-            "original": original
+            "original": original,
+            "vtbWebhook": vtbWebhook,
+            "openingWebhook": openingWebhook,
+            "openingActuality": openingActuality,
+            "vtbActuality": vtbActuality
         }).toString()
     }
 

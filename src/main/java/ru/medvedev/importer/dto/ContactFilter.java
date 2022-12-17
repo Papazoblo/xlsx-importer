@@ -3,6 +3,7 @@ package ru.medvedev.importer.dto;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 import ru.medvedev.importer.enums.Bank;
+import ru.medvedev.importer.enums.ContactActuality;
 import ru.medvedev.importer.enums.ContactStatus;
 
 import java.net.URISyntaxException;
@@ -33,6 +34,11 @@ public class ContactFilter {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime createDateTo;
     private List<Boolean> original = new ArrayList<>();
+
+    private List<Long> vtbWebhook = new ArrayList<>();
+    private List<Long> openingWebhook = new ArrayList<>();
+    private List<ContactActuality> vtbActuality = new ArrayList<>();
+    private List<ContactActuality> openingActuality = new ArrayList<>();
 
     public String getDateFromString() {
         return Optional.ofNullable(createDateFrom).map(value ->

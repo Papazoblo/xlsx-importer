@@ -14,6 +14,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Slf4j
@@ -21,6 +23,7 @@ public class XlsExporter<T> extends BaseExporterImpl<T> {
 
     private static final Integer MAX_RECORDS = 1_000_000;
     private static final int WINDOW_SIZE = 100;
+    private AtomicInteger rowNum = new AtomicInteger();
 
     public InputStreamResource export() throws IOException {
 
@@ -63,7 +66,7 @@ public class XlsExporter<T> extends BaseExporterImpl<T> {
 
                 SXSSFSheet sheet = initSheet(workbook, rowStartNum / MAX_RECORDS + 1, columns, headerStyle);
 
-                int i = 2;
+                int i = rowNum.get();
                 for (T record : new ArrayList<>(data).subList(rowStartNum, Math.min(data.size(), rowStartNum + MAX_RECORDS))) {
                     Row row = sheet.createRow(i);
 
@@ -99,13 +102,16 @@ public class XlsExporter<T> extends BaseExporterImpl<T> {
         }
 
 
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, columns.size()));
-        Row title = sheet.createRow(0);
-        Cell titleCell = title.createCell(0);
-        titleCell.setCellValue(getFullTitle());
-        titleCell.setCellStyle(headerStyle);
+        Optional.ofNullable(getFullTitle()).ifPresent(s -> {
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, columns.size()));
+            Row title = sheet.createRow(rowNum.get());
+            Cell titleCell = title.createCell(0);
+            titleCell.setCellValue(s);
+            titleCell.setCellStyle(headerStyle);
+            rowNum.getAndIncrement();
+        });
 
-        Row header = sheet.createRow(1);
+        Row header = sheet.createRow(rowNum.getAndIncrement());
         for (int i = 0; i < columns.size(); i++) {
             Cell headerCell = header.createCell(i);
             headerCell.setCellValue(columns.get(i).getName());

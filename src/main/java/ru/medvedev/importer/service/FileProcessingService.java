@@ -5,9 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import ru.medvedev.importer.dto.ColumnInfoDto;
 import ru.medvedev.importer.dto.FieldNameVariantDto;
+import ru.medvedev.importer.dto.XlsxImportInfo;
 import ru.medvedev.importer.dto.events.ImportEvent;
+import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.FileSource;
@@ -21,6 +24,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +37,8 @@ public class FileProcessingService {
     private final ApplicationEventPublisher eventPublisher;
     private final HeaderProcessingService headerProcessingService;
     private final LeadWorkerService leadWorkerService;
+    private final ContactNewService contactNewService;
+    private final XlsxStorageService xlsxStorageService;
 
 
     @Scheduled(cron = "${cron.launch-file-processing}")
@@ -63,6 +70,30 @@ public class FileProcessingService {
                         entity.getId()));
             }
         });
+    }
+
+    public void importContacts(MultipartFile file, XlsxImportInfo info) throws IOException {
+
+        FileInfoEntity fileInfoEntity = xlsxStorageService.upload(file);
+        if (fileInfoEntity == null) {
+            return;
+        }
+        Set<String> innList = contactNewService.importContacts(file);
+
+        fileInfoEntity.getBankList().addAll(info.getBanksProject().entrySet().stream()
+                .map(bankEntry -> {
+                    FileInfoBankEntity bankEntity = new FileInfoBankEntity();
+                    bankEntity.setBank(bankEntry.getKey());
+                    bankEntity.setFileInfo(fileInfoEntity);
+                    bankEntity.setProjectId(bankEntry.getValue());
+                    return bankEntity;
+                }).collect(Collectors.toList()));
+
+        if (innList.isEmpty()) {
+            //todo уведомление о пустом списке для импорта
+        } else {
+            leadWorkerService.processXlsxRecords(fileInfoEntity, innList);
+        }
     }
 
     private void launchProcessTelegramFile(FileInfoEntity entity) {

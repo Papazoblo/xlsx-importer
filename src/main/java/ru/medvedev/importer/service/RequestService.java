@@ -20,8 +20,8 @@ public class RequestService {
 
     private final RequestRepository repository;
 
-    public void save(RequestEntity entity) {
-        repository.save(entity);
+    public RequestEntity save(RequestEntity entity) {
+        return repository.save(entity);
     }
 
     public Optional<RequestEntity> getFirstByStatus(RequestStatus status) {

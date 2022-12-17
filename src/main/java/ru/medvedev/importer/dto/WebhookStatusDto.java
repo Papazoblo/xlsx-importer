@@ -1,9 +1,13 @@
 package ru.medvedev.importer.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import ru.medvedev.importer.entity.WebhookStatusEntity;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class WebhookStatusDto {
 
     private Long id;

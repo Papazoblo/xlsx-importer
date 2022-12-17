@@ -6,6 +6,7 @@ import ru.medvedev.importer.dto.ColumnInfo;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public abstract class BaseExporterImpl<T> implements BaseExporter<T> {
 
@@ -25,7 +26,7 @@ public abstract class BaseExporterImpl<T> implements BaseExporter<T> {
     }
 
     protected String getFullTitle() {
-        return String.format("%s", tableBuilder.getTitle());
+        return Optional.ofNullable(tableBuilder.getTitle()).map(title -> String.format("%s", title)).orElse(null);
     }
 
     protected String getTitle() {

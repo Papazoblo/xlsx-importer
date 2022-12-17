@@ -9,6 +9,7 @@ import ru.medvedev.importer.enums.ContactStatus;
 import ru.medvedev.importer.enums.FileInfoBankStatus;
 import ru.medvedev.importer.repository.FileInfoBankRepository;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -22,6 +23,10 @@ public class FileInfoBankService {
 
     public FileInfoBankEntity save(FileInfoBankEntity entity) {
         return repository.save(entity);
+    }
+
+    public List<FileInfoBankEntity> save(List<FileInfoBankEntity> entity) {
+        return repository.saveAll(entity);
     }
 
     public Optional<FileInfoBankEntity> getByDownloadStatus(FileInfoBankStatus status) {

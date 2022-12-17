@@ -103,6 +103,12 @@ public class FileInfoEntity {
         deleted = false;
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, size, type, uniqueId, tgFileId, hash,
+                path, status, source, processingStep, columnInfo);
+    }
+
     public Boolean getWithHeader() {
         return withHeader != null || withHeader;
     }

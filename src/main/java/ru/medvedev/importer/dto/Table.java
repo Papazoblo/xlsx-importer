@@ -8,7 +8,7 @@ import java.util.*;
 @Slf4j
 public class Table<T> {
 
-    private String title = "Экспорт данных";
+    private String title;
 
     private Map<String, ColumnInfo<T>> columnInfos;
     private List<ColumnInfo<T>> columnList;

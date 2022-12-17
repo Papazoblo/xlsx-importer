@@ -134,7 +134,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                 org.telegram.telegrambots.meta.api.objects.File file = execute(uploadedFile);
                 File newFile = new File(uploadDir + "/" + System.currentTimeMillis() + "_" + document.getFileName());
                 downloadFile(file, newFile);
-                if (!fileInfoService.create(document, chatId, newFile, FileSource.TELEGRAM)) {
+                if (fileInfoService.create(document, chatId, newFile, FileSource.TELEGRAM) == null) {
                     newFile.delete();
                 }
             } catch (TelegramApiException e) {

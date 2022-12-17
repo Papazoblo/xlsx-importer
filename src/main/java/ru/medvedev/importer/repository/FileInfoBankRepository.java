@@ -17,11 +17,11 @@ public interface FileInfoBankRepository extends JpaRepository<FileInfoBankEntity
 
     Optional<FileInfoBankEntity> findFirstByDownloadStatus(FileInfoBankStatus status);
 
-    @Query(value = "select c.status as status, c.bank_name as bank, count(c.id) as count\n" +
+    @Query(value = "select cdi.check_status as status, fib.bank as bank, count(cdi.id) as count\n" +
             "from file_info_bank fib\n" +
-            "join contact c on c.file_info_bank_id = fib.id\n" +
+            "join contact_download_info cdi on cdi.file_info_bank_id = fib.id\n" +
             "where fib.file_info_id = :fileId\n" +
-            "group by (c.status, c.bank_name)", nativeQuery = true)
+            "group by (cdi.check_status, fib.bank)", nativeQuery = true)
     List<ContactDownloadStatisticProjection> getDownloadStatistic(Long fileId);
 
     @Modifying

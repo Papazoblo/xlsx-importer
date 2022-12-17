@@ -10,6 +10,8 @@ public class WebhookDto {
     private WebhookLeadDto lead;
     private WebhookContactDto contact;
 
+    private CallDto call;
+
     @JsonProperty("call_result")
     private CallResultDto callResult;
 }

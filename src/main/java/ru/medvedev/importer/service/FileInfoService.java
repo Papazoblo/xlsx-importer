@@ -134,14 +134,14 @@ public class FileInfoService {
     }
 
     //телеграм
-    public boolean create(Document document, Long chatId, File file, FileSource source) {
+    public FileInfoEntity create(Document document, Long chatId, File file, FileSource source) {
 
         String hash = hashFile(file.toPath());
         if (repository.existsByHashAndStatusNot(hash, FileStatus.ERROR)) {
             eventPublisher.publishEvent(new ImportEvent(this, "Файл `" + file.getName() + "` ранее был успешно обработан системой",
                     EventType.LOG_TG, -1L));
             log.debug("*** file with hash {} already exist", hash);
-            return false;
+            return null;
         } else {
             FileInfoEntity entity = new FileInfoEntity();
             entity.setName(document.getFileName());
@@ -158,19 +158,19 @@ public class FileInfoService {
             eventPublisher.publishEvent(new ImportEvent(this, "Добавлен в систему и ждет своей очереди",
                     EventType.LOG_TG, entity.getId()));
             log.debug("*** create file with hash {}", hash);
-            return true;
+            return entity;
         }
     }
 
     //интерфейс
-    public boolean create(MultipartFile multipartFile, Long chatId, File file, FileSource source) {
+    public FileInfoEntity create(MultipartFile multipartFile, Long chatId, File file, FileSource source) {
 
         String hash = hashFile(file.toPath());
         if (repository.existsByHashAndStatusNot(hash, FileStatus.ERROR)) {
             eventPublisher.publishEvent(new ImportEvent(this, "Файл `" + file.getName() + "` ранее был успешно обработан системой",
                     EventType.LOG_TG, -1L));
             log.debug("*** file with hash {} already exist", hash);
-            return false;
+            return null;
         } else {
             FileInfoEntity entity = new FileInfoEntity();
             entity.setName(multipartFile.getOriginalFilename());
@@ -183,11 +183,12 @@ public class FileInfoService {
             entity.setUniqueId("");
             entity.setTgFileId("");
             entity.setProcessingStep(IN_QUEUE);
-            repository.save(entity);
-            eventPublisher.publishEvent(new ImportEvent(this, "Добавлен в систему и ждет указания столбцов для дальнейшей обратки",
+            entity = repository.save(entity);
+            eventPublisher.publishEvent(new ImportEvent(this, source == UI ? "Добавлен в систему и ждет указания столбцов для дальнейшей обратки"
+                    : "Добавлен в систему",
                     EventType.LOG_TG, entity.getId()));
             log.debug("*** create file with hash {}", hash);
-            return true;
+            return entity;
         }
     }
 

@@ -1,30 +1,12 @@
 package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import ru.medvedev.importer.dto.ContactDto;
-import ru.medvedev.importer.dto.ContactFilter;
-import ru.medvedev.importer.dto.ContactStatistic;
 import ru.medvedev.importer.entity.ContactEntity;
-import ru.medvedev.importer.entity.FileInfoBankEntity;
-import ru.medvedev.importer.entity.WebhookStatusEntity;
 import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
-import ru.medvedev.importer.enums.ContactStatus;
-import ru.medvedev.importer.enums.FileSource;
 import ru.medvedev.importer.repository.ContactRepository;
-import ru.medvedev.importer.specification.ContactSpecification;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toMap;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +18,7 @@ public class ContactService {
     private final ContactFileInfoService contactFileInfoService;
     private final WebhookStatusService webhookStatusService;
 
-    public Page<ContactDto> getPage(ContactFilter filter, Pageable pageable) {
+    /*public Page<ContactDto> getPage(ContactFilter filter, Pageable pageable) {
         Page<ContactEntity> page = repository.findAll(ContactSpecification.of(filter), pageable);
         Map<Long, Boolean> contactOriginalMap = contactFileInfoService.getOriginalsMap(page.getContent().stream()
                 .map(ContactEntity::getId).collect(Collectors.toSet()));
@@ -47,7 +29,7 @@ public class ContactService {
 
     public List<ContactEntity> findAll(ContactFilter filter) {
         return repository.findAll(ContactSpecification.of(filter));
-    }
+    }*/
 
     public Optional<ContactEntity> findLastByInn(String inn) {
         return repository.findFirstByInnOrderByIdDesc(inn);
@@ -57,7 +39,7 @@ public class ContactService {
         repository.changeWebhookStatus(webhookStatus.getId(), inn, webhookStatus.getBank().name());
     }
 
-    public List<ContactEntity> filteredContacts(List<ContactEntity> contacts, FileInfoBankEntity fileBank) {
+    /*public List<ContactEntity> filteredContacts(List<ContactEntity> contacts, FileInfoBankEntity fileBank) {
         List<String> contactInn = contacts.stream()
                 .map(ContactEntity::getInn)
                 .collect(Collectors.toList());
@@ -114,5 +96,5 @@ public class ContactService {
     public Map<ContactStatus, Long> getContactStatisticByFileId(Long fileId) {
         return repository.getContactStatisticByFileId(fileId).stream()
                 .collect(toMap(ContactStatistic::getStatus, ContactStatistic::getCount));
-    }
+    }*/
 }

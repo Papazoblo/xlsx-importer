@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.medvedev.importer.client.SkorozvonClient;
 import ru.medvedev.importer.dto.CreateLeadDto;
 import ru.medvedev.importer.dto.CreateOrganizationDto;
+import ru.medvedev.importer.dto.ScenarioDto;
 import ru.medvedev.importer.dto.request.CreateMultipleRequest;
 import ru.medvedev.importer.dto.request.ImportLeadRequest;
 import ru.medvedev.importer.dto.response.ImportLeadResponse;
@@ -35,5 +36,9 @@ public class SkorozvonClientService {
         request.setData(leads);
         request.setTags(tags);
         client.createMultipleLeads(request);
+    }
+
+    public ScenarioDto getScenarioById(Long id) {
+        return client.getScenarioById(id);
     }
 }
