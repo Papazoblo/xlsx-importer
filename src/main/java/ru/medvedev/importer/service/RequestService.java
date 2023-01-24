@@ -8,10 +8,7 @@ import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.RequestStatus;
 import ru.medvedev.importer.repository.RequestRepository;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,6 +42,10 @@ public class RequestService {
                         .collect(Collectors.toMap(RequestStatisticProjection::getStatus,
                                 RequestStatisticProjection::getCount))));
         return result;
+    }
+
+    public void deleteByFibId(Set<Long> fibId) {
+        repository.deleteAllByFileInfoBankIdIn(fibId);
     }
 
     public void changeStatus(Long id, RequestStatus newStatus) {

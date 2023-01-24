@@ -27,6 +27,9 @@ public class RequestEntity {
     @Enumerated(EnumType.STRING)
     private RequestStatus status;
 
+    @Column(name = "file_info_bank_id", insertable = false, updatable = false)
+    private Long fileInfoBankId;
+
     @ManyToOne
     @JoinColumn(name = "file_info_bank_id")
     private FileInfoBankEntity fileInfoBank;

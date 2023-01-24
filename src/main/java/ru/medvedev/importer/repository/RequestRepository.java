@@ -12,6 +12,7 @@ import ru.medvedev.importer.enums.RequestStatus;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface RequestRepository extends JpaRepository<RequestEntity, Long> {
@@ -35,4 +36,6 @@ public interface RequestRepository extends JpaRepository<RequestEntity, Long> {
     @Transactional
     @Query("update RequestEntity r set r.status = :newStatus where r.id = :id")
     void updateStatusById(Long id, RequestStatus newStatus);
+
+    void deleteAllByFileInfoBankIdIn(Set<Long> fibId);
 }

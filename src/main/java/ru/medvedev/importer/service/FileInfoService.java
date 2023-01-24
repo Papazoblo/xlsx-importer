@@ -44,6 +44,7 @@ public class FileInfoService {
 
     private final FileInfoRepository repository;
     private final ApplicationEventPublisher eventPublisher;
+    private final RequestService requestService;
 
     public Page<FileInfoDto> getPage(Pageable pageable) {
         Page<FileInfoEntity> page = repository.findAllByDeletedIsFalse(pageable);
@@ -223,6 +224,14 @@ public class FileInfoService {
     public void delete(Long id) {
         FileInfoEntity entity = repository.findById(id).orElseThrow(EntityNotFoundException::new);
         deleteFile(entity.getId());
+
+        Set<Long> fibIds = entity.getBankList().stream().map(FileInfoBankEntity::getId)
+                .collect(Collectors.toSet());
+        if(!fibIds.isEmpty()) {
+            requestService.deleteByFibId(fibIds);
+        }
+        entity.getBankList().clear();
+
         if (entity.getStatus() == FileStatus.NEW) {
             repository.delete(entity);
         } else {
