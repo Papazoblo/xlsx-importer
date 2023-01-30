@@ -67,13 +67,16 @@
                                th:if="*{authority.contains('WEBHOOK_STATUS')}">Вебхуки для создания
                                 заявок</a>
                             <a class="dropdown-item" href="/settings/webhook-success-statuses"
-                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Финальные результаты звонка для перезаливки</a>
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Финальные результаты звонка для
+                                перезаливки</a>
                             <a class="dropdown-item" href="/settings/webhook-error-statuses"
                                th:if="*{authority.contains('WEBHOOK_STATUS')}">Отказы/недозвоны для перезвливки</a>
-                            <a class="dropdown-item" href="/settings/webhook-status-map"
-                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Карта переходов</a>
+                            <!--  <a class="dropdown-item" href="/settings/webhook-status-map"
+                                 th:if="*{authority.contains('WEBHOOK_STATUS')}">Карта переходов</a>-->
                             <a class="dropdown-item" href="/settings/filters">
                                 Фильтры для загрузки контактов</a>
+                            <a class="dropdown-item" href="/settings/system-variables">
+                                Системные переменные</a>
                         </div>
                     </div>
                 </li>
@@ -98,7 +101,8 @@
                             class="selectpicker w-100 "
                             id="vtbWebhook">
                         <option th:each="webhook : ${webhooks}" th:value="${webhook.getId()}"
-                                th:text="${webhook.getName()}"></option>
+                                th:text="${webhook.getName()}"
+                                th:selected="${filter.getVtbWebhook().contains(webhook.getId())}"></option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -107,7 +111,8 @@
                             class="selectpicker w-100 "
                             id="vtbActuality">
                         <option th:each="actuality : ${actualities}" th:value="${actuality.name()}"
-                                th:text="${actuality.getTitle()}"></option>
+                                th:text="${actuality.getTitle()}"
+                                th:selected="${filter.getVtbActuality().contains(actuality)}"></option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -116,7 +121,8 @@
                             class="selectpicker w-100 "
                             id="openingWebhook">
                         <option th:each="webhook : ${webhooks}" th:value="${webhook.getId()}"
-                                th:text="${webhook.getName()}"></option>
+                                th:text="${webhook.getName()}"
+                                th:selected="${filter.getOpeningWebhook().contains(webhook.getId())}"></option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -125,7 +131,8 @@
                             class="selectpicker w-100 "
                             id="openingActuality">
                         <option th:each="actuality : ${actualities}" th:value="${actuality.name()}"
-                                th:text="${actuality.getTitle()}"></option>
+                                th:text="${actuality.getTitle()}"
+                                th:selected="${filter.getOpeningActuality().contains(actuality)}"></option>
                     </select>
                 </div>
             </div>
@@ -152,15 +159,11 @@
                 </div>
             </div>
             <div th:class="row">
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label for="innFilter">ИНН</label>
                     <input id="innFilter" type="text" class="onlyNumbers" th:text="${filter.getInn()}"/>
                 </div>
-                <div class="col-md-2">
-                    <label for="regionFilter">Регион</label>
-                    <input id="regionFilter" type="text" th:text="${filter.getRegion()}"/>
-                </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label for="cityFilter">Город</label>
                     <input id="cityFilter" type="text" th:text="${filter.getCity()}"/>
                 </div>
@@ -190,11 +193,7 @@
                 </div>
             </div>
             <div th:class="row">
-                <div class="col-md-2">
-                    <label for="ogrnFilter">ОГРН</label>
-                    <input id="ogrnFilter" type="text" class="onlyNumbers"/>
-                </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label for="statusFilter">Статус</label>
                     <select multiple data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
                             class="selectpicker w-100 "
@@ -204,7 +203,7 @@
                         </option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label for="bankFilter">Банк</label>
                     <select multiple data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
                             class="selectpicker w-100 "
@@ -248,7 +247,7 @@
                     <th>Статус лида Открытие</th>
                     <th>Актуальность ВТБ</th>
                     <th>Актуальность Открытие</th>
-                    <th>Дата добавления</th>
+                    <th>Дата загрузки</th>
                 </tr>
                 </thead>
                 <tbody>

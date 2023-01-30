@@ -22,10 +22,7 @@ import ru.medvedev.importer.dto.ContactFilter;
 import ru.medvedev.importer.dto.ContactReloadDto;
 import ru.medvedev.importer.dto.ContactStatistic;
 import ru.medvedev.importer.entity.*;
-import ru.medvedev.importer.enums.Bank;
-import ru.medvedev.importer.enums.ContactStatus;
-import ru.medvedev.importer.enums.ExportType;
-import ru.medvedev.importer.enums.WebhookType;
+import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.repository.ContactBankActualityRepository;
 import ru.medvedev.importer.repository.ContactNewRepository;
 import ru.medvedev.importer.service.export.exporter.ContactReloadExporterService;
@@ -37,8 +34,10 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static feign.Util.isNotBlank;
 import static java.util.stream.Collectors.toMap;
 import static ru.medvedev.importer.enums.ContactActuality.NEW;
+import static ru.medvedev.importer.enums.ContactActuality.PROCESSED;
 
 @Service
 @Slf4j
@@ -49,7 +48,7 @@ public class ContactNewService {
 
     private final WebhookSuccessStatusService successStatusService;
     private final ContactNewRepository repository;
-    private final WebhookStatusMapService webhookStatusMapService;
+    private final SystemVariableService systemVariableService;
     private final ContactBankActualityRepository contactBankActualityRepository;
     private final ContactReloadExporterService contactReloadExporterService;
 
@@ -62,7 +61,7 @@ public class ContactNewService {
 
     public void updateActuality(String inn, Bank bank, WebhookStatusEntity newWebhook) {
 
-        Map<Long, List<WebhookStatusMapEntity>> map = webhookStatusMapService.getMap(bank);
+        //Map<Long, List<WebhookStatusMapEntity>> map = webhookStatusMapService.getMap(bank);
 
         repository.findFirstByInn(inn).ifPresent(contact -> {
 
@@ -75,9 +74,27 @@ public class ContactNewService {
                         return actuality;
                     });
 
+            List<WebhookSuccessStatusEntity> webhookList = successStatusService.getByBankAndWebhook(bank, newWebhook.getId());
+            Integer maxErrorNumber = systemVariableService.getByCode(SystemVariable.MAX_ERROR_NUMBER)
+                    .map(item -> isNotBlank(item.getValue()) ? Integer.parseInt(item.getValue()) : 3)
+                    .orElse(3);
+
+            if (webhookList.stream().anyMatch(webhook -> webhook.getType() == WebhookType.ERROR)) {
+                actualityEntity.incErrorCount();
+                if (actualityEntity.getErrorCount() > maxErrorNumber) {
+                    actualityEntity.setActuality(PROCESSED);
+                }
+                actualityEntity.setWebhookStatusId(DEFAULT_ERROR_WEBHOOK_ID);
+                contactBankActualityRepository.save(actualityEntity);
+            } else if (webhookList.stream().anyMatch(webhook -> webhook.getType() == WebhookType.SUCCESS)) {
+                actualityEntity.setActuality(PROCESSED);
+                actualityEntity.setWebhookStatusId(newWebhook.getId());
+                contactBankActualityRepository.save(actualityEntity);
+            }
+
             //todo webhook_id is null exception
-            Optional.ofNullable(updateActuality(newWebhook, map, actualityEntity))
-                    .ifPresent(contactBankActualityRepository::save);
+            /*Optional.ofNullable(updateActuality(newWebhook, map, actualityEntity))
+                    .ifPresent(contactBankActualityRepository::save);*/
         });
     }
 

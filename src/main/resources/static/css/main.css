@@ -228,3 +228,7 @@ button.btn i.fa-trash-can {
     margin-left: 4px;
     color: white;
 }
+
+.nonPadding td, .nonPadding th {
+    padding: 0 !important;
+}

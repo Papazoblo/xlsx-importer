@@ -68,10 +68,12 @@
                                th:if="*{authority.contains('WEBHOOK_STATUS')}">Финальные результаты звонка для перезаливки</a>
                             <a class="dropdown-item" href="/settings/webhook-error-statuses"
                                th:if="*{authority.contains('WEBHOOK_STATUS')}">Отказы/недозвоны для перезвливки</a>
-                            <a class="dropdown-item" href="/settings/webhook-status-map"
-                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Карта переходов</a>
+                          <!--  <a class="dropdown-item" href="/settings/webhook-status-map"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Карта переходов</a>-->
                             <a class="dropdown-item" href="/settings/filters">
                                 Фильтры для загрузки контактов</a>
+                            <a class="dropdown-item" href="/settings/system-variables">
+                                Системные переменные</a>
                         </div>
                     </div>
                 </li>

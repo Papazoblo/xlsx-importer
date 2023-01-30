@@ -1,6 +1,7 @@
 package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +15,7 @@ import ru.medvedev.importer.enums.WebhookType;
 import ru.medvedev.importer.repository.WebhookSuccessStatusRepository;
 import ru.medvedev.importer.specification.WebhookSuccessSpecification;
 
+import javax.validation.ConstraintViolationException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +25,7 @@ import static java.util.stream.Collectors.toList;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WebhookSuccessStatusService {
 
     private final WebhookSuccessStatusRepository repository;
@@ -46,6 +49,10 @@ public class WebhookSuccessStatusService {
 
     public List<WebhookSuccessStatusEntity> getByWebhook(Long webhookId) {
         return repository.findAllByBankAndWebhookId(webhookId);
+    }
+
+    public List<WebhookSuccessStatusEntity> getByBankAndWebhook(Bank bank, Long webhookId) {
+        return repository.findAllByBankAndWebhookId(bank, webhookId);
     }
 
     public boolean existByName(WebhookSuccessFilter filter) {
@@ -72,13 +79,19 @@ public class WebhookSuccessStatusService {
         entity.setBank(input.getBank());
         entity.setType(input.getType());
 
-        if (input.getType() == WebhookType.ERROR) {
+        /*if (input.getType() == WebhookType.ERROR) {
             WebhookSuccessStatusEntity cloneEntity = entity.clone();
-            entity.setBank(Bank.VTB);
+            entity.setBank(input.getBank());
             cloneEntity.setBank(Bank.VTB_OPENING);
             repository.save(cloneEntity);
+        }*/
+        try {
+            if (!repository.existsByWebhookIdAndBankAndType(input.getStatusId(), input.getBank(), input.getType())) {
+                repository.save(entity);
+            }
+        } catch (ConstraintViolationException ex) {
+            log.debug("Такая связка Вебхука, типа и банка уже добавлена: {}", input);
         }
-        repository.save(entity);
     }
 
     public void delete(Long id) {

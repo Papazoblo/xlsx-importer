@@ -16,11 +16,11 @@ $(document).ready(function () {
         var phone = $('#phoneFilter').val();
         var orgName = $('#orgNameFilter').val();
         var inn = $('#innFilter').val();
-        var region = $('#regionFilter').val();
+        // var region = $('#regionFilter').val();
         var city = $('#cityFilter').val();
         var createDateFrom = formatDate($('#createDateFromFilter').val());
         var createDateTo = formatDate($('#createDateToFilter').val());
-        var ogrn = $('#ogrnFilter').val();
+        // var ogrn = $('#ogrnFilter').val();
         var status = [];
         var bank = [];
         var original = [];
@@ -85,11 +85,11 @@ $(document).ready(function () {
             "phone": phone,
             "orgName": orgName,
             "inn": inn,
-            "region": region,
+            // "region": region,
             "city": city,
             "createDateFrom": createDateFrom,
             "createDateTo": createDateTo,
-            "ogrn": ogrn,
+            // "ogrn": ogrn,
             "status": status,
             "bank": bank,
             "original": original,

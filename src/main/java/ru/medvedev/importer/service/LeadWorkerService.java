@@ -365,8 +365,22 @@ public class LeadWorkerService {
                     contact.setPhone(isNotBlank(record.getPhone()) ? record.getPhone() : record.getOrgPhone());
 //                    contact.setBank(fileBank.getBank());
                     return contact;
-                }).collect(Collectors.toList());
+                })
+                .filter(contact -> checkLength(contact.getOrgName(), 1000)
+                        && checkLength(contact.getName(), 100)
+                        && checkLength(contact.getSurname(), 100)
+                        && checkLength(contact.getMiddleName(), 100)
+                        && checkLength(contact.getPhone(), 20)
+                        && checkLength(contact.getInn(), 20)
+                        && checkLength(contact.getOgrn(), 20)
+                        && checkLength(contact.getRegion(), 500)
+                        && checkLength(contact.getCity(), 1000))
+                .collect(Collectors.toList());
         contactNewService.save(contacts);
 //        return contactService.filteredContacts(contacts, fileBank);
+    }
+
+    private boolean checkLength(String value, int length) {
+        return value == null || value.length() <= length;
     }
 }

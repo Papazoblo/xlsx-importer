@@ -7,10 +7,12 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import ru.medvedev.importer.dto.AutoLinkXlsxFieldDto;
 import ru.medvedev.importer.dto.FieldNameVariantDto;
+import ru.medvedev.importer.dto.SystemVariableDto;
 import ru.medvedev.importer.enums.SkorozvonField;
 import ru.medvedev.importer.enums.XlsxRequireField;
 import ru.medvedev.importer.service.AutoLinkXlsxFieldService;
 import ru.medvedev.importer.service.FieldNameVariantService;
+import ru.medvedev.importer.service.SystemVariableService;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +26,20 @@ public class SettingController {
 
     private final FieldNameVariantService fieldNameVariantService;
     private final AutoLinkXlsxFieldService autoLinkXlsxFieldService;
+    private final SystemVariableService systemVariableService;
+
+    @GetMapping("/system-variables")
+    public String getPageSystemVariables(Model model) {
+        model.addAttribute("variables", systemVariableService.getAllMap());
+        model.addAttribute("authority", getAuthorityList());
+        return "system_settings";
+    }
+
+    @PostMapping("/system-variables")
+    public String getPageSystemVariables(@RequestBody SystemVariableDto input) {
+        systemVariableService.save(input.getVariables());
+        return "redirect:/settings/system-variables";
+    }
 
     @GetMapping("/fields")
     public String getPageField(Model model) {
