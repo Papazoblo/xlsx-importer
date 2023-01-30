@@ -1,13 +1,14 @@
 $(document).ready(function () {
 
     $('#btn-add-project').on('click', function () {
-        var name = $('#statusName').val();
+        var statusId = $('select[id=statusName]').get(0).selectedOptions[0].value;
         var btn = $(this);
+        var bank = $('select[name=bankName]').get(0).selectedOptions[0].value;
 
-        if (name.length === 0) {
-            alert("Номер проекта не указан");
+        /*if (name.length === 0) {
+            alert("Название не указано");
             return;
-        }
+        }*/
 
         btn.attr('disabled', 'disabled');
 
@@ -17,7 +18,8 @@ $(document).ready(function () {
             contentType: "application/json; charset=utf-8",
             cache: false,
             data: JSON.stringify({
-                "name": name
+                "statusId": statusId,
+                "bank": bank
             }),
             type: 'POST',
             error: function (e) {

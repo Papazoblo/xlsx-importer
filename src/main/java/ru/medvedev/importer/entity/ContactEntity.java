@@ -2,15 +2,18 @@ package ru.medvedev.importer.entity;
 
 import lombok.Data;
 import lombok.ToString;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.ContactStatus;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "contact")
 @Data
-public class ContactEntity {
+public class ContactEntity implements Cloneable {
 
     @Id
     @SequenceGenerator(name = "contact_seq_gen", sequenceName = "contact_seq_id", allocationSize = 1)
@@ -41,8 +44,8 @@ public class ContactEntity {
     @Column(name = "region")
     private String region;
 
-    @Column(name = "address")
-    private String address;
+    @Column(name = "city")
+    private String city;
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
@@ -51,16 +54,47 @@ public class ContactEntity {
     @Column(name = "trash_columns")
     private String trashColumns;
 
+    @Column(name = "bank_name")
+    @Enumerated(EnumType.STRING)
+    private Bank bank;
+
     @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "webhook_status_id")
     private WebhookStatusEntity webhookStatus;
 
+    @ToString.Exclude
+    @ManyToOne
+    @JoinColumn(name = "file_info_bank_id")
+    private FileInfoBankEntity fileInfoBankDownload;
+
     @Column(name = "create_at")
     private LocalDateTime createAt;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contact_id", insertable = false, updatable = false)
+    private List<ContactFileInfoEntity> contactFileInfoEntityList = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
         createAt = LocalDateTime.now();
+    }
+
+    @Override
+    public ContactEntity clone() {
+        ContactEntity entity = new ContactEntity();
+        entity.setOrgName(this.orgName);
+        entity.setName(this.name);
+        entity.setSurname(this.surname);
+        entity.setMiddleName(this.middleName);
+        entity.setPhone(this.phone);
+        entity.setInn(this.inn);
+        entity.setOgrn(this.ogrn);
+        entity.setRegion(this.region);
+        entity.setCity(this.city);
+        entity.setStatus(this.status);
+        entity.setTrashColumns(this.trashColumns);
+        entity.setBank(this.bank);
+        return entity;
     }
 }

@@ -12,16 +12,16 @@ import ru.medvedev.importer.dto.request.LeadRequest;
 import ru.medvedev.importer.dto.response.AddLeadResponse;
 import ru.medvedev.importer.dto.response.CheckLeadResponse;
 
-@FeignClient(value = "vtbApi", url = "${vtb.url}", configuration = {
+@FeignClient(value = "vtbApi", name = "vtbApi", url = "${vtb.url}", configuration = {
         RetryerConfiguration.class, VtbErrorDecoder.class, VtbFeignInterceptor.class
 })
 public interface VtbApiClient {
 
-    @PostMapping("/lead-impers/v1/check_leads")
+    @PostMapping("/check_leads")
     ResponseEntity<CheckLeadResponse> checkLeads(@RequestBody LeadRequest request,
                                                  @RequestHeader(name = "Authorization") String token);
 
-    @PostMapping("/lead-impers/v1/leads_impersonal")
+    @PostMapping("/leads_impersonal")
     AddLeadResponse addLead(@RequestBody LeadRequest request,
                             @RequestHeader(name = "Authorization") String token);
 }

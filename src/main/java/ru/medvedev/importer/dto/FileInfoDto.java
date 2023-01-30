@@ -15,6 +15,7 @@ public class FileInfoDto {
     private String size;
     private String date;
     private String status;
+    private String source;
     private boolean deleted;
 
     public static FileInfoDto of(FileInfoEntity entity) {
@@ -24,6 +25,7 @@ public class FileInfoDto {
         dto.setStatus(entity.getStatus().getDescription());
         dto.setSize(new BigDecimal(String.valueOf(entity.getSize())).divide(new BigDecimal(1048576), 2, RoundingMode.FLOOR).toString() + " mb");
         dto.setDate(entity.getCreateAt().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")));
+        dto.setSource(entity.getSource().getDescription());
         dto.setDeleted(entity.isDeleted());
         return dto;
     }

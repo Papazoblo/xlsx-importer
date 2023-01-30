@@ -1,0 +1,142 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Xlsx importer</title>
+
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/4.6.0-1/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/fontawesome.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/solid.min.css}"/>
+    <link rel="stylesheet" th:href="@{/css/main.css}"/>
+
+</head>
+
+<body>
+
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
+    <div class="container">
+        <a class="navbar-brand" href="/">Importer service</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive"
+                aria-controls="navbarResponsive"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
+                    <a class="nav-link" href="/xlsx/import">Загрузка
+                    </a>
+                </li>
+                <li class="nav-item" th:if="*{authority.contains('FILE_STORAGE')}">
+                    <a class="nav-link" href="/file-storage">Хранилище
+                    </a>
+                </li>
+                <li class="nav-item" th:if="*{authority.contains('CONTACTS')}">
+                    <a class="nav-link" href="/contacts">Контакты
+                    </a>
+                </li>
+                <li class="nav-item" th:if="*{authority.contains('EVENTS')}">
+                    <a class="nav-link" href="/events">События</a>
+                </li>
+                <li class="nav-item">
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown2" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Настройки
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+                            <a class="dropdown-item" href="/settings/fields"
+                               th:if="*{authority.contains('COLUMN_NAME')}">Названия столбцов</a>
+                            <a class="dropdown-item" href="/settings/auto-link"
+                               th:if="*{authority.contains('COLUMN_NAME')}">Автопривязка столбцов</a>
+                            <a class="dropdown-item" href="/settings/enabled-scenario"
+                               th:if="*{authority.contains('COLUMN_NAME')}">Справочник сценариев</a>
+                            <a class="dropdown-item" href="/users" th:if="*{authority.contains('USERS')}">Пользователи
+                                системы</a>
+                            <a class="dropdown-item" href="/settings/projects"
+                               th:if="*{authority.contains('DOWNLOADS_PROJECT')}">Проекты для загрузки</a>
+                            <a class="dropdown-item" href="/settings/webhook-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Справочник вебхуков</a>
+                            <a class="dropdown-item" href="/settings/webhook-create-request-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Вебхуки для создания
+                                заявок</a>
+                            <a class="dropdown-item" href="/settings/webhook-success-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Финальные результаты звонка для перезаливки</a>
+                            <a class="dropdown-item" href="/settings/webhook-error-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Отказы/недозвоны для перезвливки</a>
+                          <!--  <a class="dropdown-item" href="/settings/webhook-status-map"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Карта переходов</a>-->
+                            <a class="dropdown-item" href="/settings/filters">
+                                Фильтры для загрузки контактов</a>
+                            <a class="dropdown-item" href="/settings/system-variables">
+                                Системные переменные</a>
+                        </div>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout">Выйти
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+<main role="main" class="container">
+    <div th:class="row">
+        <div class="col-md-10 offset-md-1">
+            <table class="table table-bordered table-responsive-sm variantTable"
+                   style="font-size: 14px; margin: 4px">
+                <thead>
+                <tr>
+                    <th style="width: 20px">Поле</th>
+                    <th>Номер колонки</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="field : ${fields}">
+                    <td th:text="${field.getDescription() + ' ' + field.getFullDescription()}" class="fieldName"
+                        th:name="${field.name()}">field
+                    </td>
+                    <td>
+                        <input type="text" class="settingInput"/>
+                        <button th:class="${field.name()} + ' btnAdd btn-2'">
+                            Добавить
+                        </button>
+                        <table class="settingNameTable">
+                            <tbody>
+                            <tr th:each="name : ${fieldsMap.get(field).getColumns()}">
+                                <td th:text="${name}" class="fieldNameValue"></td>
+                                <td class="deleteFieldNameValue">
+                                    <button class="btn btn-delete" title="Удалить">
+                                        <i class="fa-solid fa-circle-minus"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<button class="btn-2" id="btnSave" disabled="disabled">
+    Сохранить
+</button>
+<!-- /.container -->
+
+<script type="text/javascript" th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
+<script type="text/javascript" th:src="@{/js/auto_link_field.js}"></script>
+</body>
+</html>

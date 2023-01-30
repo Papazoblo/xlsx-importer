@@ -20,6 +20,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.apache.logging.log4j.util.Strings.isNotBlank;
+import static ru.medvedev.importer.enums.XlsxRequireField.*;
 
 @Service
 @RequiredArgsConstructor
@@ -57,6 +62,7 @@ public class HeaderProcessingService {
                                                                 Long fileId) {
         Map<XlsxRequireField, FieldPositionDto> positionField = new HashMap<>();
 
+        List<XlsxRequireField> emptyFieldsList = new ArrayList<>();
         namesMap.keySet().forEach(key -> {
             if (key == XlsxRequireField.TRASH) {
                 return;
@@ -86,11 +92,24 @@ public class HeaderProcessingService {
             }
 
             if (dto.isRequired() && dto.getHeader().isEmpty()) {
-                eventPublisher.publishEvent(new ImportEvent(this, String.format("Столбец %s не найден в файле",
-                        key.getDescription()), EventType.LOG_TG, fileId));
+                emptyFieldsList.add(key);
             }
             positionField.put(key, dto);
         });
+
+        if (!emptyFieldsList.isEmpty()) {
+            boolean fioIsExists = emptyFieldsList.stream()
+                    .anyMatch(field -> field == XlsxRequireField.FIO);
+            String fields = emptyFieldsList.stream()
+                    .filter(field -> (!fioIsExists && (Stream.of(NAME, SURNAME, MIDDLE_NAME).noneMatch(item -> item == field))) ||
+                            (fioIsExists && Stream.of(FIO).noneMatch(item -> item == field)))
+                    .map(XlsxRequireField::getDescription)
+                    .collect(Collectors.joining(", "));
+            if (isNotBlank(fields.trim())) {
+                eventPublisher.publishEvent(new ImportEvent(this, String.format("Столбец %s не найден в файле",
+                        fields), EventType.LOG_TG, fileId));
+            }
+        }
 
         //positionField.put(XlsxRequireField.TRASH, parseTrashColumns(row, positionField));
         return positionField;

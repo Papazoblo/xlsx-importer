@@ -4,6 +4,19 @@ $(document).ready(function () {
         var projectId = $('#textProjectId').val();
         var date = $('#date').val();
         var btn = $(this);
+        var bank;
+
+        var options = $('#bank')[0].selectedOptions;
+        for (let j = 0; j < options.length; j++) {
+            if (options[j] !== undefined) {
+                bank = options[j].value;
+            }
+        }
+
+        if (bank === undefined || bank.length === 0) {
+            alert("Банк не указан");
+            return;
+        }
 
         if (projectId.length === 0) {
             alert("Номер проекта не указан");
@@ -24,6 +37,7 @@ $(document).ready(function () {
             data: JSON.stringify({
                 "date": date,
                 "number": projectId,
+                "bank": bank
             }),
             type: 'POST',
             error: function (e) {

@@ -6,6 +6,10 @@
     width: 50%;
 }
 
+#projectTable th {
+    width: 33.3%;
+}
+
 input[type=text], input[type=password], .multiselect-native-select, #uploadTable {
     width: 100%;
 }
@@ -100,8 +104,17 @@ label[for='enableWhatsAppLink'] {
     cursor: pointer;
 }
 
-#btnSendFile.btn-2, #parseXlsx.btn-2 {
+#parseXlsx.btn-2 {
     width: 55% !important;
+}
+
+#btnSendFile.btn-2 {
+    width: 75% !important;
+}
+
+label[for=autoImport] {
+    margin-bottom: 0 !important;
+    margin-left: 1.5rem;
 }
 
 .custom-file-label::after {
@@ -201,4 +214,21 @@ button.btn i.fa-trash-can {
     top: 109px;
     right: 50px;
     width: 160px;
+}
+
+.btn-export {
+    margin: 32px 0 0 8px;
+    background: #296f24;
+    color: white;
+}
+
+.btn-search {
+    background: #343a40;
+    margin-top: 32px;
+    margin-left: 4px;
+    color: white;
+}
+
+.nonPadding td, .nonPadding th {
+    padding: 0 !important;
 }

@@ -1,0 +1,198 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Xlsx importer</title>
+
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/4.6.0-1/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/fontawesome.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/6.1.1/css/solid.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-multiselect/1.1.1/css/bootstrap-multiselect.css}"/>
+    <link rel="stylesheet" th:href="@{/css/main.css}"/>
+
+</head>
+
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
+    <div class="container">
+        <a class="navbar-brand" href="/">Importer service</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive"
+                aria-controls="navbarResponsive"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
+                    <a class="nav-link" href="/xlsx/import">Загрузка
+                    </a>
+                </li>
+                <li class="nav-item" th:if="*{authority.contains('FILE_STORAGE')}">
+                    <a class="nav-link" href="/file-storage">Хранилище
+                    </a>
+                </li>
+                <li class="nav-item" th:if="*{authority.contains('CONTACTS')}">
+                    <a class="nav-link" href="/contacts">Контакты
+                    </a>
+                </li>
+                <li class="nav-item" th:if="*{authority.contains('EVENTS')}">
+                    <a class="nav-link" href="/events">События</a>
+                </li>
+                <li class="nav-item">
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown2" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Настройки
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+                            <a class="dropdown-item" href="/settings/fields"
+                               th:if="*{authority.contains('COLUMN_NAME')}">Названия столбцов</a>
+                            <a class="dropdown-item" href="/settings/auto-link"
+                               th:if="*{authority.contains('COLUMN_NAME')}">Автопривязка столбцов</a>
+                            <a class="dropdown-item" href="/settings/enabled-scenario"
+                               th:if="*{authority.contains('COLUMN_NAME')}">Справочник сценариев</a>
+                            <a class="dropdown-item" href="/users" th:if="*{authority.contains('USERS')}">Пользователи
+                                системы</a>
+                            <a class="dropdown-item" href="/settings/projects"
+                               th:if="*{authority.contains('DOWNLOADS_PROJECT')}">Проекты для загрузки</a>
+                            <a class="dropdown-item" href="/settings/webhook-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Справочник вебхуков</a>
+                            <a class="dropdown-item" href="/settings/webhook-create-request-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Вебхуки для создания
+                                заявок</a>
+                            <a class="dropdown-item" href="/settings/webhook-success-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Финальные результаты звонка для перезаливки</a>
+                            <a class="dropdown-item" href="/settings/webhook-error-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Отказы/недозвоны для перезвливки</a>
+                          <!--  <a class="dropdown-item" href="/settings/webhook-status-map"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Карта переходов</a>-->
+                            <a class="dropdown-item" href="/settings/filters">
+                                Фильтры для загрузки контактов</a>
+                            <a class="dropdown-item" href="/settings/system-variables">
+                                Системные переменные</a>
+                        </div>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout">Выйти
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<body>
+
+<main role="main" class="container">
+    <div class="row mt-4">
+        <div class="col-md-8 offset-md-2">
+            <table id="mainTable">
+                <tr>
+                    <th><label for="statusName">Название статуса</label></th>
+                    <th>
+                        <select data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
+                                class="selectpicker w-100 "
+                                id="statusName">
+                            <option th:each="status : ${statuses}" th:value="${status.getId()}"
+                                    th:text="${status.getName()}">
+                            </option>
+                        </select>
+                    </th>
+                </tr>
+                <tr>
+                    <th><label for="bankName">Банк</label></th>
+                    <th>
+                        <select data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
+                                class="selectpicker w-100"
+                                name="bankName"
+                                id="bankName">
+                            <option th:each="item : ${banks}" th:value="${item}" th:text="${item.title}">
+                            </option>
+                        </select>
+                    </th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th style="text-align: right">
+                        <button id="btn-add-project" class="btn-2">Добавить</button>
+                    </th>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div th:class="row">
+        <div class="col-md-10 offset-md-1">
+            <table id="files" class="nonPadding table table-bordered table-responsive-sm">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Банк</th>
+                    <th class="action-td"></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${data}">
+                    <td th:text="${item.getId()}">id</td>
+                    <td th:text="${item.getName()}">date</td>
+                    <td th:text="${item.getBank().title}">bank</td>
+                    <td>
+                        <button class="btn btn-delete" title="Удалить" th:id="${item.getId()}">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+<!--    <nav aria-label="Page navigation" class="paging">-->
+<!--        <ul class="pagination" th:if="${data.totalPages > 1}">-->
+<!--            <li class="page-item" th:classappend="${!paging.isPrevEnabled()? 'disabled' : ''}">-->
+<!--                <a class="page-link" th:href="@{'/file-storage?page=' + ${paging.pageNumber - 1}}"-->
+<!--                   tabindex="-1">Previous</a>-->
+<!--            </li>-->
+<!--            <th:block th:each="item : ${paging.getItems()}">-->
+<!--                <li class="page-item" th:classappend="${item.index == paging.pageNumber? 'active' : ''}"-->
+<!--                    th:if="${item.pageItemType.name() == 'PAGE'}">-->
+<!--                    <a class="page-link" th:href="@{'/file-storage?page=' + ${item.index}}"-->
+<!--                       th:text="${item.index}"></a>-->
+<!--                </li>-->
+<!--                <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}">-->
+<!--                    <a class="page-link" href="#">...</a>-->
+<!--                </li>-->
+<!--            </th:block>-->
+<!--            <li class="page-item" th:classappend="${!paging.isNextEnabled()? 'disabled' : ''}">-->
+<!--                <a class="page-link" th:href="@{'/file-storage?page=' + ${paging.pageNumber + 1}}">Next</a>-->
+<!--            </li>-->
+<!--        </ul>-->
+<!--    </nav>-->
+</main>
+<!-- /.container -->
+
+<script type="text/javascript" th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/4.6.0-1/js/bootstrap.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap-multiselect/1.1.1/js/bootstrap-multiselect.js}"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('.selectpicker').multiselect({
+            nonSelectedText: 'Не выбрано',
+            nSelectedText: 'выбран(о)',
+            allSelectedText: 'Все выбрано',
+            resetText: 'Сбросить'
+        });
+    });
+</script>
+<script type="text/javascript" th:src="@{/js/webhook_create_request_status.js}"></script>
+
+</body>
+</html>

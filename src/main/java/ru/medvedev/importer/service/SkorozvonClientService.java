@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.client.SkorozvonClient;
-import ru.medvedev.importer.component.SkorozvonProperties;
 import ru.medvedev.importer.dto.CreateLeadDto;
 import ru.medvedev.importer.dto.CreateOrganizationDto;
+import ru.medvedev.importer.dto.ScenarioDto;
 import ru.medvedev.importer.dto.request.CreateMultipleRequest;
 import ru.medvedev.importer.dto.request.ImportLeadRequest;
 import ru.medvedev.importer.dto.response.ImportLeadResponse;
@@ -18,10 +18,9 @@ import java.util.List;
 @Slf4j
 public class SkorozvonClientService {
 
-    private static final String BEARER = "Bearer ";
     private final SkorozvonClient client;
-    private final SkorozvonProperties properties;
 
+    @Deprecated
     public void importLeads(Long projectId, List<CreateLeadDto> leads, List<String> tags) {
         ImportLeadRequest request = new ImportLeadRequest();
         request.setCallProjectId(projectId);
@@ -37,5 +36,9 @@ public class SkorozvonClientService {
         request.setData(leads);
         request.setTags(tags);
         client.createMultipleLeads(request);
+    }
+
+    public ScenarioDto getScenarioById(Long id) {
+        return client.getScenarioById(id);
     }
 }

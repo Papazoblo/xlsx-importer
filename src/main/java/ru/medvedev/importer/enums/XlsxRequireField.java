@@ -12,11 +12,12 @@ public enum XlsxRequireField {
     NAME("Имя"),
     SURNAME("Фамилия"),
     MIDDLE_NAME("Отчество"),
+    FIO("ФИО"),
     ORG_NAME("Наименование ЮЛ"),
     PHONE("Телефон"),
     INN("ИНН"),
     OGRN("ОГРН"),
-    ADDRESS("Адрес"),
+    CITY("Город"), //todo бывший адрес
     TRASH("Мусорный столбец");
 
     @Getter

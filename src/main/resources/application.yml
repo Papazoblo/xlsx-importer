@@ -10,8 +10,16 @@ server:
 feign:
   client:
     config:
-      default:
+      vtbOpeningApi:
         loggerLevel: full
+      vtbAuth:
+        loggerLevel: full
+      vtbApi:
+        loggerLevel: full
+      skorozvon:
+        loggerLevel: basic
+      skorozvonAuth:
+        loggerLevel: basic
 
 logging:
   file:
@@ -20,6 +28,10 @@ logging:
     ru.medvedev.importer: DEBUG
 
 spring:
+  task:
+    scheduling:
+      pool:
+        size: 5
   servlet:
     multipart:
       max-file-size: 10MB
@@ -27,6 +39,10 @@ spring:
   datasource:
     jdbc-url: jdbc:postgresql://127.0.0.1:5432/xlsx_importer_db
     driver-class-name: org.postgresql.Driver
+  jpa:
+    properties:
+      hibernate:
+        enable_lazy_load_no_trans: true
   main:
     allow-bean-definition-overriding: true
   thymeleaf:
@@ -39,18 +55,41 @@ cron:
   fixed-rate-update-token: 1200000
   fixed-rate-check-xlsx-exists: 900000
   launch-file-processing: '0 * * * * *'
-  webhook-statistic: '0 0 19 * * *'
-  tg-column-header-request: '*/5 * * * * *'
-  tg-file-body-processor: '*/5 * * * * *'
-  webhook-change-status: '17 */1 * * * *'
+  ending-file-processing: '30 * * * * *'
+  webhook-statistic: '0 20 18 * * *'
+  tg-column-header-request: '*/3 * * * * *'
+  tg-initialized-new-file: '*/3 * * * * *'
+  tg-file-body-processor: '*/3 * * * * *'
+  tg-file-send-to-check: '2 */1 * * * *'
+  creating-request-vtb: '45 * * * * *'
+  creating-request-opening: '40 * * * * *'
+  check-request-status-vtb: '*/35 * * * * *'
+  check-request-status-opening: '*/30 * * * * *'
+  tg-file-send-to-skorozvon: '*/30 * * * * *'
+  webhook-from-fixed-status: '17 */1 * * * *'
+  webhook-from-try-to-create-status: '30 */1 * * * *'
+  webhook-from-create-success-status: '45 */1 * * * *'
+  webhook-check-status: '20 */2 * * * *'
+  auto-load: '0 0 3 * * *'
+  logs-archive-delete: '0 0 2 * * *'
 
 telegram:
-  botName: Xlsx collector
-  reconnectTimer: 10000
+  xlsx-collector:
+    botName: Xlsx collector
+    reconnectTimer: 10000
+  notificator:
+    botName: Notificator
+    reconnectTimer: 10000
 
 skorozvon:
   url: https://app.skorozvon.ru
 
 vtb:
-  url: https://epa.api.vtb.ru/openapi/smb/lecs
-  token-url: https://passport.api.vtb.ru/passport/oauth2/token
+  url: https://gw.api.vtb.ru:443/openapi/smb/lecs/lead-impers/v1
+  token-url: https://open.api.vtb.ru:443/passport/oauth2/token
+
+vtb-opening:
+  url: https://openpartners.ru/api/v2/request
+  url-add-request: /add
+  url-check-request-status: /status
+  url-check-inn: /getduplicates

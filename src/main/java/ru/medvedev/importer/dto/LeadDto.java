@@ -1,6 +1,5 @@
 package ru.medvedev.importer.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import ru.medvedev.importer.enums.CheckLeadStatus;
@@ -14,7 +13,6 @@ public class LeadDto {
     private String inn;
     private Boolean consentOnPersonalDataProcessing;
     private String productCode = "Payments";
-    @JsonIgnore
     private String responseCodeDescription;
     private CheckLeadStatus responseCode;
 }

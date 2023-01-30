@@ -30,14 +30,18 @@ public class WebhookStatusService {
         return repository.getOne(id);
     }
 
-    public WebhookStatusDto getByName(String name) {
+    public WebhookStatusEntity creatIfNotExists(String name) {
         if (isBlank(name)) {
             throw new BadRequestException("Пустой результата вебхука");
         }
-        return repository.findByName(name).map(WebhookStatusDto::of).orElseGet(() -> {
+        return repository.findByName(name).orElseGet(() -> {
             WebhookStatusEntity entity = new WebhookStatusEntity();
             entity.setName(name);
-            return WebhookStatusDto.of(repository.save(entity));
+            return repository.save(entity);
         });
+    }
+
+    public void delete(Long id) {
+        repository.deleteById(id);
     }
 }

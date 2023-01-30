@@ -52,13 +52,29 @@
                         <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
                             <a class="dropdown-item" href="/settings/fields"
                                th:if="*{authority.contains('COLUMN_NAME')}">Названия столбцов</a>
+                            <a class="dropdown-item" href="/settings/auto-link"
+                               th:if="*{authority.contains('COLUMN_NAME')}">Автопривязка столбцов</a>
+                            <a class="dropdown-item" href="/settings/enabled-scenario"
+                               th:if="*{authority.contains('COLUMN_NAME')}">Справочник сценариев</a>
                             <a class="dropdown-item" href="/users" th:if="*{authority.contains('USERS')}">Пользователи
                                 системы</a>
                             <a class="dropdown-item" href="/settings/projects"
                                th:if="*{authority.contains('DOWNLOADS_PROJECT')}">Проекты для загрузки</a>
-                            <a class="dropdown-item" href="/settings/webhook-success-statuses"
-                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Статусы для отправки
+                            <a class="dropdown-item" href="/settings/webhook-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Справочник вебхуков</a>
+                            <a class="dropdown-item" href="/settings/webhook-create-request-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Вебхуки для создания
                                 заявок</a>
+                            <a class="dropdown-item" href="/settings/webhook-success-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Финальные результаты звонка для перезаливки</a>
+                            <a class="dropdown-item" href="/settings/webhook-error-statuses"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Отказы/недозвоны для перезвливки</a>
+                          <!--  <a class="dropdown-item" href="/settings/webhook-status-map"
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Карта переходов</a>-->
+                            <a class="dropdown-item" href="/settings/filters">
+                                Фильтры для загрузки контактов</a>
+                            <a class="dropdown-item" href="/settings/system-variables">
+                                Системные переменные</a>
                         </div>
                     </div>
                 </li>

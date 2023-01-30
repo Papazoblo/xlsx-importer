@@ -2,6 +2,7 @@ package ru.medvedev.importer.enums;
 
 public enum CheckLeadStatus {
 
+    IN_CHECK,
     POSITIVE,
     NEGATIVE,
     NO_LEADS,

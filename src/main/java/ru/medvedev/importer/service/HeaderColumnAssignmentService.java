@@ -13,17 +13,17 @@ import ru.medvedev.importer.dto.events.CheckBotColumnResponseEvent;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.entity.FileRequestEmptyRequireFieldEntity;
-import ru.medvedev.importer.enums.EventType;
-import ru.medvedev.importer.enums.FileProcessingStep;
-import ru.medvedev.importer.enums.XlsxRequireField;
+import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.exception.FileProcessingException;
-import ru.medvedev.importer.service.telegram.TelegramPollingService;
+import ru.medvedev.importer.service.telegram.xlsxcollector.TelegramPollingService;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static ru.medvedev.importer.enums.XlsxRequireField.*;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +35,7 @@ public class HeaderColumnAssignmentService {
     private final FieldNameVariantService fieldNameVariantService;
     private final FileRequestEmptyRequireFieldService fileRequestEmptyRequireFieldService;
     private final ApplicationEventPublisher eventPublisher;
+    private final SystemVariableService systemVariableService;
 
     @Scheduled(cron = "${cron.tg-column-header-request}")
     public void sendRequestToTelegram() {
@@ -46,6 +47,7 @@ public class HeaderColumnAssignmentService {
 
         if (event.getText().equals("Отменить загрузку")) {
             fileInfoService.getFileInProcess().ifPresent(file -> {
+                systemVariableService.save(SystemVariable.CHAT_STATE, ChatState.NONE.name());
                 eventPublisher.publishEvent(new ImportEvent(this, "Загрузка файла отменена",
                         EventType.ERROR, file.getId()));
             });
@@ -72,7 +74,14 @@ public class HeaderColumnAssignmentService {
                         headerDto.setValue(columnInfo.getColumnInfoMap().get(columnPosition).get(0));
                         fieldNameVariantService.add(xlsxField, headerDto.getValue(), true);
                         fieldPositionDto.getHeader().add(headerDto);
-                        columnInfo.getFieldPositionMap().put(xlsxField, fieldPositionDto);
+                        if (xlsxField == FIO) {
+                            columnInfo.getFieldPositionMap().put(NAME, fieldPositionDto);
+                            columnInfo.getFieldPositionMap().put(SURNAME, fieldPositionDto);
+                            columnInfo.getFieldPositionMap().put(MIDDLE_NAME, fieldPositionDto);
+                            columnInfo.getFieldPositionMap().put(FIO, fieldPositionDto);
+                        } else {
+                            columnInfo.getFieldPositionMap().put(xlsxField, fieldPositionDto);
+                        }
                         file.setColumnInfo(columnInfo);
                         file.setProcessingStep(FileProcessingStep.RESPONSE_COLUMN_NAME);
                         file.setAskColumnNumber(null);
@@ -116,24 +125,39 @@ public class HeaderColumnAssignmentService {
     private void findColumnToAsk(FileInfoEntity file) {
         file.getColumnInfo().ifPresent(columnInfo -> {
             //ищем номер столбца, которого нет ни в одном HeaderDto
-            Optional<Integer> optionalPosition = columnInfo.getColumnInfoMap().keySet().stream().filter(columnNum ->
-                    columnInfo.getFieldPositionMap().values().stream()
-                            .flatMap(fieldPositionDto -> fieldPositionDto.getHeader().stream())
-                            .noneMatch(header -> header.getPosition().equals(columnNum))
-            ).findFirst();
+            Optional<Integer> optionalPosition = columnInfo.getColumnInfoMap().keySet().stream()
+                    .filter(columnNum ->
+                            columnInfo.getFieldPositionMap().values().stream()
+                                    .flatMap(fieldPositionDto -> fieldPositionDto.getHeader().stream())
+                                    .noneMatch(header -> header.getPosition().equals(columnNum))
+                    ).findFirst();
 
             //если такой номер есть, то формируем ТГ сообщение
             if (optionalPosition.isPresent()) {
-                telegramService.sendRequestGetColumnName(file.getName(),
-                        getEmptyRequiredColumn(columnInfo.getFieldPositionMap()),
-                        columnInfo.getColumnInfoMap().get(optionalPosition.get()));
-                file.setProcessingStep(FileProcessingStep.REQUEST_COLUMN_NAME);
-                file.setAskColumnNumber(optionalPosition.get());
+                List<String> columnLines = columnInfo.getColumnInfoMap().get(optionalPosition.get());
+                if (columnLines.isEmpty() || columnLines.stream().allMatch(String::isEmpty)) {
+                    log.debug("*** empty column lines: {}", columnLines.toString());
+                    file.setAskColumnNumber(null);
+                    HeaderDto headerDto = new HeaderDto();
+                    headerDto.setPosition(optionalPosition.get());
+                    headerDto.setValue("");
+                    columnInfo.getFieldPositionMap().get(XlsxRequireField.TRASH).getHeader().add(headerDto);
+                    file.setColumnInfo(columnInfo);
+                    systemVariableService.save(SystemVariable.CHAT_STATE, ChatState.NONE.name());
+                } else {
+                    telegramService.sendRequestGetColumnName(file.getName(),
+                            getEmptyRequiredColumn(columnInfo.getFieldPositionMap()),
+                            columnInfo.getColumnInfoMap().get(optionalPosition.get()));
+                    file.setProcessingStep(FileProcessingStep.REQUEST_COLUMN_NAME);
+                    file.setAskColumnNumber(optionalPosition.get());
+                    systemVariableService.save(SystemVariable.CHAT_STATE, ChatState.COLUMN_NAME.name());
+                }
             } else {//иначе переводим файл в статус WAIT_READ_DATA
                 //todo добавить условие , что обязательные поля заполнены
                 List<String> emptyRequiredFieldList = getEmptyRequireColumnWithNoRequest(file,
                         columnInfo.getFieldPositionMap());
                 if (emptyRequiredFieldList.isEmpty()) {
+                    systemVariableService.save(SystemVariable.CHAT_STATE, ChatState.NONE.name());
                     //проверяем, Что все обязательные поля заполнены, иначе кидаем фаил в ошибку
                     if (getEmptyRequiredColumn(columnInfo.getFieldPositionMap()).isEmpty()) {
                         file.setProcessingStep(FileProcessingStep.WAIT_READ_DATA);
@@ -152,6 +176,7 @@ public class HeaderColumnAssignmentService {
                     file.getFileRequestEmptyRequireFieldEntities().add(fileRequestEntity);
                     file.setProcessingStep(FileProcessingStep.REQUEST_REQUIRE_FIELD);
                     telegramService.sendRequestGetRequireColumn(file, emptyRequiredFieldList.get(0));
+                    systemVariableService.save(SystemVariable.CHAT_STATE, ChatState.COLUMN_NAME.name());
                 }
             }
             fileInfoService.save(file);

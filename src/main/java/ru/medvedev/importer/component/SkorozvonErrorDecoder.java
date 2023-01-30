@@ -6,6 +6,7 @@ import feign.codec.ErrorDecoder;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import ru.medvedev.importer.exception.TimeOutException;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -26,6 +27,11 @@ public class SkorozvonErrorDecoder implements ErrorDecoder {
         if (response.status() == 401) {
             parameter.clearToken();
         }
+
+        if(response.status() == 408) {
+            throw new TimeOutException(s);
+        }
+
         if (response.status() > 300) {
             throw new RetryableException(response.status(),
                     new BufferedReader(

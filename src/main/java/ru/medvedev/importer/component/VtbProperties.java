@@ -15,6 +15,7 @@ public class VtbProperties {
     private String tokenUrl;
     private String clientId;
     private String clientSecret;
+    private String domen;
 
     public void clearToken() {
         this.accessToken = null;
