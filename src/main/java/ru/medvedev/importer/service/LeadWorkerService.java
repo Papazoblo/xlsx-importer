@@ -225,8 +225,9 @@ public class LeadWorkerService {
                     item.setStatus(WebhookStatus.WAIT_CHECK_LEAD_AFTER_CREATE_RESPONSE);
                     item.setOpeningRequestId(result.getAdditionalInfo());
                 } else {
-                    if (result.getLeadResponse().stream().anyMatch(lead ->
-                            lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {
+                    //todo костыль, что если после создания лида его можно создать еще раз
+                    /*if (result.getLeadResponse().stream().anyMatch(lead ->
+                            lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {*/
                         log.debug("*** lead loaded in {} {} ", item.getBank(), item.getInn());
                         item.setStatus(WebhookStatus.SUCCESS);
                         eventPublisher.publishEvent(new NotificationEvent(this,
@@ -235,9 +236,9 @@ public class LeadWorkerService {
                                         item.getCity(),
                                         item.getName()),
                                 EventType.LOG_TG));
-                    } else {
+                    /*} else {
                         item.setStatus(WebhookStatus.ERROR);
-                    }
+                    }*/
                 }
             } catch (TimeOutException ex) {
                 log.debug("*** FROM STATUS TRY TO CREATE LEAD TIMEOUT ERROR " + item.getInn());
