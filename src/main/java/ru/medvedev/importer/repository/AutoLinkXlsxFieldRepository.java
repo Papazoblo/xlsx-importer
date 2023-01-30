@@ -10,6 +10,4 @@ import java.util.List;
 @Repository
 public interface AutoLinkXlsxFieldRepository extends JpaRepository<AutoLinkXlsxFieldEntity, Long> {
 
-    List<AutoLinkXlsxFieldEntity> findAllByField(SkorozvonField field);
-
 }

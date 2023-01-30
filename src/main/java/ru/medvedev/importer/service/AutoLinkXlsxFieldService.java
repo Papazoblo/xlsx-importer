@@ -39,16 +39,6 @@ public class AutoLinkXlsxFieldService {
                 }));
     }
 
-    public AutoLinkXlsxFieldDto getByField(SkorozvonField field) {
-        AutoLinkXlsxFieldDto dto = new AutoLinkXlsxFieldDto();
-        List<AutoLinkXlsxFieldEntity> entities = repository.findAllByField(field);
-        dto.setColumns(entities.stream()
-                .filter(name -> Objects.nonNull(name.getColumn()))
-                .map(AutoLinkXlsxFieldEntity::getColumn)
-                .collect(Collectors.toSet()));
-        return dto;
-    }
-
     @Transactional
     public void create(List<AutoLinkXlsxFieldDto> input) {
         repository.deleteAll();

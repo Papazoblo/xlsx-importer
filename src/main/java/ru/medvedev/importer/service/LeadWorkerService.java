@@ -39,12 +39,10 @@ public class LeadWorkerService {
     private final BankClientServiceFactory bankClientServiceFactory;
     private final WebhookSuccessStatusService webhookSuccessStatusService;
     private final WebhookStatisticService webhookStatisticService;
-    //private final ContactService contactService;
     private final ApplicationEventPublisher eventPublisher;
     private final DownloadFilterService downloadFilterService;
     private final FileInfoBankService fileInfoBankService;
     private final WebhookStatusService webhookStatusService;
-    private final SkorozvonClientService skorozvonClientService;
     private final ContactNewService contactNewService;
     private final ContactDownloadInfoService contactDownloadInfoService;
     private final FileInfoService fileInfoService;

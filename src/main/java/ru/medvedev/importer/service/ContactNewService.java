@@ -61,8 +61,6 @@ public class ContactNewService {
 
     public void updateActuality(String inn, Bank bank, WebhookStatusEntity newWebhook) {
 
-        //Map<Long, List<WebhookStatusMapEntity>> map = webhookStatusMapService.getMap(bank);
-
         repository.findFirstByInn(inn).ifPresent(contact -> {
 
             ContactBankActualityEntity actualityEntity = contact.getActualityList().stream()
@@ -91,55 +89,7 @@ public class ContactNewService {
                 actualityEntity.setWebhookStatusId(newWebhook.getId());
                 contactBankActualityRepository.save(actualityEntity);
             }
-
-            //todo webhook_id is null exception
-            /*Optional.ofNullable(updateActuality(newWebhook, map, actualityEntity))
-                    .ifPresent(contactBankActualityRepository::save);*/
         });
-    }
-
-    private ContactBankActualityEntity updateActuality(WebhookStatusEntity newWebhook,
-                                                       Map<Long, List<WebhookStatusMapEntity>> map,
-                                                       ContactBankActualityEntity actuality) {
-
-        List<WebhookSuccessStatusEntity> webhookList = successStatusService.getByWebhook(newWebhook.getId());
-
-        if (webhookList.stream().anyMatch(item -> item.getType() == WebhookType.ERROR)) {
-
-            Map<Integer, WebhookStatusMapEntity> statusMap = map.get(DEFAULT_ERROR_WEBHOOK_ID).stream()
-                    .collect(toMap(WebhookStatusMapEntity::getErrorCount, item -> item));
-
-            Integer errorCount = actuality.incErrorCount();
-            if (actuality.getActuality() == NEW) {
-                actuality.setActuality(Optional.ofNullable(statusMap.get(errorCount))
-                        .map(WebhookStatusMapEntity::getActuality)
-                        .orElseGet(() -> statusMap.keySet().stream().max(Integer::compareTo)
-                                .map(maxItem -> statusMap.get(maxItem).getActuality())
-                                .orElse(NEW)));
-                actuality.setWebhookStatusId(DEFAULT_ERROR_WEBHOOK_ID);
-            }
-        } else if (webhookList.stream().anyMatch(item -> item.getType() == WebhookType.SUCCESS)) {
-
-            WebhookStatusMapEntity newStatusMap = Optional.ofNullable(map.get(newWebhook.getId()))
-                    .map(item -> item.get(0))
-                    .orElse(null);
-            WebhookStatusMapEntity oldStatusMap = Optional.ofNullable(map.get(actuality.getWebhookStatusId()))
-                    .map(item -> item.get(0))
-                    .orElse(null);
-
-            if (newStatusMap != null) {
-                if (actuality.getActuality() == NEW || oldStatusMap == null
-                        || Optional.ofNullable(oldStatusMap.getPriority()).orElse(0) < Optional.ofNullable(newStatusMap.getPriority()).orElse(0)) {
-                    actuality.setActuality(newStatusMap.getActuality());
-                    actuality.setWebhookStatusId(newWebhook.getId());
-                }
-            } else {
-                return null;
-            }
-        } else { // == MINOR
-            // ничего не делаем
-        }
-        return actuality;
     }
 
     public boolean existsByInn(String inn) {
@@ -193,25 +143,6 @@ public class ContactNewService {
             System.out.println("End process sheet");
             i++;
         }
-    }
-
-    private static boolean isFileNotValid(MultipartFile file) {
-        if (file == null) {
-            log.error("Excel file is null");
-            return true;
-        }
-        return isFileExtensionNotValid(file.getOriginalFilename());
-    }
-
-    private static boolean isFileExtensionNotValid(String fileName) {
-        String fileExtension = FilenameUtils.getExtension(fileName);
-
-        if (fileExtension == null || fileExtension.isEmpty()
-                || (!fileExtension.equalsIgnoreCase("xls") && !fileExtension.equalsIgnoreCase("xlsx"))) {
-            log.error("Bad file extension for Excel file.");
-            return true;
-        }
-        return false;
     }
 
     public InputStreamResource export(ContactFilter filter) {

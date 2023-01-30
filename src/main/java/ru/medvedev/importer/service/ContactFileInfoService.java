@@ -29,10 +29,4 @@ public class ContactFileInfoService {
             return entity;
         }).collect(Collectors.toList()));
     }
-
-    public Map<Long, Boolean> getOriginalsMap(Set<Long> contactIds) {
-        return repository.findByContactId(contactIds).stream()
-                .collect(toMap(item -> item.getId().getContactId(),
-                        ContactFileInfoEntity::isOriginal));
-    }
 }

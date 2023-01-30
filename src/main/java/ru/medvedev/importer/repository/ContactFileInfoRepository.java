@@ -13,6 +13,4 @@ import java.util.Set;
 @Repository
 public interface ContactFileInfoRepository extends JpaRepository<ContactFileInfoEntity, ContactFileInfoId> {
 
-    @Query("select cfi from ContactFileInfoEntity cfi where cfi.id.contactId in :contactIds")
-    List<ContactFileInfoEntity> findByContactId(@Param("contactIds") Set<Long> contactIds);
 }

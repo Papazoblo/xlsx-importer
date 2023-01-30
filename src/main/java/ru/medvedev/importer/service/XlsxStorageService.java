@@ -25,22 +25,11 @@ public class XlsxStorageService {
 
     private final FileInfoService fileInfoService;
 
-    /*@Scheduled(fixedRateString = "${cron.fixed-rate-check-xlsx-exists}")
-    public void scheduleCheckExistXlsx() {
-        checkIsExist();
-    }*/
-
-    /*@EventListener(ApplicationReadyEvent.class)
-    public void checkExistXlsx() {
-        checkIsExist();
-    }*/
-
     public FileInfoEntity upload(MultipartFile file) throws IOException {
         if (isBlank(file.getOriginalFilename()) || !file.getOriginalFilename().contains(".xlsx")
                 || !file.getOriginalFilename().contains(".xls")) {
             throw new BadRequestException("Неверный формат файла");
         }
-        //deleteIfExist();
         return saveFile(file);
     }
 
@@ -48,22 +37,5 @@ public class XlsxStorageService {
         File newFile = new File(uploadDir + "/" + System.currentTimeMillis() + "_" + file.getOriginalFilename());
         FileUtils.writeByteArrayToFile(newFile, file.getBytes());
         return fileInfoService.create(file, scanningChatId, newFile, FileSource.UI);
-    }/*
-
-    public void deleteIfExist() {
-        if (storage.isExist()) {
-            File root = new File(".");
-            Arrays.stream(root.listFiles())
-                    .filter(file -> file.getName().contains(".xlsx") || file.getName().contains(".xls"))
-                    .forEach(file -> file.delete());
-        }
-    }*/
-
-    /*private void checkIsExist() {
-        File root = new File(".");
-        Arrays.stream(root.listFiles()).filter(file -> file.getName().contains(".xlsx") || file.getName().contains(".xls"))
-                .findFirst().ifPresent(file -> {
-            storage.setFileName(file.getName());
-        });
-    }*/
+    }
 }

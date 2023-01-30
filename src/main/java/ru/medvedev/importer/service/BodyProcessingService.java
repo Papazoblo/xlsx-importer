@@ -39,10 +39,10 @@ import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import static ru.medvedev.importer.enums.Bank.VTB;
 import static ru.medvedev.importer.enums.Bank.VTB_OPENING;
 import static ru.medvedev.importer.enums.FileInfoBankStatus.*;
-import static ru.medvedev.
+import static ru.medvedev.importer.enums.RequestStatus.*;
 import static ru.medvedev.importer.enums.RequestStatus.ERROR;
 import static ru.medvedev.importer.enums.RequestStatus.IN_QUEUE;
-importer.enums.RequestStatus.*;
+
 import static ru.medvedev.importer.service.EventService.BANK_NAME_PATTERN;
 import static ru.medvedev.importer.service.EventService.STATISTIC_LINE_PATTERN;
 import static ru.medvedev.importer.utils.StringUtils.*;
@@ -56,7 +56,6 @@ public class BodyProcessingService {
     private static final Integer MAX_TRY_RESEND = 5;
 
     private final FileInfoService fileInfoService;
-    private final ContactService contactService;
     private final SkorozvonClientService skorozvonClientService;
     private final BankClientServiceFactory bankClientServiceFactory;
     private final ApplicationEventPublisher eventPublisher;
