@@ -38,7 +38,7 @@ public class SkorozvonClientService {
         client.createMultipleLeads(request);
     }
 
-    public ScenarioDto getScenarioById(Long id) {
-        return client.getScenarioById(id);
+    public List<ScenarioDto> getScenarioList() {
+        return client.getScenarioList();
     }
 }

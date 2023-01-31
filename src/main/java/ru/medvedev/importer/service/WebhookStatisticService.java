@@ -79,6 +79,7 @@ public class WebhookStatisticService {
         entity.setPhone(webhook.getLead().getPhones());
         entity.setCity(webhook.getLead().getCity().trim());
         entity.setName(webhook.getLead().getName());
+        entity.setCreateAt(webhook.getLead().getCreateAt());
         if (webhook.getContact() != null) {
             entity.setFullName(webhook.getContact().getName());
         }
@@ -92,27 +93,7 @@ public class WebhookStatisticService {
         repository.save(entity);
     }
 
-    /*public void updateStatisticStatus(String inn, WebhookStatus oldStatus, WebhookStatus newStatus) {
-        repository.saveAll(repository.findAllByInnAndStatus(inn, oldStatus)
-                .stream()
-                .peek(item -> item.setStatus(newStatus))
-                .collect(Collectors.toList()));
-    }
-
-    public void updateStatisticStatusToError(String inn, WebhookStatus oldStatus, String message) {
-        repository.saveAll(repository.findAllByInnAndStatus(inn, oldStatus)
-                .stream()
-                .peek(item -> item.setStatus(WebhookStatus.ERROR))
-                .peek(item -> item.setErrorMessage(message))
-                .collect(Collectors.toList()));
-    }*/
-
     public void save(WebhookStatisticEntity entity) {
         repository.save(entity);
     }
-/*
-    public WebhookStatisticEntity updateStatisticStatusAndOpeningId(WebhookStatisticEntity entity, WebhookStatus newStatus, String requestId) {
-        entity.setOpeningRequestId(requestId);
-        return updateStatisticStatus(entity, newStatus);
-    }*/
 }

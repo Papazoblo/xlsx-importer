@@ -128,7 +128,7 @@ public class ContactNewService {
         }
     }
 
-    private void readDataFromSheet(XMLReader parser, XSSFReader reader) throws IOException, SAXException, InvalidFormatException {
+    public static void readDataFromSheet(XMLReader parser, XSSFReader reader) throws IOException, SAXException, InvalidFormatException {
         Iterator<InputStream> sheets = reader.getSheetsData();
         int i = 0;
         while (sheets.hasNext()) {

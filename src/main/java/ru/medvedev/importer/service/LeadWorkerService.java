@@ -2,9 +2,15 @@ package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.util.XMLHelper;
+import org.apache.poi.xssf.eventusermodel.XSSFReader;
+import org.apache.poi.xssf.model.SharedStringsTable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.xml.sax.XMLReader;
 import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.events.NotificationEvent;
@@ -17,16 +23,21 @@ import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
 import ru.medvedev.importer.service.bankclientservice.BankClientService;
 import ru.medvedev.importer.service.bankclientservice.BankClientServiceFactory;
+import ru.medvedev.importer.service.sheethandler.ContactNewSheetHandler;
+import ru.medvedev.importer.service.sheethandler.WebhookSheetHandler;
 
 import javax.naming.OperationNotSupportedException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.logging.log4j.util.Strings.isBlank;
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import static ru.medvedev.importer.enums.FileInfoBankStatus.IN_QUEUE;
+import static ru.medvedev.importer.service.ContactNewService.readDataFromSheet;
 import static ru.medvedev.importer.service.EventService.NOTIFICATION_PATTERN;
 import static ru.medvedev.importer.utils.StringUtils.getFioStringFromContact;
 
@@ -47,6 +58,7 @@ public class LeadWorkerService {
     private final ContactDownloadInfoService contactDownloadInfoService;
     private final FileInfoService fileInfoService;
     private final EnabledScenarioService enabledScenarioService;
+    private final SkorozvonClientService skorozvonClientService;
 
     @Scheduled(cron = "${cron.webhook-from-fixed-status}")
     public void fromStatusFixed() {
@@ -228,14 +240,14 @@ public class LeadWorkerService {
                     //todo костыль, что если после создания лида его можно создать еще раз
                     /*if (result.getLeadResponse().stream().anyMatch(lead ->
                             lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {*/
-                        log.debug("*** lead loaded in {} {} ", item.getBank(), item.getInn());
-                        item.setStatus(WebhookStatus.SUCCESS);
-                        eventPublisher.publishEvent(new NotificationEvent(this,
-                                String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
-                                        item.getInn(),
-                                        item.getCity(),
-                                        item.getName()),
-                                EventType.LOG_TG));
+                    log.debug("*** lead loaded in {} {} ", item.getBank(), item.getInn());
+                    item.setStatus(WebhookStatus.SUCCESS);
+                    eventPublisher.publishEvent(new NotificationEvent(this,
+                            String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
+                                    item.getInn(),
+                                    item.getCity(),
+                                    item.getName()),
+                            EventType.LOG_TG));
                     /*} else {
                         item.setStatus(WebhookStatus.ERROR);
                     }*/
@@ -286,19 +298,33 @@ public class LeadWorkerService {
             //если результат соответствует нашим ожиданиям
             if (isNotBlank(resultName)) {
                 WebhookStatusEntity webhookStatus = webhookStatusService.creatIfNotExists(resultName);
-                //ScenarioDto scenarioDto = skorozvonClientService.getScenarioById(webhookDto.getCall().getScenarioId());
 
                 //создаем заливку в банк
-                webhookSuccessStatusService.getByNameAndStatus(resultName).ifPresent(status -> {
-//                    contactNewService.changeWebhookStatus(webhookDto.getLead().getInn(), status);
-                    webhookStatisticService.addStatistic(WebhookStatus.FIXED, webhookDto, status);
-                });
+                webhookSuccessStatusService.getByNameAndStatus(resultName).ifPresent(status ->
+                        webhookStatisticService.addStatistic(WebhookStatus.FIXED, webhookDto, status));
 
                 if (webhookDto.getCall().getScenarioId() != null) {
                     enabledScenarioService.findByScenarioId(webhookDto.getCall().getScenarioId()).ifPresent(scenario ->
                             contactNewService.updateActuality(webhookDto.getLead().getInn(), scenario.getBank(), webhookStatus));
                 }
             }
+        }
+    }
+
+    public void massLoadWebhooks(MultipartFile file) {
+        try (InputStream inputStream = file.getInputStream()) {
+
+            OPCPackage pkg = OPCPackage.open(inputStream);
+            XSSFReader r = new XSSFReader(pkg);
+            SharedStringsTable sst = (SharedStringsTable) r.getSharedStringsTable();
+            XMLReader parser = XMLHelper.newXMLReader();
+            WebhookSheetHandler handler = new WebhookSheetHandler(sst, skorozvonClientService.getScenarioList().stream()
+                    .collect(toMap(ScenarioDto::getName, item -> item)));
+            parser.setContentHandler(handler);
+            readDataFromSheet(parser, r);
+            handler.getWebhooks().forEach(this::processWebhook);
+        } catch (Exception e) {
+            log.error("Cannot read excel-file '{}'", file.getName(), e);
         }
     }
 

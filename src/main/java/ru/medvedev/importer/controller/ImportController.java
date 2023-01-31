@@ -13,6 +13,7 @@ import ru.medvedev.importer.dto.WebhookDto;
 import ru.medvedev.importer.dto.XlsxImportInfo;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.Bank;
+import ru.medvedev.importer.enums.DownloadAction;
 import ru.medvedev.importer.enums.SkorozvonField;
 import ru.medvedev.importer.exception.BadRequestException;
 import ru.medvedev.importer.service.*;
@@ -102,9 +103,16 @@ public class ImportController {
 
     @PostMapping(value = "/xlsx/upload", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file,
+                                         @RequestParam("action") DownloadAction action) {
         try {
-            xlsxStorageService.upload(file);
+            if (action == DownloadAction.ACTION_LEAD_DOWNLOAD) {
+                xlsxStorageService.upload(file);
+            } else if (action == DownloadAction.ACTION_WEBHOOK_DOWNLOAD) {
+                leadWorkerService.massLoadWebhooks(file);
+            } else {
+                return ResponseEntity.badRequest().build();
+            }
             return ResponseEntity.ok(file.getOriginalFilename());
         } catch (IOException io) {
             throw new BadRequestException("Невозможно загрузить файл");

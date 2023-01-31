@@ -92,23 +92,22 @@
             <form id="formSendFile" enctype="multipart/form-data" class="mt-4">
                 <table id="uploadTable">
                     <tr>
-                        <th>
+                        <th style="vertical-align: top">
                             <div class="custom-file">
                                 <input type="file" class="custom-file-input" id="file" name="file">
                                 <label class="custom-file-label" for="file"></label>
                             </div>
                         </th>
-                        <!--<th>
-                            <label for="autoImport">
-                                Автоимпорт
-                                <input type="checkbox"
-                                       title="Ссылка на WhatsApp"
-                                       id="autoImport"/>
-                            </label>
-                        </th>-->
                         <th style="text-align: right">
-                            <button class="btn-2" type="submit" id="btnSendFile">
-                                Загрузить
+                            <input name="action" type="hidden"/>
+                            <button class="btn-2" type="submit" id="btnSendFile" name="action"
+                                    value="ACTION_LEAD_DOWNLOAD">
+                                Загрузить лиды
+                            </button>
+                            <br/>
+                            <button type="submit" id="btnLoadWebhook" name="action" value="ACTION_WEBHOOK_DOWNLOAD"
+                                    th:class="'row mt-4 ' + (${fileExist} ? '' : 'hide-block')">
+                                Загрузить вебхуки
                             </button>
                         </th>
                     </tr>

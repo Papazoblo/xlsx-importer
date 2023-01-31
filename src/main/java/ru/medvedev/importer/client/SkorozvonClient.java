@@ -14,13 +14,15 @@ import ru.medvedev.importer.dto.request.ImportLeadRequest;
 import ru.medvedev.importer.dto.response.ImportLeadResponse;
 import ru.medvedev.importer.dto.response.LoginResponse;
 
+import java.util.List;
+
 @FeignClient(value = "skorozvon", name = "skorozvon", url = "${skorozvon.url}", configuration = {
         RetryerConfiguration.class, SkorozvonFeignInterceptor.class, SkorozvonErrorDecoder.class
 })
 public interface SkorozvonClient {
 
-    @GetMapping("/api/v2/scenarios/{id}")
-    ScenarioDto getScenarioById(@PathVariable("id") Long id);
+    @GetMapping("/api/v2/scenarios")
+    List<ScenarioDto> getScenarioList();
 
     @PostMapping("/api/v2/leads/import")
     ImportLeadResponse importLeads(@RequestBody ImportLeadRequest request);

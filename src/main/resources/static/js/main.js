@@ -91,10 +91,19 @@ $(document).ready(function () {
         });
     });
 
+    $('#btnSendFile').on('click', function () {
+        $('input[name=action]').val('ACTION_LEAD_DOWNLOAD');
+    });
+
+    $('#btnLoadWebhook').on('click', function () {
+        $('input[name=action]').val('ACTION_WEBHOOK_DOWNLOAD');
+    });
+
     $("#formSendFile").submit(function (e) {
         e.preventDefault();
         var data = new FormData($('#formSendFile')[0]);
         data.append('file', $('#file')[0].files[0]);
+        data.append('action', $('input[name=action]').val());
 
         $.ajax({
             url: '/xlsx/upload',

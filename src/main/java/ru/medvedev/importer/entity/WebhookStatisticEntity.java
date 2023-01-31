@@ -6,6 +6,7 @@ import ru.medvedev.importer.enums.WebhookStatus;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Entity
 @Table(name = "webhook_statistic")
@@ -64,7 +65,7 @@ public class WebhookStatisticEntity {
 
     @PrePersist
     public void prePersist() {
-        this.createAt = LocalDateTime.now();
+        this.createAt = Optional.ofNullable(createAt).orElse(LocalDateTime.now());
         this.updateAt = createAt;
     }
 
