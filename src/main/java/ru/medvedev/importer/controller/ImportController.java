@@ -119,7 +119,7 @@ public class ImportController {
         }
     }
 
-    @PostMapping("/webhook")
+    @PostMapping/*("/webhook")*/
     @ResponseBody
     public void takeWebhook(@RequestBody WebhookDto input) {
         log.debug("*** Take a webhook {}", input);

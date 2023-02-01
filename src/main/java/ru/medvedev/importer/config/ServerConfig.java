@@ -9,7 +9,7 @@ import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration
+//@Configuration
 public class ServerConfig {
 
     @Bean
@@ -32,9 +32,9 @@ public class ServerConfig {
     private Connector getHttpConnector() {
         Connector connector = new Connector(TomcatServletWebServerFactory.DEFAULT_PROTOCOL);
         connector.setScheme("http");
-        connector.setPort(8082);
+        connector.setPort(8081);
         connector.setSecure(false);
-        connector.setRedirectPort(8081);
+        connector.setRedirectPort(8080);
         return connector;
     }
 }

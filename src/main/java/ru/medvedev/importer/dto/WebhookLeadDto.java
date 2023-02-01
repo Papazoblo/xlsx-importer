@@ -1,5 +1,6 @@
 package ru.medvedev.importer.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -19,7 +20,8 @@ public class WebhookLeadDto {
     private String name;
     private String comment;
     @JsonProperty("created_at")
-    @DateTimeFormat(pattern = "dd.MM.yyyy HH:mm:ss")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    //@JsonFormat(shape=JsonFormat.Shape.STRING, pattern="dd.MM.yyyy HH:mm:ss")
     private LocalDateTime createAt;
     private List<String> emails = new ArrayList<>();
 }

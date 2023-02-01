@@ -3,6 +3,7 @@ package ru.medvedev.importer.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -27,9 +28,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     public void configure(HttpSecurity http) throws Exception {
 
-        http.csrf().disable().requiresChannel(channel ->
-                channel.anyRequest().requiresSecure())/*
-                .authorizeRequests(authorize ->
+        http.csrf().disable()/*.requiresChannel(channel ->
+                channel.anyRequest().requiresSecure())*/
+                /*.authorizeRequests(authorize ->
                         authorize.anyRequest().permitAll())*/
                 .authorizeRequests()
                 .antMatchers("/contacts").hasAuthority("CONTACTS")
@@ -40,7 +41,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/settings/projects").hasAuthority("DOWNLOADS_PROJECT")
                 .antMatchers("/settings/webhook-success-statuses").hasAuthority("WEBHOOK_STATUS")
                 .antMatchers("/users").hasAuthority("USERS")
-                .antMatchers("/webhook").permitAll()
+                .antMatchers(HttpMethod.POST, "/").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
