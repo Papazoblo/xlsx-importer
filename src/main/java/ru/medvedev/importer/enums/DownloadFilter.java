@@ -10,21 +10,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public enum DownloadFilter {
 
-    INN("Исключить ИНН", "ИНН контакта, который будет начинаться на указанные цифры будет пропущен", new TypeReference<List<String>>() {
-    }, Collections.emptyList()),
-    abs("Исключить ИНН", "ИНН контакта, который будет начинаться на указанные цифры будет пропущен", new TypeReference<List<String>>() {
-    }, Collections.emptyList()),
-    asd("Исключить ИНН", "ИНН контакта, который будет начинаться на указанные цифры будет пропущен", new TypeReference<List<String>>() {
-    }, Collections.emptyList()),
-    sgdfgdf("Исключить ИНН", "ИНН контакта, который будет начинаться на указанные цифры будет пропущен", new TypeReference<List<String>>() {
-    }, Collections.emptyList());
+    INN("Исключить ИНН", "Контакт с ИНН, который будет начинаться на указанные цифры будет пропущен"),
+    PHONE("Исключить телефон", "Контакт с телефоном, который будет начинаться на указанные цифры будет пропущен");
 
     @Getter
     private final String title;
     @Getter
     private final String description;
-    @Getter
-    private final TypeReference<?> type;
-    @Getter
-    private final Object defaultValue;
 }

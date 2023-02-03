@@ -8,8 +8,12 @@ import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.request.DownloadFilterRequest;
 import ru.medvedev.importer.dto.response.DownloadFilterDto;
 import ru.medvedev.importer.entity.DownloadFilterEntity;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.DownloadFilter;
 import ru.medvedev.importer.repository.DownloadFilterRepository;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -17,37 +21,34 @@ import ru.medvedev.importer.repository.DownloadFilterRepository;
 public class DownloadFilterService {
 
     private final DownloadFilterRepository repository;
-    private final ObjectMapper objectMapper;
 
-    public DownloadFilterDto getByName(DownloadFilter filterName) {
-        return repository.findByName(filterName)
+    public List<DownloadFilterDto> getByCode(DownloadFilter code) {
+        return repository.findAllByCode(code).stream()
                 .map(entity -> {
                     DownloadFilterDto dto = new DownloadFilterDto();
                     dto.setId(entity.getId());
-                    dto.setName(entity.getName());
-                    try {
-                        dto.setFilter(objectMapper.readValue(entity.getFilter(), entity.getName().getType()));
-                    } catch (JsonProcessingException e) {
-                        log.debug("*** Error convert string to DownloadFilter");
-                        dto.setFilter(entity.getName().getDefaultValue());
-                    }
+                    dto.setCode(entity.getCode());
+                    dto.setValue(entity.getValue());
+                    dto.setBank(entity.getBank());
                     return dto;
                 })
-                .orElseGet(() -> {
-                    DownloadFilterRequest request = new DownloadFilterRequest();
-                    request.setName(DownloadFilter.INN);
-                    request.setFilter("[]");
-                    saveFilter(request);
-                    return getByName(filterName);
-                });
+                .collect(Collectors.toList());
     }
 
-    public void saveFilter(DownloadFilterRequest request) {
-        repository.deleteByName(request.getName());
+    public List<DownloadFilterEntity> getByCodeAndBank(DownloadFilter code, Bank bank) {
+        return repository.findAllByCodeAndBank(code, bank);
+    }
 
-        DownloadFilterEntity entity = new DownloadFilterEntity();
-        entity.setName(request.getName());
-        entity.setFilter(String.valueOf(request.getFilter()));
-        repository.save(entity);
+    public void saveFilter(DownloadFilter code, DownloadFilterRequest request) {
+        repository.deleteByCode(code);
+
+        repository.saveAll(request.getFilter().stream()
+                .map(item -> {
+                    DownloadFilterEntity entity = new DownloadFilterEntity();
+                    entity.setCode(code);
+                    entity.setBank(item.getBank());
+                    entity.setValue(item.getValue());
+                    return entity;
+                }).collect(Collectors.toList()));
     }
 }

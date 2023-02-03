@@ -94,3 +94,6 @@ vtb-opening:
   url-add-request: /add
   url-check-request-status: /status
   url-check-inn: /getduplicates
+
+raiffeisen:
+  url: https://api.raiffeisen.ru/private/openapi-013-ssl

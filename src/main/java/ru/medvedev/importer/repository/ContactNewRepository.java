@@ -19,8 +19,8 @@ public interface ContactNewRepository extends JpaRepository<ContactNewEntity, Lo
 
     boolean existsByInn(String inn);
 
-    @Query("select c.id from ContactNewEntity c where c.inn in :innList")
-    List<Long> findContactIdByInn(List<String> innList);
+    @Query("select c from ContactNewEntity c where c.inn in :innList")
+    List<ContactNewEntity> findAllContactByInn(List<String> innList);
 
     @Query(value = "select count(id) as count, check_status\n" +
             "from contact_new c\n" +

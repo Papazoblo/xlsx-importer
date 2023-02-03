@@ -1,6 +1,7 @@
 package ru.medvedev.importer.entity;
 
 import lombok.Data;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.DownloadFilter;
 
 import javax.persistence.*;
@@ -16,9 +17,13 @@ public class DownloadFilterEntity {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "name")
-    private DownloadFilter name;
+    @Column(name = "code")
+    private DownloadFilter code;
 
-    @Column(name = "filter")
-    private String filter;
+    @Column(name = "value")
+    private String value;
+
+    @Column(name = "bank")
+    @Enumerated(EnumType.STRING)
+    private Bank bank;
 }

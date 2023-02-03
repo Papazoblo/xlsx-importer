@@ -7,6 +7,7 @@ import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,8 +21,11 @@ public class WebhookLeadDto {
     private String name;
     private String comment;
     @JsonProperty("created_at")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    //@JsonFormat(shape=JsonFormat.Shape.STRING, pattern="dd.MM.yyyy HH:mm:ss")
-    private LocalDateTime createAt;
+    private String createAt;
     private List<String> emails = new ArrayList<>();
+
+    public LocalDateTime getCreateAt() {
+        return LocalDateTime.parse(createAt.replace("T", "").split("\\+")[0],
+                DateTimeFormatter.ofPattern("yyyy-MM-ddHH:mm:ss"));
+    }
 }

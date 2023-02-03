@@ -23,7 +23,6 @@ import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
 import ru.medvedev.importer.service.bankclientservice.BankClientService;
 import ru.medvedev.importer.service.bankclientservice.BankClientServiceFactory;
-import ru.medvedev.importer.service.sheethandler.ContactNewSheetHandler;
 import ru.medvedev.importer.service.sheethandler.WebhookSheetHandler;
 
 import javax.naming.OperationNotSupportedException;
@@ -51,7 +50,6 @@ public class LeadWorkerService {
     private final WebhookSuccessStatusService webhookSuccessStatusService;
     private final WebhookStatisticService webhookStatisticService;
     private final ApplicationEventPublisher eventPublisher;
-    private final DownloadFilterService downloadFilterService;
     private final FileInfoBankService fileInfoBankService;
     private final WebhookStatusService webhookStatusService;
     private final ContactNewService contactNewService;
@@ -358,16 +356,9 @@ public class LeadWorkerService {
     }
 
     private Map<String, List<XlsxRecordDto>> getValidInnListFromFile(FileInfoEntity fileInfo) throws IOException {
-        List<String> innSkipFilter = (List<String>) downloadFilterService.getByName(DownloadFilter.INN).getFilter();
         return xlsxParserService.readColumnBody(fileInfo).stream()
                 .filter(item -> isNotBlank(item.getOrgInn()))
                 .filter(item -> item.getOrgInn().length() == 10 || item.getOrgInn().length() == 12)
-                .filter(item -> {
-                    if (innSkipFilter.isEmpty()) {
-                        return true;
-                    }
-                    return innSkipFilter.stream().noneMatch(innPrefix -> item.getOrgInn().startsWith(innPrefix));
-                })
                 .collect(groupingBy(XlsxRecordDto::getOrgInn));
     }
 

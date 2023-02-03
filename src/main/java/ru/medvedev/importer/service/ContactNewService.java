@@ -2,7 +2,6 @@ package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.util.XMLHelper;
@@ -36,7 +35,6 @@ import java.util.stream.Collectors;
 
 import static feign.Util.isNotBlank;
 import static java.util.stream.Collectors.toMap;
-import static ru.medvedev.importer.enums.ContactActuality.NEW;
 import static ru.medvedev.importer.enums.ContactActuality.PROCESSED;
 
 @Service
@@ -100,8 +98,8 @@ public class ContactNewService {
         return repository.findFirstByInn(inn);
     }
 
-    public List<Long> getContactIdByInn(List<String> innList) {
-        return repository.findContactIdByInn(innList);
+    public List<ContactNewEntity> getContactIdByInn(List<String> innList) {
+        return repository.findAllContactByInn(innList);
     }
 
     public void save(List<ContactNewEntity> entities) {

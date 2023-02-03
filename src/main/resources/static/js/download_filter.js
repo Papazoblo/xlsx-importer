@@ -2,27 +2,36 @@ $(document).ready(function () {
 
     $('.settingInput').keypress(function (e) {
         if (e.code === 'Enter' || e.code === 'NumpadEnter') {
-            var value = $(this).val();
-            $(this).val('');
-            addToTable($($($(this)[0].nextElementSibling)[0].nextElementSibling)[0], value);
+            addToTable();
         }
     });
 
     $('.btnAdd').on('click', function () {
-        var value = $($(this)[0].previousElementSibling).val();
-        $($(this)[0].previousElementSibling).val('');
-        addToTable($($(this)[0].nextElementSibling)[0], value);
+        addToTable();
     });
 
-    function addToTable(table, value) {
+    function addToTable() {
+        var filterValueElement = $('#filterValue');
+        var value = filterValueElement.val();
+        var bank;
+        var bankCode;
+        var options = $('#bankName')[0].selectedOptions;
+        for (let j = 0; j < options.length; j++) {
+            if (options[j] !== undefined) {
+                bank = options[j].text;
+                bankCode = options[j].value;
+            }
+        }
+        filterValueElement.val('');
 
         if (value.length === 0) {
             return;
         }
         $("#btnSave").removeAttr('disabled');
 
-        $(table)[0].firstElementChild.innerHTML +=
-            "<tr><td class=\"filterValue\">" + value + "</td>" +
+        $('.settingNameTable tbody')[0].innerHTML +=
+            "<tr class='valueRow'><td class=\"filterValue\">" + value + "</td>" +
+            "    <td class=\"bankName\" name='" + bankCode + "'>" + bank + "</td>" +
             "    <td class=\"deleteFilterValue\">" +
             "         <button class=\"btn btn-delete\" title=\"Удалить\">" +
             "              <i class=\"fa-solid fa-circle-minus\"></i>" +
@@ -41,15 +50,26 @@ $(document).ready(function () {
         }
     });
 
+    $('select[name=filterList]').on('change', function (e) {
+        var valueSelected = this.value;
+        window.location.replace("/settings/filters?filter=" + valueSelected);
+    });
+
     $("#btnSave").on('click', function (e) {
         var name = $('select[name=filterList]').find(":selected").val();
         var filterArray = Array();
-        var values = $(".filterValue")
+        var values = $(".valueRow")
+        console.log(values);
         for (i = 0; i < values.length; i++) {
-            filterArray.push('\"' + values[i].innerText + "\"");
+            console.log(values[i]);
+            var valuesTd = $(values[i]).children('td');
+            console.log(valuesTd);
+            filterArray.push({
+                bank: valuesTd[1].getAttribute('name').length === 0 ? null : valuesTd[1].getAttribute('name'),
+                value: valuesTd[0].innerText
+            });
         }
         var requestBody = {
-            'name': name,
             'filter': filterArray
         };
 
@@ -58,7 +78,7 @@ $(document).ready(function () {
         $("#btnSave").attr('disabled', 'disabled');
 
         $.ajax({
-            url: '/settings/filters',
+            url: '/settings/filters/' + name,
             data: JSON.stringify(requestBody),
             dataType: 'json',
             cache: false,

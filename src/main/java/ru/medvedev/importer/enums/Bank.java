@@ -10,6 +10,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public enum Bank {
 
+    RAIFFEISEN("Райффайзен"),
     VTB("ВТБ"),
     VTB_OPENING("Открытие");
 

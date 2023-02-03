@@ -48,7 +48,9 @@ public class WebhookSheetHandler extends BaseItemSheetHandler {
             CallResultDto callResultDto = new CallResultDto();
             CallDto callDto = new CallDto();
 
-            leadDto.setCreateAt(LocalDateTime.parse(value + rowMap.get("B"), formatter));
+
+            leadDto.setCreateAt(LocalDateTime.parse(value + rowMap.get("B"), formatter)
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-ddHH:mm:ss")));
             setValue("AB", leadDto::setInn);
             setValue("O", item -> leadDto.setEmails(Optional.ofNullable(item)
                     .map(Collections::singletonList)

@@ -376,7 +376,6 @@ public class BodyProcessingService {
     private List<List<ContactEntity>> readValidContactFromFile(FileInfoEntity file) throws IOException {
         FileInputStream fis = new FileInputStream(new File(file.getPath()));
         Workbook wb = file.getName().endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
-        List<String> innFilter = (List<String>) downloadFilterService.getByName(DownloadFilter.INN).getFilter();
 
         Sheet sheet = wb.getSheetAt(0);
         Map<XlsxRequireField, FieldPositionDto> fieldPositionMap = file.getColumnInfo().get().getFieldPositionMap();
@@ -391,12 +390,12 @@ public class BodyProcessingService {
             }
             try {
                 ContactEntity contact = parseContact(row, fieldPositionMap, file.getId(), innRegionMap);
-                if (isBlank(contact.getInn()) ||
+                /*if (isBlank(contact.getInn()) ||
                         (contact.getInn().length() != 10 && contact.getInn().length() != 12) ||
                         (!innFilter.isEmpty() && innFilter.stream()
                                 .anyMatch(innPrefix -> contact.getInn().startsWith(innPrefix)))) {
                     continue;
-                }
+                }*///todo выправить фильтрацию по примеру интерфейса
                 contactBatch.add(contact);
             } catch (Exception ex) {
                 log.debug("*** Invalid contact rowNum = {}", row.getRowNum(), ex);

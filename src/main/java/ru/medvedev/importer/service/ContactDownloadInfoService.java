@@ -3,11 +3,19 @@ package ru.medvedev.importer.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.entity.ContactDownloadInfoEntity;
+import ru.medvedev.importer.entity.ContactNewEntity;
+import ru.medvedev.importer.entity.DownloadFilterEntity;
 import ru.medvedev.importer.entity.FileInfoBankEntity;
+import ru.medvedev.importer.enums.Bank;
+import ru.medvedev.importer.enums.DownloadFilter;
 import ru.medvedev.importer.repository.ContactDownloadInfoRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingBy;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +25,7 @@ public class ContactDownloadInfoService {
 
     private final ContactDownloadInfoRepository repository;
     private final ContactNewService contactNewService;
+    private final DownloadFilterService downloadFilterService;
 
     public void save(List<ContactDownloadInfoEntity> entityList) {
         repository.saveAll(entityList);
@@ -26,14 +35,25 @@ public class ContactDownloadInfoService {
         List<ContactDownloadInfoEntity> downloadInfoList = new ArrayList<>();
 
         for (int i = 0; i < innSet.size(); i += MAX_BATCH_SIZE) {
-            List<Long> contactIds = contactNewService.getContactIdByInn(innSet.subList(i,
+            List<ContactNewEntity> contacts = contactNewService.getContactIdByInn(innSet.subList(i,
                     Math.min((i + MAX_BATCH_SIZE), innSet.size())));
-            contactIds.forEach(contactId -> fileInfoBankEntityList.forEach(fileInfoBank -> {
-                ContactDownloadInfoEntity downloadInfoEntity = new ContactDownloadInfoEntity();
-                downloadInfoEntity.setContactId(contactId);
-                downloadInfoEntity.setFileInfoBankId(fileInfoBank.getId());
-                downloadInfoList.add(downloadInfoEntity);
-            }));
+
+            fileInfoBankEntityList.forEach(fileInfoBank -> {
+                List<DownloadFilterEntity> innFilters = downloadFilterService.getByCodeAndBank(DownloadFilter.INN, fileInfoBank.getBank());
+                List<DownloadFilterEntity> phoneFilters = downloadFilterService.getByCodeAndBank(DownloadFilter.PHONE, fileInfoBank.getBank());
+
+                contacts.stream()
+                        .filter(contact -> innFilters.stream()
+                                .noneMatch(filter -> contact.getInn().startsWith(filter.getValue())))
+                        .filter(contact -> phoneFilters.stream()
+                                .noneMatch(filter -> contact.getPhone().startsWith(filter.getValue())))
+                        .forEach(contact -> {
+                            ContactDownloadInfoEntity downloadInfoEntity = new ContactDownloadInfoEntity();
+                            downloadInfoEntity.setContactId(contact.getId());
+                            downloadInfoEntity.setFileInfoBankId(fileInfoBank.getId());
+                            downloadInfoList.add(downloadInfoEntity);
+                        });
+            });
         }
         repository.saveAll(downloadInfoList);
     }

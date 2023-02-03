@@ -19,7 +19,7 @@
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
     <div class="container">
-        <a class="navbar-brand" href="/">Importer service</a>
+        <a class="navbar-brand" href="/xlsx/import">Importer service</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive"
                 aria-controls="navbarResponsive"
                 aria-expanded="false" aria-label="Toggle navigation">
@@ -65,11 +65,12 @@
                                th:if="*{authority.contains('WEBHOOK_STATUS')}">Вебхуки для создания
                                 заявок</a>
                             <a class="dropdown-item" href="/settings/webhook-success-statuses"
-                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Финальные результаты звонка для перезаливки</a>
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Финальные результаты звонка для
+                                перезаливки</a>
                             <a class="dropdown-item" href="/settings/webhook-error-statuses"
                                th:if="*{authority.contains('WEBHOOK_STATUS')}">Отказы/недозвоны для перезвливки</a>
-                          <!--  <a class="dropdown-item" href="/settings/webhook-status-map"
-                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Карта переходов</a>-->
+                            <!--  <a class="dropdown-item" href="/settings/webhook-status-map"
+                                 th:if="*{authority.contains('WEBHOOK_STATUS')}">Карта переходов</a>-->
                             <a class="dropdown-item" href="/settings/filters">
                                 Фильтры для загрузки контактов</a>
                             <a class="dropdown-item" href="/settings/system-variables">
@@ -92,9 +93,9 @@
         <div class="col-md-10 offset-md-1">
             <table class="table table-bordered table-responsive-sm variantTable"
                    style="font-size: 14px; margin: 4px">
-                <thead>
+                <tbody>
                 <tr>
-                    <th style="width: 300px">
+                    <td style="width: 300px">
                         <select data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
                                 th:class="'selectpicker w-100 '"
                                 th:name="filterList">
@@ -102,21 +103,38 @@
                                     th:selected="${item == currentFilter}">
                             </option>
                         </select>
-                    </th>
-                    <th th:text="${currentFilter.getDescription()}" style="vertical-align: middle"></th>
+                    </td>
+                    <td colspan="2" th:text="${currentFilter.getDescription()}"
+                        style="font-weight: bold; vertical-align: middle"></td>
                 </tr>
-                </thead>
-                <tbody>
                 <tr>
-                    <td colspan="2">
-                        <input type="text" class="settingInput onlyNumbers"/>
-                        <button th:class="${currentFilter} + ' btnAdd btn-2'">
+                    <td>
+                        <input type="text" class="settingInput onlyNumbers" id="filterValue"/>
+                    </td>
+                    <td>
+                        <select data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
+                                class="selectpicker w-100"
+                                name="bankName"
+                                id="bankName">
+                            <option value="">Любой</option>
+                            <option th:each="item : ${banks}" th:value="${item}" th:text="${item.title}">
+                            </option>
+                        </select>
+                    </td>
+                    <td>
+                        <button th:class="${currentFilter} + ' btnAdd btn-2'" style="width: 60%; padding: 0">
                             Добавить
                         </button>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4">
                         <table class="settingNameTable">
                             <tbody>
-                            <tr th:each="value : ${filter.getFilter()}">
-                                <td th:text="${value}" class="filterValue"></td>
+                            <tr th:each="filter : ${filters}">
+                                <td th:text="${filter.getValue()}" class="filterValue"></td>
+                                <td th:text="${filter.getBank() == null ? 'Любой' : filter.getBank().getTitle()}"
+                                    class="filterBank"></td>
                                 <td class="deleteFilterValue">
                                     <button class="btn btn-delete" title="Удалить">
                                         <i class="fa-solid fa-circle-minus"></i>

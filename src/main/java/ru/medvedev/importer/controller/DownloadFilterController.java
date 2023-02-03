@@ -6,6 +6,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import ru.medvedev.importer.dto.request.DownloadFilterRequest;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.DownloadFilter;
 import ru.medvedev.importer.service.DownloadFilterService;
 
@@ -29,15 +30,17 @@ public class DownloadFilterController {
 
         model.addAttribute("authority", getAuthorityList());
         model.addAttribute("currentFilter", filter);
+        model.addAttribute("banks", Bank.values());
         model.addAttribute("filterList", Arrays.stream(DownloadFilter.values())
                 .sorted(Comparator.comparing(DownloadFilter::getDescription)).collect(toList()));
-        model.addAttribute("filter", service.getByName(filter));
+        model.addAttribute("filters", service.getByCode(filter));
         return "download_filter";
     }
 
-    @PostMapping
-    public ResponseEntity<Boolean> saveFilter(@RequestBody DownloadFilterRequest request) {
-        service.saveFilter(request);
+    @PostMapping("/{filterCode}")
+    public ResponseEntity<Boolean> saveFilter(@PathVariable("filterCode") DownloadFilter filterCode,
+                                              @RequestBody DownloadFilterRequest request) {
+        service.saveFilter(filterCode, request);
         return ResponseEntity.ok(true);
     }
 }
