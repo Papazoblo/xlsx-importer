@@ -36,8 +36,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.*;
 import static org.apache.logging.log4j.util.Strings.isBlank;
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
-import static ru.medvedev.importer.enums.Bank.VTB;
-import static ru.medvedev.importer.enums.Bank.VTB_OPENING;
+import static ru.medvedev.importer.enums.Bank.*;
 import static ru.medvedev.importer.enums.FileInfoBankStatus.*;
 import static ru.medvedev.importer.enums.RequestStatus.*;
 import static ru.medvedev.importer.enums.RequestStatus.ERROR;
@@ -60,7 +59,6 @@ public class BodyProcessingService {
     private final BankClientServiceFactory bankClientServiceFactory;
     private final ApplicationEventPublisher eventPublisher;
     private final InnRegionService innRegionService;
-    private final DownloadFilterService downloadFilterService;
     private final ObjectMapper objectMapper;
     private final FileInfoBankService fileInfoBankService;
     private final RequestService requestService;
@@ -123,7 +121,7 @@ public class BodyProcessingService {
                     RequestEntity openingRequest = new RequestEntity();
                     openingRequest.setFileInfoBank(fib);
                     openingRequest = requestService.save(openingRequest);
-                    for(ContactDownloadInfoEntity info : contactSublist) {
+                    for (ContactDownloadInfoEntity info : contactSublist) {
                         info.setRequestId(openingRequest.getId());
                     }
                     contactDownloadInfoService.save(contactSublist);
@@ -155,6 +153,11 @@ public class BodyProcessingService {
         requestService.getFirstByStatusAndBank(CREATING, VTB_OPENING).ifPresent(this::creatingRequest);
     }
 
+    @Scheduled(cron = "${cron.creating-request-raiffeisen}")
+    public void creatingRequestRaiffeisen() {
+        requestService.getFirstByStatusAndBank(CREATING, RAIFFEISEN).ifPresent(this::creatingRequest);
+    }
+
     private void creatingRequest(RequestEntity request) {
         FileInfoBankEntity fib = request.getFileInfoBank();
         try {
@@ -163,6 +166,8 @@ public class BodyProcessingService {
             request.setStatus(IN_QUEUE);
             if (fib.getBank() == VTB) {
                 request.setRequestId("blank");
+            } else if (fib.getBank() == RAIFFEISEN) {
+                request.setStatus(SUCCESS_CHECK);
             } else {
                 CheckLeadResult result = bankClientService.getAllFromCheckLead(request.getContactDownloadInfo().stream()
                         .map(ContactDownloadInfoEntity::getContact)
@@ -280,7 +285,6 @@ public class BodyProcessingService {
 
     @Scheduled(cron = "${cron.tg-file-send-to-skorozvon}")
     public void sendToSkorozvon(/*OpeningRequestEntity request*/) {
-        //запуск обработки по разным банкам
         requestService.getFirstByStatus(RequestStatus.SUCCESS_CHECK).ifPresent(request -> {
             requestService.changeStatus(request.getId(), RequestStatus.DOWNLOADING);
             FileInfoBankEntity fib = request.getFileInfoBank();

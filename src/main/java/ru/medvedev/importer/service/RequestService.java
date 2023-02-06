@@ -37,8 +37,7 @@ public class RequestService {
         Map<Bank, Map<RequestStatus, Integer>> result = new HashMap<>();
         repository.getStatisticByFile(fileId).stream()
                 .collect(Collectors.groupingBy(RequestStatisticProjection::getBank))
-                .entrySet()
-                .forEach(entry -> result.put(entry.getKey(), entry.getValue().stream()
+                .forEach((key, value) -> result.put(key, value.stream()
                         .collect(Collectors.toMap(RequestStatisticProjection::getStatus,
                                 RequestStatisticProjection::getCount))));
         return result;

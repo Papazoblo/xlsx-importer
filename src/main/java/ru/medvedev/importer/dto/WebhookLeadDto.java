@@ -4,15 +4,20 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Slf4j
 public class WebhookLeadDto {
 
     private String phones;
@@ -25,7 +30,14 @@ public class WebhookLeadDto {
     private List<String> emails = new ArrayList<>();
 
     public LocalDateTime getCreateAt() {
-        return LocalDateTime.parse(createAt.replace("T", "").split("\\+")[0],
-                DateTimeFormatter.ofPattern("yyyy-MM-ddHH:mm:ss"));
+        try {
+            return new SimpleDateFormat("yyyy-MM-ddHH:mm:ss")
+                    .parse(createAt.replace("T", "")).toInstant()
+                    .atOffset(OffsetDateTime.now().getOffset())
+                    .toLocalDateTime();
+        } catch (ParseException e) {
+            log.debug("Error convert date: {}", createAt);
+            return LocalDateTime.now();
+        }
     }
 }

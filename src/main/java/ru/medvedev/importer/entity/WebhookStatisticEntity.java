@@ -57,6 +57,9 @@ public class WebhookStatisticEntity {
     @Column(name = "opening_id")
     private String openingRequestId;
 
+    @Column(name = "skorozvon_create_at")
+    private LocalDateTime skorozvonCreateAt;
+
     @Column(name = "create_at")
     private LocalDateTime createAt;
 
@@ -65,7 +68,7 @@ public class WebhookStatisticEntity {
 
     @PrePersist
     public void prePersist() {
-        this.createAt = Optional.ofNullable(createAt).orElse(LocalDateTime.now());
+        this.createAt = LocalDateTime.now();
         this.updateAt = createAt;
     }
 

@@ -157,7 +157,7 @@ public class FileInfoService {
             entity.setProcessingStep(INITIALIZE);
             entity = repository.save(entity);
             eventPublisher.publishEvent(new ImportEvent(this, "Добавлен в систему и ждет своей очереди",
-                    EventType.LOG_TG, entity.getId()));
+                    EventType.FILE_PROCESS, entity.getId()));
             log.debug("*** create file with hash {}", hash);
             return entity;
         }
@@ -187,7 +187,7 @@ public class FileInfoService {
             entity = repository.save(entity);
             eventPublisher.publishEvent(new ImportEvent(this, source == UI ? "Добавлен в систему и ждет указания столбцов для дальнейшей обратки"
                     : "Добавлен в систему",
-                    EventType.LOG_TG, entity.getId()));
+                    EventType.FILE_PROCESS, entity.getId()));
             log.debug("*** create file with hash {}", hash);
             return entity;
         }
@@ -210,7 +210,7 @@ public class FileInfoService {
             file.setOrgTags(xlsxImportInfo.getOrgTags());
             repository.save(file);
             eventPublisher.publishEvent(new ImportEvent(this, "Добавлена информация о столбцах. " +
-                    "Файл ожидает обработки", EventType.LOG_TG, file.getId()));
+                    "Файл ожидает обработки", EventType.FILE_PROCESS, file.getId()));
             return true;
         }).orElseThrow(() -> {
             log.debug("Файл с id {} не найден", xlsxImportInfo.getFileId());

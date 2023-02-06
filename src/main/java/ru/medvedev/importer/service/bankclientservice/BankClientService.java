@@ -12,18 +12,30 @@ import static ru.medvedev.importer.enums.CheckLeadStatus.POSITIVE;
 
 public interface BankClientService {
 
-    CreateLeadResult createLead(WebhookLeadDto webhookLead);
+    default CreateLeadResult createLead(WebhookLeadDto webhookLead) throws OperationNotSupportedException {
+        throw new OperationNotSupportedException();
+    }
 
-    default CheckLeadResult getPositiveFromCheckLead(List<String> innList, Long fileId) {
+    default CheckLeadResult getPositiveFromCheckLead(List<String> innList, Long fileId) throws OperationNotSupportedException {
         CheckLeadResult result = getAllFromCheckLead(innList, fileId);
         result.setLeadResponse(result.getLeadResponse().stream().filter(item -> item.getResponseCode() == POSITIVE)
                 .collect(Collectors.toList()));
         return result;
     }
 
-    CheckLeadResult getAllFromCheckLead(List<String> innList, Long fileId);
+    default CheckLeadResult getAllFromCheckLead(List<String> innList, Long fileId) throws OperationNotSupportedException {
+        throw new OperationNotSupportedException();
+    }
 
-    CheckLeadResult getCheckLeadResult(String id, Long fileId) throws OperationNotSupportedException;
+    default CheckLeadResult getCheckLeadResult(String id, Long fileId) throws OperationNotSupportedException {
+        throw new OperationNotSupportedException();
+    }
 
-    boolean getCreateLeadResult(String id) throws OperationNotSupportedException;
+    default boolean getCreateLeadResult(String id) throws OperationNotSupportedException {
+        throw new OperationNotSupportedException();
+    }
+
+    default void getCityDictionary() throws OperationNotSupportedException {
+        throw new OperationNotSupportedException();
+    }
 }

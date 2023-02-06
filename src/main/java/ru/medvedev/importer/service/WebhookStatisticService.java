@@ -79,7 +79,7 @@ public class WebhookStatisticService {
         entity.setPhone(webhook.getLead().getPhones());
         entity.setCity(webhook.getLead().getCity().trim());
         entity.setName(webhook.getLead().getName());
-        entity.setCreateAt(webhook.getLead().getCreateAt());
+        entity.setSkorozvonCreateAt(webhook.getLead().getCreateAt());
         if (webhook.getContact() != null) {
             entity.setFullName(webhook.getContact().getName());
         }

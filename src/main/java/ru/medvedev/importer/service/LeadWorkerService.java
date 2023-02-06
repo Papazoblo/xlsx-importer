@@ -36,6 +36,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.logging.log4j.util.Strings.isBlank;
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import static ru.medvedev.importer.enums.FileInfoBankStatus.IN_QUEUE;
+import static ru.medvedev.importer.enums.WebhookStatus.SUCCESS;
 import static ru.medvedev.importer.service.ContactNewService.readDataFromSheet;
 import static ru.medvedev.importer.service.EventService.NOTIFICATION_PATTERN;
 import static ru.medvedev.importer.utils.StringUtils.getFioStringFromContact;
@@ -69,6 +70,8 @@ public class LeadWorkerService {
                 if (item.getBank() == Bank.VTB_OPENING) {
                     item.setStatus(WebhookStatus.WAIT_CHECK_LEAD_AFTER_FIXED_RESPONSE);
                     item.setOpeningRequestId(result.getAdditionalInfo());
+                } else if (item.getBank() == Bank.RAIFFEISEN) {
+                    item.setStatus(WebhookStatus.TRY_TO_CREATE_LEAD);
                 } else {
                     if (result.getLeadResponse().stream().anyMatch(lead ->
                             lead.getResponseCode() == CheckLeadStatus.POSITIVE)) {
@@ -90,11 +93,13 @@ public class LeadWorkerService {
                 log.debug("*** FROM FIXED STATUS TIMEOUT ERROR " + item.getInn());
                 item.setStatus(WebhookStatus.FIXED);
             } catch (ErrorCheckLeadException ex) {
-
                 log.debug("*** Error check duplicate: {} {}", ex.getMessage(), ex);
                 eventPublisher.publishEvent(new ImportEvent(this, "Ошибка проверки на дубликат. " +
                         ex.getMessage(),
                         EventType.LOG_TG, null));
+                item.setStatus(WebhookStatus.ERROR);
+            } catch (OperationNotSupportedException e) {
+                log.debug("*** Operation not supported exception: fromStatusFixed {}", item);
                 item.setStatus(WebhookStatus.ERROR);
             }
             webhookStatisticService.save(item);
@@ -171,6 +176,8 @@ public class LeadWorkerService {
                     if (item.getBank() == Bank.VTB_OPENING) {
                         item.setStatus(WebhookStatus.WAIT_CREATE_LEAD_RESPONSE);
                         item.setOpeningRequestId(result.getAdditionalInfo());
+                    } else if (item.getBank() == Bank.RAIFFEISEN) {
+                        item.setStatus(SUCCESS);
                     } else {
                         item.setStatus(WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
                     }
@@ -188,6 +195,9 @@ public class LeadWorkerService {
                         String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
                                 "Невозможно добавить. " + ex.getMessage(), leadDto.getInn(), leadDto.getCity(), leadDto.getName()),
                         EventType.LOG_TG));
+                item.setStatus(WebhookStatus.ERROR);
+            } catch (OperationNotSupportedException e) {
+                log.debug("*** Operation not supported exception: fromStatusTryToCreateLead {}", item);
                 item.setStatus(WebhookStatus.ERROR);
             }
             webhookStatisticService.save(item);
@@ -239,7 +249,7 @@ public class LeadWorkerService {
                     /*if (result.getLeadResponse().stream().anyMatch(lead ->
                             lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {*/
                     log.debug("*** lead loaded in {} {} ", item.getBank(), item.getInn());
-                    item.setStatus(WebhookStatus.SUCCESS);
+                    item.setStatus(SUCCESS);
                     eventPublisher.publishEvent(new NotificationEvent(this,
                             String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
                                     item.getInn(),
@@ -253,6 +263,9 @@ public class LeadWorkerService {
             } catch (TimeOutException ex) {
                 log.debug("*** FROM STATUS TRY TO CREATE LEAD TIMEOUT ERROR " + item.getInn());
                 item.setStatus(WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
+            } catch (OperationNotSupportedException e) {
+                log.debug("*** Operation not supported exception: fromStatusTryToCreateLeadSuccess {}", item);
+                item.setStatus(WebhookStatus.ERROR);
             }
             webhookStatisticService.save(item);
         });
@@ -269,7 +282,7 @@ public class LeadWorkerService {
                 if (result.getLeadResponse().stream().anyMatch(lead ->
                         lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {
                     log.debug("*** lead loaded in {} {} ", item.getBank(), item.getInn());
-                    item.setStatus(WebhookStatus.SUCCESS);
+                    item.setStatus(SUCCESS);
                     eventPublisher.publishEvent(new NotificationEvent(this,
                             String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
                                     item.getInn(),

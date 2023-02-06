@@ -90,14 +90,4 @@ public class VtbClientService implements BankClientService {
             throw new ErrorCheckLeadException(responseBody.getMoreInformation(), fileId);
         }
     }
-
-    @Override
-    public CheckLeadResult getCheckLeadResult(String id, Long fileId) throws OperationNotSupportedException {
-        throw new OperationNotSupportedException();
-    }
-
-    @Override
-    public boolean getCreateLeadResult(String id) throws OperationNotSupportedException {
-        throw new OperationNotSupportedException();
-    }
 }

@@ -64,6 +64,7 @@ cron:
   tg-file-send-to-check: '2 */1 * * * *'
   creating-request-vtb: '45 * * * * *'
   creating-request-opening: '40 * * * * *'
+  creating-request-raiffeisen: '50 * * * * *'
   check-request-status-vtb: '*/35 * * * * *'
   check-request-status-opening: '*/30 * * * * *'
   tg-file-send-to-skorozvon: '*/30 * * * * *'
@@ -73,6 +74,7 @@ cron:
   webhook-check-status: '20 */2 * * * *'
   auto-load: '0 0 3 * * *'
   logs-archive-delete: '0 0 2 * * *'
+  raiffeisen-city-dictionary: '0 10 2 * * *'
 
 telegram:
   xlsx-collector:
@@ -96,4 +98,5 @@ vtb-opening:
   url-check-inn: /getduplicates
 
 raiffeisen:
-  url: https://api.raiffeisen.ru/private/openapi-013-ssl
+  url: https://api.raiffeisen.ru/private/openapi-013-ssl/corporate-leads-xs/app
+  dict-url: https://api.raiffeisen.ru/dict-001-snd/dictionaries/cities/rko-sme

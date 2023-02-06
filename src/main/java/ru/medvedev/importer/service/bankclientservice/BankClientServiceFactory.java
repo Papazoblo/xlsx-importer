@@ -10,6 +10,7 @@ public class BankClientServiceFactory {
 
     private final VtbClientService vtbClientService;
     private final OpeningClientService openingClientService;
+    private final RaiffeisenClientService raiffeisenClientService;
 
     public BankClientService getBankClientService(Bank bank) {
         switch (bank) {
@@ -17,6 +18,8 @@ public class BankClientServiceFactory {
                 return vtbClientService;
             case VTB_OPENING:
                 return openingClientService;
+            case RAIFFEISEN:
+                return raiffeisenClientService;
         }
         return null;
     }
