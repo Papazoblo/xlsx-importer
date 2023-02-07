@@ -21,7 +21,10 @@ import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.exception.BadRequestException;
+import ru.medvedev.importer.repository.ContactDownloadInfoRepository;
+import ru.medvedev.importer.repository.FileInfoBankRepository;
 import ru.medvedev.importer.repository.FileInfoRepository;
+import ru.medvedev.importer.repository.RequestRepository;
 
 import javax.persistence.EntityNotFoundException;
 import java.io.File;
@@ -45,6 +48,8 @@ public class FileInfoService {
     private final FileInfoRepository repository;
     private final ApplicationEventPublisher eventPublisher;
     private final RequestService requestService;
+    private final ContactDownloadInfoService contactDownloadInfoService;
+    private final FileInfoBankService fileInfoBankService;
 
     public Page<FileInfoDto> getPage(Pageable pageable) {
         Page<FileInfoEntity> page = repository.findAllByDeletedIsFalse(pageable);
@@ -140,7 +145,7 @@ public class FileInfoService {
         String hash = hashFile(file.toPath());
         if (repository.existsByHashAndStatusNot(hash, FileStatus.ERROR)) {
             eventPublisher.publishEvent(new ImportEvent(this, "Файл `" + file.getName() + "` ранее был успешно обработан системой",
-                    EventType.LOG_TG, -1L));
+                    EventType.LOG_TG, null));
             log.debug("*** file with hash {} already exist", hash);
             return null;
         } else {
@@ -169,7 +174,7 @@ public class FileInfoService {
         String hash = hashFile(file.toPath());
         if (repository.existsByHashAndStatusNot(hash, FileStatus.ERROR)) {
             eventPublisher.publishEvent(new ImportEvent(this, "Файл `" + file.getName() + "` ранее был успешно обработан системой",
-                    EventType.LOG_TG, -1L));
+                    EventType.LOG_TG, null));
             log.debug("*** file with hash {} already exist", hash);
             return null;
         } else {
@@ -227,11 +232,13 @@ public class FileInfoService {
 
         Set<Long> fibIds = entity.getBankList().stream().map(FileInfoBankEntity::getId)
                 .collect(Collectors.toSet());
-        if(!fibIds.isEmpty()) {
+        if (!fibIds.isEmpty()) {
+            contactDownloadInfoService.deleteAllByFileInfoBankId(fibIds);
             requestService.deleteByFibId(fibIds);
+            fileInfoBankService.deleteAllById(fibIds);
         }
-        entity.getBankList().clear();
 
+        entity.getBankList().clear();
         if (entity.getStatus() == FileStatus.NEW) {
             repository.delete(entity);
         } else {

@@ -6,19 +6,16 @@ import feign.RetryableException;
 import feign.codec.ErrorDecoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import ru.medvedev.importer.dto.LeadDto;
-import ru.medvedev.importer.dto.request.LeadRequest;
+import ru.medvedev.importer.dto.raiffeisen.RaiffeisenErrorDto;
+import ru.medvedev.importer.dto.raiffeisen.RaiffeisenErrorResponseDto;
 import ru.medvedev.importer.dto.response.CheckLeadBadRequestResponse;
-import ru.medvedev.importer.dto.response.CheckLeadResponse;
-import ru.medvedev.importer.enums.CheckLeadStatus;
-import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
+import ru.medvedev.importer.exception.ErrorCreateLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
 
 import java.io.IOException;
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -37,6 +34,23 @@ public class RaiffeisenErrorDecoder implements ErrorDecoder {
                     response.request().httpMethod(),
                     Date.from(LocalDateTime.now().plusMinutes(2).atZone(ZoneId.systemDefault()).toInstant()),
                     response.request());
+        }
+
+        if (response.status() == 400) {
+
+            try {
+                log.debug("*** raiffeisen badRequest");
+
+                ObjectMapper objectMapper = new ObjectMapper();
+                RaiffeisenErrorResponseDto responseBody = objectMapper.readValue(response.body().asInputStream(),
+                        RaiffeisenErrorResponseDto.class);
+                throw new ErrorCreateLeadException(String.format("%s\n%s", responseBody.getError().getErrorMessage(),
+                        responseBody.getError().getDetails().stream()
+                                .map(detail -> String.format("%s: %s", detail.getCause(), detail.getMessage()))
+                                .collect(Collectors.joining("\n"))), -1L);
+            } catch (IOException e) {
+                log.debug("*** error parse response body", e);
+            }
         }
 
         if (response.status() == 408) {

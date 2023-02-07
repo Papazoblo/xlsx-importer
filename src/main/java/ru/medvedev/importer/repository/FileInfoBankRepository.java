@@ -9,6 +9,7 @@ import ru.medvedev.importer.dto.ContactDownloadStatisticProjection;
 import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.enums.FileInfoBankStatus;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,4 +31,8 @@ public interface FileInfoBankRepository extends JpaRepository<FileInfoBankEntity
             "set fib.downloadStatus = :status " +
             "where fib.id = :id")
     void updateStatusById(FileInfoBankStatus status, Long id);
+
+    @Modifying
+    @Transactional
+    void deleteAllByIdIn(Collection<Long> ids);
 }

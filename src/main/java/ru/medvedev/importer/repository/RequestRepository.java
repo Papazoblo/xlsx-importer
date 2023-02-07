@@ -19,6 +19,10 @@ public interface RequestRepository extends JpaRepository<RequestEntity, Long> {
 
     Optional<RequestEntity> findFirstByStatusOrderByLastCheckAsc(RequestStatus status);
 
+    @Query(value = "select count(r) from RequestEntity r " +
+            "where r.status = :status and r.fileInfoBank.bank = :bank ")
+    long countByStatusAndBank(RequestStatus status, Bank bank);
+
     @Query(value = "select r from RequestEntity r " +
             "where r.status = :status and r.fileInfoBank.bank = :bank " +
             "order by r.lastCheck asc ")
@@ -37,5 +41,7 @@ public interface RequestRepository extends JpaRepository<RequestEntity, Long> {
     @Query("update RequestEntity r set r.status = :newStatus where r.id = :id")
     void updateStatusById(Long id, RequestStatus newStatus);
 
+    @Transactional
+    @Modifying
     void deleteAllByFileInfoBankIdIn(Set<Long> fibId);
 }

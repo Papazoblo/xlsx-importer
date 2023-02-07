@@ -7,7 +7,7 @@ import feign.codec.ErrorDecoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ru.medvedev.importer.dto.response.OpeningErrorResponse;
-import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
+import ru.medvedev.importer.exception.ErrorCreateLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
 
 import java.sql.Date;
@@ -32,9 +32,9 @@ public class OpeningErrorDecoder implements ErrorDecoder {
                 try {
                     responseDto = objectMapper.readValue(response.body().asInputStream(), OpeningErrorResponse.class);
                 } catch (Exception ex) {
-                    throw new ErrorCreateVtbLeadException("Невозможно распарсить ответ", -1L);
+                    throw new ErrorCreateLeadException("Невозможно распарсить ответ", -1L);
                 }
-                throw new ErrorCreateVtbLeadException(responseDto.getDescription(), -1L);
+                throw new ErrorCreateLeadException(responseDto.getDescription(), -1L);
 
             }
         }

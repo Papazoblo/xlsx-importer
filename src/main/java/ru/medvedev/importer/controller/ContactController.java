@@ -24,7 +24,6 @@ import ru.medvedev.importer.enums.WebhookType;
 import ru.medvedev.importer.service.ContactNewService;
 import ru.medvedev.importer.service.FileProcessingService;
 import ru.medvedev.importer.service.WebhookSuccessStatusService;
-import ru.medvedev.importer.service.export.exporter.ContactExporterService;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -40,7 +39,6 @@ public class ContactController {
     private final ContactNewService service;
     private final FileProcessingService fileProcessingService;
     private final WebhookSuccessStatusService statusService;
-    private final ContactExporterService exporterService;
 
     @GetMapping
     public String getPage(Model model,

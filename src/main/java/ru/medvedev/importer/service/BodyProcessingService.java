@@ -9,6 +9,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.hibernate.internal.util.StringHelper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -77,7 +78,7 @@ public class BodyProcessingService {
             fileInfoService.save(file);
 
             try {
-                List<List<ContactEntity>> contactBatchList = readValidContactFromFile(file);
+                List<List<ContactNewEntity>> contactBatchList = readValidContactFromFile(file);
                 file.getBankList().forEach(fileBank -> {
                     //todo переделать
                     /*contactBatchList.forEach(batch ->
@@ -150,7 +151,9 @@ public class BodyProcessingService {
 
     @Scheduled(cron = "${cron.creating-request-opening}")
     public void creatingRequestOpening() {
-        requestService.getFirstByStatusAndBank(CREATING, VTB_OPENING).ifPresent(this::creatingRequest);
+        if (requestService.getCountByStatusAndBank(IN_QUEUE, VTB_OPENING) < 15) {
+            requestService.getFirstByStatusAndBank(CREATING, VTB_OPENING).ifPresent(this::creatingRequest);
+        }
     }
 
     @Scheduled(cron = "${cron.creating-request-raiffeisen}")
@@ -304,7 +307,7 @@ public class BodyProcessingService {
                         .collect(groupingBy(ContactNewEntity::getInn)).values()
                         .stream()
                         .map(contactList -> {
-                            CreateOrganizationDto orgDto = xlsxRecordToOrganization(contactList.get(0), fib.getBank());
+                            CreateOrganizationDto orgDto = xlsxRecordToOrganization(contactList.get(0), fib.getBank(), fileInfo);
                             contactList.forEach(contact -> orgDto.getLeads().add(xlsxRecordToLead(contact)));
                             return orgDto;
                         }).collect(toList());
@@ -377,15 +380,15 @@ public class BodyProcessingService {
         });
     }
 
-    private List<List<ContactEntity>> readValidContactFromFile(FileInfoEntity file) throws IOException {
+    private List<List<ContactNewEntity>> readValidContactFromFile(FileInfoEntity file) throws IOException {
         FileInputStream fis = new FileInputStream(new File(file.getPath()));
         Workbook wb = file.getName().endsWith("xlsx") ? new XSSFWorkbook(fis) : new HSSFWorkbook(fis);
 
         Sheet sheet = wb.getSheetAt(0);
         Map<XlsxRequireField, FieldPositionDto> fieldPositionMap = file.getColumnInfo().get().getFieldPositionMap();
 
-        List<List<ContactEntity>> contactBatchList = new ArrayList<>();
-        List<ContactEntity> contactBatch = new ArrayList<>();
+        List<List<ContactNewEntity>> contactBatchList = new ArrayList<>();
+        List<ContactNewEntity> contactBatch = new ArrayList<>();
         Map<String, InnRegionEntity> innRegionMap = innRegionService.getAllMap();
         regionCodes.clear();
         for (Row row : sheet) {
@@ -393,7 +396,7 @@ public class BodyProcessingService {
                 continue;
             }
             try {
-                ContactEntity contact = parseContact(row, fieldPositionMap, file.getId(), innRegionMap);
+                ContactNewEntity contact = parseContact(row, fieldPositionMap, file.getId(), innRegionMap);
                 /*if (isBlank(contact.getInn()) ||
                         (contact.getInn().length() != 10 && contact.getInn().length() != 12) ||
                         (!innFilter.isEmpty() && innFilter.stream()
@@ -420,11 +423,11 @@ public class BodyProcessingService {
         return contactBatchList;
     }
 
-    private ContactEntity parseContact(Row row, Map<XlsxRequireField, FieldPositionDto> cellPositionMap, Long
+    private ContactNewEntity parseContact(Row row, Map<XlsxRequireField, FieldPositionDto> cellPositionMap, Long
             fileId,
-                                       Map<String, InnRegionEntity> innRegionMap) {
+                                          Map<String, InnRegionEntity> innRegionMap) {
 
-        ContactEntity contact = new ContactEntity();
+        ContactNewEntity contact = new ContactNewEntity();
         List<TrashColumnDto> trashColumns = new ArrayList<>();
         cellPositionMap.keySet().forEach(field -> {
             FieldPositionDto positionInfo = cellPositionMap.get(field);
@@ -514,7 +517,7 @@ public class BodyProcessingService {
         }
 
         try {
-            contact.setTrashColumns(objectMapper.writeValueAsString(trashColumns));
+            //contact.setTrashColumns(objectMapper.writeValueAsString(trashColumns));
         } catch (Exception ex) {
             log.debug("*** Error convert trashColumn to String");
         }
@@ -549,12 +552,15 @@ public class BodyProcessingService {
         return lead;
     }
 
-    private static CreateOrganizationDto xlsxRecordToOrganization(ContactNewEntity contact, Bank bank) {
+    private static CreateOrganizationDto xlsxRecordToOrganization(ContactNewEntity contact, Bank bank,
+                                                                  FileInfoEntity fileInfo) {
         CreateOrganizationDto organization = new CreateOrganizationDto();
         String fioStringFromContact = getFioStringFromContact(contact);
         organization.setName(String.format("%s %s %s", bank.getTitle(), contact.getOrgName().contains(fioStringFromContact) ? "" : fioStringFromContact, contact.getOrgName()));
         organization.setPhones(Collections.singletonList(contact.getPhone()));
-        organization.setHomepage(String.format("https://wa.me/%s", contact.getPhone()));
+        if (fileInfo.getEnableWhatsAppLink()) {
+            organization.setHomepage(String.format("https://wa.me/%s", contact.getPhone()));
+        }
         organization.setCity(contact.getCity());
         organization.setRegion(contact.getRegion());
         organization.setInn(contact.getInn());

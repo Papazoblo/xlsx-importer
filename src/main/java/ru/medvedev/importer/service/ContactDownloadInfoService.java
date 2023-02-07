@@ -7,10 +7,12 @@ import ru.medvedev.importer.entity.ContactNewEntity;
 import ru.medvedev.importer.entity.DownloadFilterEntity;
 import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.enums.Bank;
+import ru.medvedev.importer.enums.ContactStatus;
 import ru.medvedev.importer.enums.DownloadFilter;
 import ru.medvedev.importer.repository.ContactDownloadInfoRepository;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -51,10 +53,17 @@ public class ContactDownloadInfoService {
                             ContactDownloadInfoEntity downloadInfoEntity = new ContactDownloadInfoEntity();
                             downloadInfoEntity.setContactId(contact.getId());
                             downloadInfoEntity.setFileInfoBankId(fileInfoBank.getId());
+                            if (fileInfoBank.getBank() == Bank.RAIFFEISEN) {
+                                downloadInfoEntity.setCheckStatus(ContactStatus.DOWNLOADED);
+                            }
                             downloadInfoList.add(downloadInfoEntity);
                         });
             });
         }
         repository.saveAll(downloadInfoList);
+    }
+
+    public void deleteAllByFileInfoBankId(Collection<Long> fibIds) {
+        repository.deleteAllByFileInfoBankIdIn(fibIds);
     }
 }

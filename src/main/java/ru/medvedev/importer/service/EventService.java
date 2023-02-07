@@ -59,30 +59,18 @@ public class EventService {
 
     @EventListener(ImportEvent.class)
     public void create(ImportEvent event) {
-        Optional.ofNullable(event.getFileId()).ifPresent(fileId -> {
-            if (event.getFileId() == -1) {
-                telegramPollingService.sendMessage(String.format(MESSAGE_SIMPLE_PATTERN, event.getDescription()),
-                        null, null, null, event.isWithCancelButton());
-            } else {
-                FileInfoEntity fileInfo = fileInfoService.getById(fileId);
-                if (event.getEventType() == EventType.FILE_PROCESS) {
-                    printFileProcessInfo(fileInfo, event);
-                } else if (event.getEventType() != EventType.LOG && fileInfo.getChatId() != null) {
-                    telegramPollingService.sendMessage(initHeaderMessage(fileInfo, event, event.getDescription()),
-                            null, fileInfo.getMessageId(), fileInfo.getChatId(), event.isWithCancelButton());
-                    /*if (event.getEventType() == EventType.SUCCESS) {
-                        printStatistic(chatId, file);
-                    }*/
-                }
-            }
-        });
 
-        if (event.getEventType() != EventType.FILE_PROCESS) {
-            EventEntity entity = new EventEntity();
-            entity.setDescription(event.getDescription());
-            entity.setType(event.getEventType());
-            entity.setFileId(event.getFileId());
-            repository.save(entity);
+        if (event.getFileId() == null) {
+            telegramPollingService.sendMessage(String.format(MESSAGE_SIMPLE_PATTERN, event.getDescription()),
+                    null, null, null, event.isWithCancelButton());
+        } else {
+            FileInfoEntity file = fileInfoService.getById(event.getFileId());
+            String message = initHeaderMessage(file, event, event.getDescription());
+            if (file.getMessageId() != null) {
+                telegramPollingService.updateMessage(message, file.getMessageId(), file.getChatId(), event.isWithCancelButton());
+            } else {
+                telegramPollingService.sendMessage(message, file.getId(), null, file.getChatId(), event.isWithCancelButton());
+            }
 
             if (event.getEventType() == EventType.ERROR) {
                 eventPublisher.publishEvent(new InvalidFileEvent(this, event.getFileId()));
@@ -90,21 +78,18 @@ public class EventService {
                 eventPublisher.publishEvent(new CompleteFileEvent(this, event.getFileId()));
             }
         }
+
+        EventEntity entity = new EventEntity();
+        entity.setDescription(event.getDescription());
+        entity.setType(event.getEventType());
+        entity.setFileId(event.getFileId());
+        repository.save(entity);
     }
 
     @EventListener(NotificationEvent.class)
     public void sendNotification(NotificationEvent event) {
         notificationChatService.getAllChatId().forEach(chatId ->
                 telegramNotificatorPollingService.sendMessage(event.getDescription(), chatId));
-    }
-
-    private void printFileProcessInfo(FileInfoEntity file, ImportEvent event) {
-        String message = initHeaderMessage(file, event, event.getDescription());
-        if (file.getMessageId() != null) {
-            telegramPollingService.updateMessage(message, file.getMessageId(), file.getChatId(), false);
-        } else {
-            telegramPollingService.sendMessage(message, file.getId(), null, file.getChatId(), false);
-        }
     }
 
     private static String initHeaderMessage(FileInfoEntity fileInfo, ImportEvent event, String additional) {
@@ -122,15 +107,15 @@ public class EventService {
             return;
         }
         telegramPollingService.sendMessage(String.format(MESSAGE_STATISTIC_PATTERN,
-                getCurDateTime(),
-                fileInfo.getName(),
-                fileInfo.getSource().getDescription(),
-                ContactStatus.ADDED.getDescription(),
-                Optional.ofNullable(mapStatistic.get(ContactStatus.ADDED)).orElse(0L),
-                ContactStatus.DOWNLOADED.getDescription(),
-                Optional.ofNullable(mapStatistic.get(ContactStatus.DOWNLOADED)).orElse(0L),
-                ContactStatus.REJECTED.getDescription(),
-                Optional.ofNullable(mapStatistic.get(ContactStatus.REJECTED)).orElse(0L)),
+                        getCurDateTime(),
+                        fileInfo.getName(),
+                        fileInfo.getSource().getDescription(),
+                        ContactStatus.ADDED.getDescription(),
+                        Optional.ofNullable(mapStatistic.get(ContactStatus.ADDED)).orElse(0L),
+                        ContactStatus.DOWNLOADED.getDescription(),
+                        Optional.ofNullable(mapStatistic.get(ContactStatus.DOWNLOADED)).orElse(0L),
+                        ContactStatus.REJECTED.getDescription(),
+                        Optional.ofNullable(mapStatistic.get(ContactStatus.REJECTED)).orElse(0L)),
                 null, null, chatId, false);
     }
 

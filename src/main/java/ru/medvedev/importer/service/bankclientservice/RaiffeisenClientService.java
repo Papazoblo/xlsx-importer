@@ -1,32 +1,19 @@
 package ru.medvedev.importer.service.bankclientservice;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.client.RaiffeisenDictionaryApiClient;
 import ru.medvedev.importer.client.RaiffeisenRequestApiClient;
-import ru.medvedev.importer.client.VtbApiClient;
-import ru.medvedev.importer.component.VtbProperties;
 import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.raiffeisen.*;
-import ru.medvedev.importer.dto.request.LeadRequest;
-import ru.medvedev.importer.dto.response.CheckLeadBadRequestResponse;
-import ru.medvedev.importer.dto.response.CheckLeadResponse;
 import ru.medvedev.importer.entity.CityEntity;
-import ru.medvedev.importer.exception.ErrorCheckLeadException;
-import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
-import ru.medvedev.importer.exception.TimeOutException;
 import ru.medvedev.importer.service.CityService;
 import ru.medvedev.importer.service.ContactNewService;
 
-import javax.naming.OperationNotSupportedException;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -34,6 +21,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class RaiffeisenClientService implements BankClientService {
+
+    @Value("${raiffeisen.partner-id}")
+    private String partnerId;
 
     private final RaiffeisenDictionaryApiClient dictionaryApiClient;
     private final RaiffeisenRequestApiClient raiffeisenRequestApiClient;
@@ -63,13 +53,17 @@ public class RaiffeisenClientService implements BankClientService {
         } else {
             return CreateLeadResult.of(false, String.format("Город %s отсутствует в справочнике", webhookLead.getCity()));
         }
-        leadInfo.setCity(webhookLead.getCity());
         leadInfo.setPersonName(personDto);
         leadInfo.setInn(webhookLead.getInn());
         leadInfo.setCommunicationChannels(channelsDto);
         contactService.getByInn(webhookLead.getInn()).ifPresent(contact ->
                 leadInfo.setCompanyName(contact.getOrgName()));
-
+        request.setData(leadInfo);
+        RaiffeisenMetaDto metaDto = new RaiffeisenMetaDto();
+        metaDto.setPartnerId(partnerId);
+        metaDto.setRefId("de1c69b5-51de-000c-9ed7-14b0000dd5df");
+        metaDto.setBusinessProduct("Corporate Account Opening XS");
+        request.setMeta(metaDto);
         ResponseEntity<Object> response = raiffeisenRequestApiClient.createRequest(request);
         if (response.getStatusCode().is2xxSuccessful()) {
             return CreateLeadResult.of(true);

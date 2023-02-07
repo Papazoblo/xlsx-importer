@@ -25,6 +25,10 @@ public class RequestService {
         return repository.findFirstByStatusOrderByLastCheckAsc(status);
     }
 
+    public long getCountByStatusAndBank(RequestStatus status, Bank bank) {
+        return repository.countByStatusAndBank(status, bank);
+    }
+
     public Optional<RequestEntity> getFirstByStatusAndBank(RequestStatus status, Bank bank) {
         List<RequestEntity> requests = repository.findFirstByStatusAndBank(status, bank);
         if (requests.isEmpty()) {

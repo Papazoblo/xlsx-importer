@@ -19,7 +19,7 @@ import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.entity.WebhookStatusEntity;
 import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
-import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
+import ru.medvedev.importer.exception.ErrorCreateLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
 import ru.medvedev.importer.service.bankclientservice.BankClientService;
 import ru.medvedev.importer.service.bankclientservice.BankClientServiceFactory;
@@ -66,27 +66,29 @@ public class LeadWorkerService {
             BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
             //мы спрашиваем у банка можем ли мы добавить лид
             try {
-                CheckLeadResult result = clientService.getAllFromCheckLead(Collections.singletonList(item.getInn()), null);
-                if (item.getBank() == Bank.VTB_OPENING) {
-                    item.setStatus(WebhookStatus.WAIT_CHECK_LEAD_AFTER_FIXED_RESPONSE);
-                    item.setOpeningRequestId(result.getAdditionalInfo());
-                } else if (item.getBank() == Bank.RAIFFEISEN) {
+                if (item.getBank() == Bank.RAIFFEISEN) {
                     item.setStatus(WebhookStatus.TRY_TO_CREATE_LEAD);
                 } else {
-                    if (result.getLeadResponse().stream().anyMatch(lead ->
-                            lead.getResponseCode() == CheckLeadStatus.POSITIVE)) {
-                        log.debug("*** have a positive lead inn {} ", item.getInn());
-                        item.setStatus(WebhookStatus.TRY_TO_CREATE_LEAD);
+                    CheckLeadResult result = clientService.getAllFromCheckLead(Collections.singletonList(item.getInn()), null);
+                    if (item.getBank() == Bank.VTB_OPENING) {
+                        item.setStatus(WebhookStatus.WAIT_CHECK_LEAD_AFTER_FIXED_RESPONSE);
+                        item.setOpeningRequestId(result.getAdditionalInfo());
                     } else {
-                        eventPublisher.publishEvent(new NotificationEvent(this,
-                                String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
-                                        String.format("Заявка отклонена (%s)", result.getLeadResponse().get(0)
-                                                .getResponseCode()),
-                                        item.getInn(),
-                                        item.getCity(),
-                                        item.getName()),
-                                EventType.LOG_TG));
-                        item.setStatus(WebhookStatus.REJECTED);
+                        if (result.getLeadResponse().stream().anyMatch(lead ->
+                                lead.getResponseCode() == CheckLeadStatus.POSITIVE)) {
+                            log.debug("*** have a positive lead inn {} ", item.getInn());
+                            item.setStatus(WebhookStatus.TRY_TO_CREATE_LEAD);
+                        } else {
+                            eventPublisher.publishEvent(new NotificationEvent(this,
+                                    String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
+                                            String.format("Заявка отклонена (%s)", result.getLeadResponse().get(0)
+                                                    .getResponseCode()),
+                                            item.getInn(),
+                                            item.getCity(),
+                                            item.getName()),
+                                    EventType.LOG_TG));
+                            item.setStatus(WebhookStatus.REJECTED);
+                        }
                     }
                 }
             } catch (TimeOutException ex) {
@@ -183,14 +185,16 @@ public class LeadWorkerService {
                     }
                 } else {
                     eventPublisher.publishEvent(new NotificationEvent(this,
-                            String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Непредвиденная ошибка", leadDto.getInn(), leadDto.getCity(), leadDto.getName()),
+                            String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), isBlank(result.getAdditionalInfo())
+                                            ? "Непредвиденная ошибка" : result.getAdditionalInfo(), leadDto.getInn(),
+                                    leadDto.getCity(), leadDto.getName()),
                             EventType.LOG_TG));
                     item.setStatus(WebhookStatus.ERROR);
                 }
             } catch (TimeOutException ex) {
                 log.debug("*** CREATE LEAD TIMEOUT ERROR " + item.getInn());
                 item.setStatus(WebhookStatus.FIXED);
-            } catch (ErrorCreateVtbLeadException ex) {
+            } catch (ErrorCreateLeadException ex) {
                 eventPublisher.publishEvent(new NotificationEvent(this,
                         String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
                                 "Невозможно добавить. " + ex.getMessage(), leadDto.getInn(), leadDto.getCity(), leadDto.getName()),
@@ -219,7 +223,7 @@ public class LeadWorkerService {
             } catch (OperationNotSupportedException ex) {
                 log.debug("*** Operation not supported exception {}", item);
                 item.setStatus(WebhookStatus.ERROR);
-            } catch (ErrorCreateVtbLeadException ex) {
+            } catch (ErrorCreateLeadException ex) {
                 eventPublisher.publishEvent(new NotificationEvent(this,
                         String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
                                 "Невозможно добавить. " + ex.getMessage(),

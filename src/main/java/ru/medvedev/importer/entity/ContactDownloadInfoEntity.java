@@ -5,6 +5,7 @@ import ru.medvedev.importer.enums.ContactStatus;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Table(name = "contact_download_info")
 @Entity
@@ -47,6 +48,6 @@ public class ContactDownloadInfoEntity {
     @PrePersist
     public void prePersist() {
         this.createAt = LocalDateTime.now();
-        this.checkStatus = ContactStatus.IN_CHECK;
+        this.checkStatus = Optional.ofNullable(checkStatus).orElse(ContactStatus.IN_CHECK);
     }
 }

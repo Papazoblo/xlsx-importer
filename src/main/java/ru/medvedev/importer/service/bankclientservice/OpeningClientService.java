@@ -21,7 +21,7 @@ import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.OpeningInnStatus;
 import ru.medvedev.importer.enums.OpeningRequestStatus;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
-import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
+import ru.medvedev.importer.exception.ErrorCreateLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
 
 import java.util.Collections;
@@ -66,7 +66,7 @@ public class OpeningClientService implements BankClientService {
                 log.debug("*** VtbOpening error create lead [{}]", response.getStatusCode());
                 return CreateLeadResult.of(false);
             }
-        } catch (TimeOutException | ErrorCreateVtbLeadException ex) {
+        } catch (TimeOutException | ErrorCreateLeadException ex) {
             throw ex;
         } catch (Exception ex) {
             log.debug("*** ошибка добавления лида " + ex.getMessage(), ex);
@@ -142,7 +142,7 @@ public class OpeningClientService implements BankClientService {
                     status == OpeningRequestStatus.valueOf(result.getStatus()))) {
                 return true;
             } else {
-                throw new ErrorCreateVtbLeadException(result.getLabel() + ". Статус заявки: `" + result.getStatus() + "`", -1L);
+                throw new ErrorCreateLeadException(result.getLabel() + ". Статус заявки: `" + result.getStatus() + "`", -1L);
             }
         } else {
             log.debug("*** error thread sleep VtbOpeningClientService::getCreateLeadResult [{}]", response.getStatusCode());

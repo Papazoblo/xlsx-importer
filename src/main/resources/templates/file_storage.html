@@ -65,11 +65,12 @@
                                th:if="*{authority.contains('WEBHOOK_STATUS')}">Вебхуки для создания
                                 заявок</a>
                             <a class="dropdown-item" href="/settings/webhook-success-statuses"
-                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Финальные результаты звонка для перезаливки</a>
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Финальные результаты звонка для
+                                перезаливки</a>
                             <a class="dropdown-item" href="/settings/webhook-error-statuses"
                                th:if="*{authority.contains('WEBHOOK_STATUS')}">Отказы/недозвоны для перезвливки</a>
-                          <!--  <a class="dropdown-item" href="/settings/webhook-status-map"
-                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Карта переходов</a>-->
+                            <!--  <a class="dropdown-item" href="/settings/webhook-status-map"
+                                 th:if="*{authority.contains('WEBHOOK_STATUS')}">Карта переходов</a>-->
                             <a class="dropdown-item" href="/settings/filters">
                                 Фильтры для загрузки контактов</a>
                             <a class="dropdown-item" href="/settings/system-variables">
@@ -95,6 +96,7 @@
                 <tr>
                     <th>ID</th>
                     <th>Название</th>
+                    <th style="width:150px">Загрузки</th>
                     <th>Размер</th>
                     <th>Дата загрузки</th>
                     <th>Источник</th>
@@ -106,6 +108,14 @@
                 <tr th:each="file : ${files}" th:class="${file.isDeleted()} ? deleted : ''">
                     <td th:text="${file.getId()}">id</td>
                     <td th:text="${file.getName()}">name</td>
+                    <td>
+                        <ul style="list-style: none;padding: 0;    text-align: left;">
+                            <li th:each="bankInfo:${file.getFileInfoBankList()}">
+                                <label th:text="${bankInfo.getBank().getTitle() + ':'}"></label>
+                                <b th:text="${bankInfo.getProjectId()}"></b>
+                            </li>
+                        </ul>
+                    </td>
                     <td th:text="${file.getSize()}">size</td>
                     <td th:text="${file.getDate()}">date</td>
                     <td th:text="${file.getSource()}">date</td>

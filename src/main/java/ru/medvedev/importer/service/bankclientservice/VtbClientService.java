@@ -16,10 +16,9 @@ import ru.medvedev.importer.dto.request.LeadRequest;
 import ru.medvedev.importer.dto.response.CheckLeadBadRequestResponse;
 import ru.medvedev.importer.dto.response.CheckLeadResponse;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
-import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
+import ru.medvedev.importer.exception.ErrorCreateLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
 
-import javax.naming.OperationNotSupportedException;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -50,7 +49,7 @@ public class VtbClientService implements BankClientService {
         try {
             client.addLead(request, BEARER + properties.getAccessToken());
             return CreateLeadResult.of(true);
-        } catch (TimeOutException | ErrorCreateVtbLeadException ex) {
+        } catch (TimeOutException | ErrorCreateLeadException ex) {
             throw ex;
         } catch (Exception ex) {
             log.debug("*** ошибка добавления лида " + ex.getMessage(), ex);

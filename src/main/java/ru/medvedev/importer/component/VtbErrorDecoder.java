@@ -11,7 +11,7 @@ import ru.medvedev.importer.dto.request.LeadRequest;
 import ru.medvedev.importer.dto.response.CheckLeadBadRequestResponse;
 import ru.medvedev.importer.dto.response.CheckLeadResponse;
 import ru.medvedev.importer.enums.CheckLeadStatus;
-import ru.medvedev.importer.exception.ErrorCreateVtbLeadException;
+import ru.medvedev.importer.exception.ErrorCreateLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
 
 import java.io.IOException;
@@ -73,7 +73,7 @@ public class VtbErrorDecoder implements ErrorDecoder {
                     responseBody.setMoreInformation(responseBody.getLeads().stream()
                             .map(item -> String.format("%s: %s", item.getInn(), item.getResponseCodeDescription()))
                             .collect(Collectors.joining("\n")));
-                    throw new ErrorCreateVtbLeadException(responseBody.getMoreInformation(), -1L);
+                    throw new ErrorCreateLeadException(responseBody.getMoreInformation(), -1L);
                 }
             } catch (IOException e) {
                 log.debug("*** error updating check lead request", e);

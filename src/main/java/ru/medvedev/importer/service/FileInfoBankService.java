@@ -9,6 +9,7 @@ import ru.medvedev.importer.enums.ContactStatus;
 import ru.medvedev.importer.enums.FileInfoBankStatus;
 import ru.medvedev.importer.repository.FileInfoBankRepository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,5 +43,9 @@ public class FileInfoBankService {
 
     public void updateDownloadStatus(FileInfoBankStatus status, Long id) {
         repository.updateStatusById(status, id);
+    }
+
+    public void deleteAllById(Collection<Long> fibIds) {
+        repository.deleteAllByIdIn(fibIds);
     }
 }
