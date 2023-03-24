@@ -17,6 +17,7 @@ import ru.medvedev.importer.dto.events.NotificationEvent;
 import ru.medvedev.importer.entity.ContactNewEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.entity.WebhookStatusEntity;
+import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateLeadException;
@@ -315,8 +316,20 @@ public class LeadWorkerService {
                 WebhookStatusEntity webhookStatus = webhookStatusService.creatIfNotExists(resultName);
 
                 //создаем заливку в банк
-                webhookSuccessStatusService.getByNameAndStatus(resultName).ifPresent(status ->
-                        webhookStatisticService.addStatistic(WebhookStatus.FIXED, webhookDto, status));
+                Optional<WebhookSuccessStatusEntity> successStatusOptional = webhookSuccessStatusService.getByNameAndStatus(resultName);
+                if (successStatusOptional.isPresent()) {
+                    if (isNotBlank(webhookDto.getLead().getInn())) {
+                        webhookStatisticService.addStatistic(WebhookStatus.FIXED, webhookDto, successStatusOptional.get());
+                    } else {
+                        eventPublisher.publishEvent(new NotificationEvent(this,
+                                String.format(NOTIFICATION_PATTERN, successStatusOptional.get().getBank(),
+                                        "Невозможно добавить. Некорректные данные. ",
+                                        webhookDto.getLead().getInn(),
+                                        webhookDto.getLead().getCity(),
+                                        webhookDto.getLead().getName()),
+                                EventType.LOG_TG));
+                    }
+                }
 
                 if (webhookDto.getCall().getScenarioId() != null) {
                     enabledScenarioService.findByScenarioId(webhookDto.getCall().getScenarioId()).ifPresent(scenario ->

@@ -81,15 +81,15 @@ public class FileInfoService {
     }
 
     public Optional<FileInfoEntity> getNewUiFileToInitialize() {
-        return repository.findFirstByProcessingStepAndSourceAndStatus(IN_QUEUE, UI, FileStatus.NEW);
+        return repository.findFirstByStatusAndSourceAndProcessingStep(FileStatus.NEW, UI, IN_QUEUE);
     }
 
     public Optional<FileInfoEntity> getTgFileToSelectBank() {
-        return repository.findFirstByProcessingStepAndSourceAndStatus(INITIALIZE, TELEGRAM, FileStatus.IN_PROCESS);
+        return repository.findFirstByStatusAndSourceAndProcessingStep(FileStatus.IN_PROCESS, TELEGRAM, INITIALIZE);
     }
 
     public Optional<FileInfoEntity> getTgFileToSetProjectCode() {
-        return repository.findFirstByProcessingStepAndSourceAndStatus(BANK_INITIALIZED, TELEGRAM, FileStatus.IN_PROCESS);
+        return repository.findFirstByStatusAndSourceAndProcessingStep(FileStatus.IN_PROCESS, TELEGRAM, BANK_INITIALIZED);
     }
 
     public Optional<FileInfoEntity> getNewFileToProcessing() {

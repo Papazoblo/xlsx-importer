@@ -322,6 +322,7 @@ public class BodyProcessingService {
                     log.debug("Timeout error send to skorozvon: {}", ex.getMessage());
                     request.setStatus(SUCCESS_CHECK);
                 } else {
+                    request.incRetryRequestCount();
                     request.setStatus(ERROR);
                     log.debug("Error send to skorozvon: {}", ex.getMessage());
                     eventPublisher.publishEvent(new ImportEvent(this, ex.getMessage(), EventType.LOG,
@@ -332,13 +333,17 @@ public class BodyProcessingService {
                 log.debug("Error send to skorozvon: {}", ex.getMessage());
                 eventPublisher.publishEvent(new ImportEvent(this, ex.getMessage(), EventType.LOG,
                         ex.getFileId()));
-                requestService.changeStatus(request.getId(), ERROR);
+                request.incRetryRequestCount();
+                request.setStatus(ERROR);
+                requestService.save(request);
             } catch (Exception ex) {
                 log.debug("Error send to skorozvon", ex);
                 eventPublisher.publishEvent(new ImportEvent(this, Optional.ofNullable(ex.getMessage())
                         .orElse("Непредвиденная ошибка\n" + ex.getClass()), EventType.LOG,
                         fib.getFileInfoId()));
-                requestService.changeStatus(request.getId(), ERROR);
+                request.incRetryRequestCount();
+                request.setStatus(ERROR);
+                requestService.save(request);
             }
         });
     }

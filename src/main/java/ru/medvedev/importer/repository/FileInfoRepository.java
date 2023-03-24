@@ -56,9 +56,9 @@ public interface FileInfoRepository extends JpaRepository<FileInfoEntity, Long> 
 
     Optional<FileInfoEntity> findByStatusAndSource(FileStatus status, FileSource source);
 
-    Optional<FileInfoEntity> findFirstByProcessingStepAndSourceAndStatus(FileProcessingStep processingStep,
+    Optional<FileInfoEntity> findFirstByStatusAndSourceAndProcessingStep(FileStatus status,
                                                                          FileSource source,
-                                                                         FileStatus status);
+                                                                         FileProcessingStep processingStep);
 
     @Query("select (count(fi) > 0) from FileInfoEntity fi " +
             "where lower(fi.hash) = lower(:hash) and " +

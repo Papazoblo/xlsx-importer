@@ -24,6 +24,8 @@ public class RaiffeisenClientService implements BankClientService {
 
     @Value("${raiffeisen.partner-id}")
     private String partnerId;
+    @Value("${raiffeisen.hid_all}")
+    private String refId;
 
     private final RaiffeisenDictionaryApiClient dictionaryApiClient;
     private final RaiffeisenRequestApiClient raiffeisenRequestApiClient;
@@ -61,7 +63,7 @@ public class RaiffeisenClientService implements BankClientService {
         request.setData(leadInfo);
         RaiffeisenMetaDto metaDto = new RaiffeisenMetaDto();
         metaDto.setPartnerId(partnerId);
-        metaDto.setRefId("de1c69b5-51de-000c-9ed7-14b0000dd5df");
+        metaDto.setRefId(refId);
         metaDto.setBusinessProduct("Corporate Account Opening XS");
         request.setMeta(metaDto);
         ResponseEntity<Object> response = raiffeisenRequestApiClient.createRequest(request);

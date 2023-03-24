@@ -17,6 +17,8 @@ feign:
         loggerLevel: full
       vtbApi:
         loggerLevel: full
+      raiffeisenApi:
+        loggerLevel: full
       skorozvon:
         loggerLevel: basic
       skorozvonAuth:
@@ -99,5 +101,5 @@ vtb-opening:
 
 raiffeisen:
   url: https://api.raiffeisen.ru/private/openapi-013-ssl/corporate-leads-xs/app
-  dict-url: https://api.raiffeisen.ru/dict-001-snd/dictionaries/cities/rko-sme
-  partner-id: 000117
+  dict-url: https://api.raiffeisen.ru/private/openapi-006/dictionaries/cities
+  partner-id: "000117"
