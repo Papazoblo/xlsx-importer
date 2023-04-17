@@ -1,6 +1,7 @@
 package ru.medvedev.importer.entity;
 
 import lombok.Data;
+import ru.medvedev.importer.enums.TelegramNotificationType;
 
 import javax.persistence.*;
 
@@ -16,4 +17,8 @@ public class NotificationChatEntity {
 
     @Column(name = "chat_id")
     private Long chatId;
+
+    @Column(name = "type")
+    @Enumerated(EnumType.STRING)
+    private TelegramNotificationType type = TelegramNotificationType.ALL;
 }

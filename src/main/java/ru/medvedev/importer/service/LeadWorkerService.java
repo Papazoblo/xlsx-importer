@@ -87,6 +87,7 @@ public class LeadWorkerService {
                                             item.getInn(),
                                             item.getCity(),
                                             item.getName()),
+                                    TelegramNotificationType.ALL,
                                     EventType.LOG_TG));
                             item.setStatus(WebhookStatus.REJECTED);
                         }
@@ -129,6 +130,7 @@ public class LeadWorkerService {
                                         item.getInn(),
                                         item.getCity(),
                                         item.getName()),
+                                TelegramNotificationType.ALL,
                                 EventType.LOG_TG));
                         item.setStatus(WebhookStatus.REJECTED);
                     }
@@ -147,6 +149,7 @@ public class LeadWorkerService {
                                 item.getInn(),
                                 item.getCity(),
                                 item.getName()),
+                        TelegramNotificationType.ADDING_ERROR,
                         EventType.LOG_TG));
                 item.setStatus(WebhookStatus.ERROR);
             }
@@ -189,6 +192,7 @@ public class LeadWorkerService {
                             String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), isBlank(result.getAdditionalInfo())
                                             ? "Непредвиденная ошибка" : result.getAdditionalInfo(), leadDto.getInn(),
                                     leadDto.getCity(), leadDto.getName()),
+                            TelegramNotificationType.ADDING_ERROR,
                             EventType.LOG_TG));
                     item.setStatus(WebhookStatus.ERROR);
                 }
@@ -199,6 +203,7 @@ public class LeadWorkerService {
                 eventPublisher.publishEvent(new NotificationEvent(this,
                         String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
                                 "Невозможно добавить. " + ex.getMessage(), leadDto.getInn(), leadDto.getCity(), leadDto.getName()),
+                        TelegramNotificationType.ADDING_ERROR,
                         EventType.LOG_TG));
                 item.setStatus(WebhookStatus.ERROR);
             } catch (OperationNotSupportedException e) {
@@ -231,6 +236,7 @@ public class LeadWorkerService {
                                 item.getInn(),
                                 item.getCity(),
                                 item.getName()),
+                        TelegramNotificationType.ADDING_ERROR,
                         EventType.LOG_TG));
                 item.setStatus(WebhookStatus.ERROR);
             }
@@ -260,6 +266,7 @@ public class LeadWorkerService {
                                     item.getInn(),
                                     item.getCity(),
                                     item.getName()),
+                            TelegramNotificationType.ALL,
                             EventType.LOG_TG));
                     /*} else {
                         item.setStatus(WebhookStatus.ERROR);
@@ -293,6 +300,7 @@ public class LeadWorkerService {
                                     item.getInn(),
                                     item.getCity(),
                                     item.getName()),
+                            TelegramNotificationType.ALL,
                             EventType.LOG_TG));
                 } else {
                     item.setStatus(WebhookStatus.ERROR);
@@ -327,6 +335,7 @@ public class LeadWorkerService {
                                         webhookDto.getLead().getInn(),
                                         webhookDto.getLead().getCity(),
                                         webhookDto.getLead().getName()),
+                                TelegramNotificationType.ADDING_ERROR,
                                 EventType.LOG_TG));
                     }
                 }

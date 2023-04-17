@@ -13,6 +13,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.medvedev.importer.component.TelegramNotificatorProperty;
+import ru.medvedev.importer.enums.TelegramNotificationType;
 import ru.medvedev.importer.service.NotificationChatService;
 
 import java.time.LocalDateTime;
@@ -62,11 +63,15 @@ public class TelegramNotificatorPollingService extends TelegramLongPollingBot {
 
             if (isNotBlank(message.getText()) && message.getText().startsWith("/start")) {
                 String[] splitText = message.getText().trim().split(" ");
-                if (splitText.length == 2) {
+                if (splitText.length == 3) {
                     try {
                         if (LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd:HH")).equals(splitText[1])) {
-                            notificationChatService.addChatId(message.getChatId());
-                            sendMessage("Авторизация прошла успешно", message.getChatId());
+                            try {
+                                notificationChatService.addChatId(message.getChatId(), TelegramNotificationType.valueOf(splitText[2]));
+                                sendMessage("Авторизация прошла успешно", message.getChatId());
+                            } catch (Exception ex) {
+                                sendMessage("Невозможно авторизироваться. Тип " + splitText[2] + " недоступен", message.getChatId());
+                            }
                         } else {
                             sendMessage("Невозможно авторизироваться", message.getChatId());
                         }

@@ -88,7 +88,7 @@ public class EventService {
 
     @EventListener(NotificationEvent.class)
     public void sendNotification(NotificationEvent event) {
-        notificationChatService.getAllChatId().forEach(chatId ->
+        notificationChatService.getAllByNotificationType(event.getType()).forEach(chatId ->
                 telegramNotificatorPollingService.sendMessage(event.getDescription(), chatId));
     }
 
