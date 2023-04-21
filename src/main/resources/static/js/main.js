@@ -62,7 +62,9 @@ $(document).ready(function () {
             "fileId": fileId,
             "fieldLinks": Object.fromEntries(result),
             "orgTags": orgTagsInput,
-            "enableWhatsAppLink": $('#enableWhatsAppLink').is(":checked")
+            "enableWhatsAppLink": $('#enableWhatsAppLink').is(":checked"),
+            "isFirstVtbLoadLead": $('#isFirstVtbLoadLead').is(":checked"),
+            "notLoadFromVtbDedublicate": $('#notLoadFromVtbDedublicate').is(":checked")
         });
 
         $("#parseXlsx").attr('disabled', 'disabled');

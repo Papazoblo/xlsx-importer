@@ -60,10 +60,10 @@ public class BodyProcessingService {
     private final BankClientServiceFactory bankClientServiceFactory;
     private final ApplicationEventPublisher eventPublisher;
     private final InnRegionService innRegionService;
-    private final ObjectMapper objectMapper;
     private final FileInfoBankService fileInfoBankService;
     private final RequestService requestService;
     private final ContactDownloadInfoService contactDownloadInfoService;
+    private final FirstLoadLeadService firstLoadLeadService;
 
     private final Set<String> regionCodes = new HashSet<>();
 
@@ -111,10 +111,7 @@ public class BodyProcessingService {
                     EventType.FILE_PROCESS, fib.getFileInfoId()));
             try {
                 fileInfoBankService.updateDownloadStatus(FileInfoBankStatus.INN_CHECK, fib.getId());
-                List<ContactDownloadInfoEntity> contacts = fib.getContactDownloadList();/*.stream()
-                        .map(ContactDownloadInfoEntity::getContact)
-//                        .filter(contact -> contact.getStatus() == ContactStatus.IN_CHECK)
-                        .collect(toList());*/
+                List<ContactDownloadInfoEntity> contacts = fib.getContactDownloadList();
 
                 for (int i = 0; i < contacts.size(); i = i + BATCH_SIZE) {
                     List<ContactDownloadInfoEntity> contactSublist = contacts.subList(i, Math.min(i + BATCH_SIZE, contacts.size()));
@@ -226,10 +223,6 @@ public class BodyProcessingService {
         //openingRequestService.getFirstByStatus(CHECKING);
         FileInfoBankEntity fib = request.getFileInfoBank();
 
-        /*eventPublisher.publishEvent(new ImportEvent(this, "Проверяю группу для `" +
-                fib.getBank().getTitle() + "`",
-                EventType.LOG_TG, fib.getFileInfoId()));*/
-
         try {
             BankClientService bankClientService = bankClientServiceFactory.getBankClientService(fib.getBank());
 
@@ -255,6 +248,12 @@ public class BodyProcessingService {
                     if (contact.getContact().getInn().equals(lead.getInn())) {
                         contact.setCheckStatus(lead.getResponseCode() == CheckLeadStatus.POSITIVE
                                 ? ContactStatus.DOWNLOADED : ContactStatus.REJECTED);
+
+                        if (fib.getBank() == VTB &&
+                                fib.getFileInfo().getIsFirstVtbLoadLead() &&
+                                contact.getCheckStatus() == ContactStatus.REJECTED) {
+                            firstLoadLeadService.create(lead.getInn());
+                        }
                     }
                 }));
                 request.setStatus(SUCCESS_CHECK);

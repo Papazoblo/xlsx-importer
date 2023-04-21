@@ -211,6 +211,8 @@ public class FileInfoService {
                         return bankEntity;
                     }).collect(Collectors.toList()));
             file.setEnableWhatsAppLink(xlsxImportInfo.isEnableWhatsAppLink());
+            file.setIsFirstVtbLoadLead(xlsxImportInfo.isFirstVtbLoadLead());
+            file.setNotLoadFromVtbDedublicate(xlsxImportInfo.isNotLoadFromVtbDedublicate());
             file.setFieldLinks(xlsxImportInfo.getFieldLinks());
             file.setOrgTags(xlsxImportInfo.getOrgTags());
             repository.save(file);

@@ -12,6 +12,8 @@ public class XlsxImportInfo {
     private Map<Bank, Long> banksProject = new HashMap<>();
     private Long fileId;
     private boolean enableWhatsAppLink;
+    private boolean firstVtbLoadLead;
+    private boolean notLoadFromVtbDedublicate;
     //енам скорозвона => список идентификаторов колонок экселя
     private Map<SkorozvonField, List<Integer>> fieldLinks = new LinkedHashMap<>();
     private List<String> orgTags = new ArrayList<>();

@@ -8,6 +8,8 @@ server:
     enabled: false
   port: 8080
 
+
+
 feign:
   client:
     config:
@@ -29,6 +31,7 @@ logging:
     name: /opt/xlsx-importer/logs/application.log
   level:
     ru.medvedev.importer: DEBUG
+    ru.medvedev.importer.config.LogFilterConfiguration: DEBUG
 
 spring:
   task:
@@ -76,6 +79,7 @@ cron:
   webhook-check-status: '20 */2 * * * *'
   auto-load: '0 0 3 * * *'
   logs-archive-delete: '0 0 2 * * *'
+  first-load-lead-delete: '0 0 1 * * *'
   raiffeisen-city-dictionary: '0 10 2 * * *'
 
 telegram:

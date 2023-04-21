@@ -148,6 +148,26 @@
         <div class="col-md-8 offset-md-2">
             <table id="mainTable">
                 <tr th:class="space-block">
+                    <th>
+                        <label for="enableWhatsAppLink">
+                            Первичная загрузка лидов в ВТБ
+                            <input type="checkbox"
+                                   title="Первичная загрузка лидов в ВТБ"
+                                   checked
+                                   id="isFirstVtbLoadLead"/>
+                        </label>
+                    </th>
+                    <th>
+                        <label for="notLoadFromVtbDedublicate">
+                            Не загружать отказы с дедубликации ВТБ
+                            <input type="checkbox"
+                                   title="Не загружать отказы с дедубликации ВТБ"
+                                   checked
+                                   id="notLoadFromVtbDedublicate"/>
+                        </label>
+                    </th>
+                </tr>
+                <tr th:class="space-block">
                     <th th:class="text-center"><label>Поля контактов в скорозвоне</label></th>
                     <th th:class="text-center"><label>Поля excel</label></th>
                 </tr>

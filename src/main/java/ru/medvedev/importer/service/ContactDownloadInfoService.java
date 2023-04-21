@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
+import static ru.medvedev.importer.enums.Bank.VTB;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +29,7 @@ public class ContactDownloadInfoService {
     private final ContactDownloadInfoRepository repository;
     private final ContactNewService contactNewService;
     private final DownloadFilterService downloadFilterService;
+    private final FirstLoadLeadService firstLoadLeadService;
 
     public void save(List<ContactDownloadInfoEntity> entityList) {
         repository.saveAll(entityList);
@@ -49,6 +51,9 @@ public class ContactDownloadInfoService {
                                 .noneMatch(filter -> contact.getInn().startsWith(filter.getValue())))
                         .filter(contact -> phoneFilters.stream()
                                 .noneMatch(filter -> contact.getPhone().startsWith(filter.getValue())))
+                        .filter(contact -> fileInfoBank.getBank() != VTB ||
+                                !fileInfoBank.getFileInfo().getNotLoadFromVtbDedublicate() ||
+                                !firstLoadLeadService.existsByInn(contact.getInn()))
                         .forEach(contact -> {
                             ContactDownloadInfoEntity downloadInfoEntity = new ContactDownloadInfoEntity();
                             downloadInfoEntity.setContactId(contact.getId());

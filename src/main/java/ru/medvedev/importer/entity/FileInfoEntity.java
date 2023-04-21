@@ -79,7 +79,10 @@ public class FileInfoEntity {
 
     @Column(name = "enable_whats_app_link")
     private Boolean enableWhatsAppLink = false;
-
+    @Column(name = "is_first_vtb_load_lead")
+    private Boolean isFirstVtbLoadLead = false;
+    @Column(name = "is_not_load_from_vtb_dedublicate")
+    private Boolean notLoadFromVtbDedublicate = false;
     //енам скорозвона => список идентификаторов колонок экселя
     @Column(name = "field_links")
     private String fieldLinks;
