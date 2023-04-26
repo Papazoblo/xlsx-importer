@@ -31,7 +31,6 @@ logging:
     name: /opt/xlsx-importer/logs/application.log
   level:
     ru.medvedev.importer: DEBUG
-    ru.medvedev.importer.config.LogFilterConfiguration: DEBUG
 
 spring:
   task:

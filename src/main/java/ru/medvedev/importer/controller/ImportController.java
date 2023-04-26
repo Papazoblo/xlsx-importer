@@ -1,9 +1,15 @@
 package ru.medvedev.importer.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.json.GsonJsonParser;
+import org.springframework.boot.json.JacksonJsonParser;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -121,8 +127,8 @@ public class ImportController {
 
     @PostMapping/*("/webhook")*/
     @ResponseBody
-    public void takeWebhook(@RequestBody WebhookDto input) {
+    public void takeWebhook(@RequestBody String input) throws JsonProcessingException {
         log.debug("*** Take a webhook {}", input);
-        leadWorkerService.processWebhook(input);
+        leadWorkerService.processWebhook(new ObjectMapper().readValue(input, WebhookDto.class));
     }
 }

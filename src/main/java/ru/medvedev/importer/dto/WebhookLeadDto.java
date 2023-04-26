@@ -1,6 +1,7 @@
 package ru.medvedev.importer.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -16,7 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(value = JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Slf4j
 public class WebhookLeadDto {
 
