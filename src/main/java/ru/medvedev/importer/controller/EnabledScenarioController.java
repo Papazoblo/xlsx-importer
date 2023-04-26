@@ -27,7 +27,7 @@ public class EnabledScenarioController {
         dto.sort(Comparator.comparing(EnabledScenarioDto::getScenarioId));
 
         model.addAttribute("scenarios", dto);
-        model.addAttribute("banks", Bank.values());
+        model.addAttribute("banks", Bank.valuesNotExclude());
         model.addAttribute("authority", getAuthorityList());
         return "enabled_scenarios";
     }

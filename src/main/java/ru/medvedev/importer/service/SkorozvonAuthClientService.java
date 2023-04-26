@@ -22,27 +22,27 @@ public class SkorozvonAuthClientService {
     private final SkorozvonProperties properties;
 
     private String login() {
-        LoginRequest request = new LoginRequest();
-        request.setApiKey(properties.getApiKey());
-        request.setClient_id(properties.getApplicationId());
-        request.setClient_secret(properties.getApplicationKey());
-        request.setUsername(properties.getLogin());
-        LoginResponse response = client.login(request);
-        properties.setAccessToken(response.getAccessToken());
-        properties.setRefreshToken(response.getRefreshToken());
-        return properties.getAccessToken();
-//        return "";
+//        LoginRequest request = new LoginRequest();
+//        request.setApiKey(properties.getApiKey());
+//        request.setClient_id(properties.getApplicationId());
+//        request.setClient_secret(properties.getApplicationKey());
+//        request.setUsername(properties.getLogin());
+//        LoginResponse response = client.login(request);
+//        properties.setAccessToken(response.getAccessToken());
+//        properties.setRefreshToken(response.getRefreshToken());
+//        return properties.getAccessToken();
+        return "";
     }
 
     public void refreshToken() {
-        log.debug("*** refreshing token");
-        RefreshRequest request = new RefreshRequest();
-        request.setApplicationId(properties.getApplicationId());
-        request.setApplicationKey(properties.getApplicationKey());
-        request.setRefreshToken(properties.getRefreshToken());
-        LoginResponse response = client.refresh(request, BEARER + properties.getAccessToken());
-        properties.setAccessToken(response.getAccessToken());
-        properties.setRefreshToken(response.getRefreshToken());
+//        log.debug("*** refreshing token");
+//        RefreshRequest request = new RefreshRequest();
+//        request.setApplicationId(properties.getApplicationId());
+//        request.setApplicationKey(properties.getApplicationKey());
+//        request.setRefreshToken(properties.getRefreshToken());
+//        LoginResponse response = client.refresh(request, BEARER + properties.getAccessToken());
+//        properties.setAccessToken(response.getAccessToken());
+//        properties.setRefreshToken(response.getRefreshToken());
     }
 
     @EventListener(ApplicationReadyEvent.class)

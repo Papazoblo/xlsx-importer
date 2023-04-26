@@ -1,0 +1,1 @@
+create index inn_exclude_by_bank_idx on inn_exclude (bank);

@@ -32,7 +32,7 @@ public class ProjectNumberController {
         model.addAttribute("projectNumbers", resultPage);
         model.addAttribute("authority", getAuthorityList());
         model.addAttribute("paging", PagingDto.of(resultPage.getTotalPages(), page, size));
-        model.addAttribute("banks", Bank.values());
+        model.addAttribute("banks", Bank.valuesNotExclude());
         return "project_number_setting";
     }
 

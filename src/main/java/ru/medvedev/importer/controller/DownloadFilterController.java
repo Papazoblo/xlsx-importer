@@ -30,7 +30,7 @@ public class DownloadFilterController {
 
         model.addAttribute("authority", getAuthorityList());
         model.addAttribute("currentFilter", filter);
-        model.addAttribute("banks", Bank.values());
+        model.addAttribute("banks", Bank.valuesNotExclude());
         model.addAttribute("filterList", Arrays.stream(DownloadFilter.values())
                 .sorted(Comparator.comparing(DownloadFilter::getDescription)).collect(toList()));
         model.addAttribute("filters", service.getByCode(filter));

@@ -51,7 +51,7 @@ public class ContactController {
         Page<ContactDto> resultPage = service.getPage(contactFilter, pageable);
         model.addAttribute("contacts", resultPage);
         model.addAttribute("filter", contactFilter);
-        model.addAttribute("banks", Bank.values());
+        model.addAttribute("banks", Bank.valuesNotExclude());
         model.addAttribute("statuses", ContactStatus.values());
         model.addAttribute("authority", getAuthorityList());
         model.addAttribute("actualities", ContactActuality.values());

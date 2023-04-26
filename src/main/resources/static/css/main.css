@@ -45,7 +45,7 @@ input[type=text], input[type=password] {
     background-color: #cd050c !important;
 }
 
-.btn-2, .btn3, #btnLoadWebhook {
+.btn-2, .btn3, #btnLoadWebhook, #btnDeleteInn {
     display: inline-block;
     box-sizing: border-box;
     padding: 0 24px;
@@ -68,11 +68,11 @@ input[type=text], input[type=password] {
     transition: box-shadow .18s ease-out, background .18s ease-out, color .18s ease-out;
 }
 
-#btnSendFile, #btnLoadWebhook {
+#btnSendFile, #btnLoadWebhook, #btnDeleteInn {
     margin: 0 !important;
 }
 
-#btnLoadWebhook {
+#btnLoadWebhook, #btnDeleteInn {
     background-color: #6a0909 !important;
     width: 75%;
     margin-top: 10px !important;

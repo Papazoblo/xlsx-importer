@@ -41,7 +41,7 @@ public abstract class BaseWebhookStatusController {
 
         Page<WebhookSuccessStatusDto> resultPage = service.getPage(pageable, filter);
         model.addAttribute("data", resultPage);
-        model.addAttribute("banks", Bank.values());
+        model.addAttribute("banks", Bank.valuesNotExclude());
         model.addAttribute("statuses", statusDtoList);
         model.addAttribute("authority", getAuthorityList());
         model.addAttribute("paging", PagingDto.of(resultPage.getTotalPages(), page, size));

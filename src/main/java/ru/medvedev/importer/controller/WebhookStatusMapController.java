@@ -33,7 +33,7 @@ public class WebhookStatusMapController {
                 .collect(Collectors.toList());
 
         model.addAttribute("data", statusDtoList);
-        model.addAttribute("banks", Bank.values());
+        model.addAttribute("banks", Bank.valuesNotExclude());
         model.addAttribute("statuses", statusService.findWebhookStatusByType(Collections.singletonList(WebhookType.SUCCESS)));
         model.addAttribute("actualities", ContactActuality.values());
 

@@ -37,7 +37,7 @@ public class ContactDto {
         dto.setOrgName(entity.getOrgName());
         dto.setRegion(entity.getRegion());
         dto.setCity(entity.getCity());
-        Arrays.stream(Bank.values()).forEach(bank -> {
+        Arrays.stream(Bank.valuesNotExclude()).forEach(bank -> {
             Optional<ContactBankActualityEntity> actualityEntity = entity.getActualityList().stream()
                     .filter(actuality -> actuality.getBank() == bank)
                     .findFirst();

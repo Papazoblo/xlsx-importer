@@ -50,7 +50,7 @@ public class InitializedNewTgFileService {
     }
 
     private void sendRequestSelectBank(FileInfoEntity fileInfo) {
-        List<String> buttons = Arrays.stream(Bank.values())
+        List<String> buttons = Arrays.stream(Bank.valuesNotExclude())
                 .filter(item -> fileInfo.getBankList().stream()
                         .noneMatch(bankEntity -> bankEntity.getBank() == item))
                 .map(Bank::getTitle)
@@ -99,7 +99,7 @@ public class InitializedNewTgFileService {
                         fi.setProjectId(Long.parseLong(value));
                     }
                 }
-                if (Arrays.stream(Bank.values()).allMatch(bank ->
+                if (Arrays.stream(Bank.valuesNotExclude()).allMatch(bank ->
                         file.getBankList().stream().anyMatch(bankEntity -> bankEntity.getBank() == bank))) {
                     file.setProcessingStep(FileProcessingStep.RESPONSE_COLUMN_NAME);
                 } else {

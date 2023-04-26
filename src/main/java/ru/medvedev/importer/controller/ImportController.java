@@ -81,7 +81,7 @@ public class ImportController {
         model.addAttribute("fields", SkorozvonField.values());
 
         List<List<Bank>> banks = new ArrayList<>();
-        Bank[] bankArray = Bank.values();
+        Bank[] bankArray = Bank.valuesNotExclude();
         for (int i = 0; i < bankArray.length; i += 3) {
             List<Bank> bankInner = new ArrayList<>();
             for (int j = 0; j < 3; j++) {

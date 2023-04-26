@@ -6,10 +6,12 @@ import ru.medvedev.importer.entity.ContactDownloadInfoEntity;
 import ru.medvedev.importer.entity.ContactNewEntity;
 import ru.medvedev.importer.entity.DownloadFilterEntity;
 import ru.medvedev.importer.entity.FileInfoBankEntity;
+import ru.medvedev.importer.entity.id.InnExcludeId;
 import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.ContactStatus;
 import ru.medvedev.importer.enums.DownloadFilter;
 import ru.medvedev.importer.repository.ContactDownloadInfoRepository;
+import ru.medvedev.importer.repository.InnExcludeRepository;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,6 +32,7 @@ public class ContactDownloadInfoService {
     private final ContactNewService contactNewService;
     private final DownloadFilterService downloadFilterService;
     private final FirstLoadLeadService firstLoadLeadService;
+    private final InnExcludeRepository innExcludeRepository;
 
     public void save(List<ContactDownloadInfoEntity> entityList) {
         repository.saveAll(entityList);
@@ -54,6 +57,12 @@ public class ContactDownloadInfoService {
                         .filter(contact -> fileInfoBank.getBank() != VTB ||
                                 !fileInfoBank.getFileInfo().getNotLoadFromVtbDedublicate() ||
                                 !firstLoadLeadService.existsByInn(contact.getInn()))
+                        .filter(contact -> { //inn-exclude
+                            InnExcludeId id = new InnExcludeId();
+                            id.setInn(contact.getInn());
+                            id.setBank(fileInfoBank.getBank());
+                            return !innExcludeRepository.existsById(id);
+                        })
                         .forEach(contact -> {
                             ContactDownloadInfoEntity downloadInfoEntity = new ContactDownloadInfoEntity();
                             downloadInfoEntity.setContactId(contact.getId());

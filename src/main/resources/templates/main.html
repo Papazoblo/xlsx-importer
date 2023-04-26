@@ -62,14 +62,17 @@
                                th:if="*{authority.contains('WEBHOOK_STATUS')}">Вебхуки для создания
                                 заявок</a>
                             <a class="dropdown-item" href="/settings/webhook-success-statuses"
-                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Финальные результаты звонка для перезаливки</a>
+                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Финальные результаты звонка для
+                                перезаливки</a>
                             <a class="dropdown-item" href="/settings/webhook-error-statuses"
                                th:if="*{authority.contains('WEBHOOK_STATUS')}">Вебхуки для повторной обработки
                                 контакта</a>
-                          <!--  <a class="dropdown-item" href="/settings/webhook-status-map"
-                               th:if="*{authority.contains('WEBHOOK_STATUS')}">Карта переходов</a>-->
+                            <!--  <a class="dropdown-item" href="/settings/webhook-status-map"
+                                 th:if="*{authority.contains('WEBHOOK_STATUS')}">Карта переходов</a>-->
                             <a class="dropdown-item" href="/settings/filters">
                                 Фильтры для загрузки контактов</a>
+                            <a class="dropdown-item" href="/inn-exclude">
+                                Исключения ИНН</a>
                             <a class="dropdown-item" href="/settings/system-variables">
                                 Системные переменные</a>
                         </div>
