@@ -18,11 +18,15 @@ import ru.medvedev.importer.dto.response.CheckLeadResponse;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
+import ru.medvedev.importer.service.BankCountSendedRequestService;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static ru.medvedev.importer.enums.Bank.ALFA;
+import static ru.medvedev.importer.enums.Bank.VTB;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +35,7 @@ public class VtbClientService implements BankClientService {
 
     private static final String BEARER = "Bearer ";
 
+    private final BankCountSendedRequestService bankCountSendedRequestService;
     private final VtbApiClient client;
     private final VtbProperties properties;
 
@@ -47,6 +52,7 @@ public class VtbClientService implements BankClientService {
         LeadRequest request = new LeadRequest();
         request.setLeads(Collections.singletonList(leadDto));
         try {
+            bankCountSendedRequestService.incCreateRequestCount(VTB, 1);
             client.addLead(request, BEARER + properties.getAccessToken());
             return CreateLeadResult.of(true);
         } catch (TimeOutException | ErrorCreateLeadException ex) {
@@ -69,6 +75,7 @@ public class VtbClientService implements BankClientService {
         LeadRequest leadRequest = new LeadRequest();
         leadRequest.setLeads(leads);
         try {
+            bankCountSendedRequestService.incCheckRequestCount(VTB, 1);
             ResponseEntity<CheckLeadResponse> response = client.checkLeads(leadRequest,
                     BEARER + properties.getAccessToken());
             return CheckLeadResult.of(true, null, response.getBody().getLeads());

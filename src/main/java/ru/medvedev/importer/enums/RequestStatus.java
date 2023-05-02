@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum RequestStatus {
 
+    PAUSE("На паузе"),
     CREATING("Создание"),
     IN_QUEUE("Ожидают"),
     CHECKING("Проверяются"),

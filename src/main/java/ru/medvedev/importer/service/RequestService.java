@@ -1,6 +1,7 @@
 package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.RequestStatisticProjection;
 import ru.medvedev.importer.entity.RequestEntity;
@@ -16,6 +17,20 @@ import java.util.stream.Collectors;
 public class RequestService {
 
     private final RequestRepository repository;
+
+    public void setToPause() {
+        repository.setToPause();
+    }
+
+    @Scheduled(cron = "${cron.request-unpause}")
+    public void setToUnpause() {
+        repository.setToUnpause();
+    }
+
+    @Scheduled(cron = "${cron.request-18-30-unpause}")
+    public void set1830ToUnpause() {
+        repository.setToUnpause();
+    }
 
     public RequestEntity save(RequestEntity entity) {
         return repository.save(entity);

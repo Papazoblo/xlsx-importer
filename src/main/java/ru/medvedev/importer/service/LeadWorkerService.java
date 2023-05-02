@@ -64,6 +64,7 @@ public class LeadWorkerService {
     public void fromStatusFixed() {
 
         webhookStatisticService.getByStatus(WebhookStatus.FIXED).ifPresent(item -> {
+            log.debug("fromStatusFixed");
             BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
             //мы спрашиваем у банка можем ли мы добавить лид
             try {
@@ -114,6 +115,7 @@ public class LeadWorkerService {
     public void fromStatusWaitCheckLeadAfterFixedResponse() {
 
         webhookStatisticService.getByStatus(WebhookStatus.WAIT_CHECK_LEAD_AFTER_FIXED_RESPONSE).ifPresent(item -> {
+            log.debug("fromStatusWaitCheckLeadAfterFixedResponse");
             BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
             try {
                 CheckLeadResult result = clientService.getCheckLeadResult(item.getOpeningRequestId(), null);
@@ -161,6 +163,7 @@ public class LeadWorkerService {
     public void fromStatusTryToCreateLead() {
 
         webhookStatisticService.getByStatus(WebhookStatus.TRY_TO_CREATE_LEAD).ifPresent(item -> {
+            log.debug("fromStatusTryToCreateLead");
             BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
             WebhookLeadDto leadDto = new WebhookLeadDto();
             leadDto.setCity(item.getCity());
@@ -220,6 +223,7 @@ public class LeadWorkerService {
     public void fromStatusWaitToCreateLeadResponse() {
 
         webhookStatisticService.getByStatus(WebhookStatus.WAIT_CREATE_LEAD_RESPONSE).ifPresent(item -> {
+            log.debug("fromStatusWaitToCreateLeadResponse");
             try {
                 BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
                 if (clientService.getCreateLeadResult(item.getOpeningRequestId())) {

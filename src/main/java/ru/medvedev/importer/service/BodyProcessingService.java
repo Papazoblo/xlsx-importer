@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -43,6 +44,7 @@ import static ru.medvedev.importer.enums.RequestStatus.*;
 import static ru.medvedev.importer.enums.RequestStatus.ERROR;
 import static ru.medvedev.importer.enums.RequestStatus.IN_QUEUE;
 
+import static ru.medvedev.importer.service.BankCountSendedRequestService.DAY_RESERVE;
 import static ru.medvedev.importer.service.EventService.BANK_NAME_PATTERN;
 import static ru.medvedev.importer.service.EventService.STATISTIC_LINE_PATTERN;
 import static ru.medvedev.importer.utils.StringUtils.*;
@@ -64,6 +66,8 @@ public class BodyProcessingService {
     private final RequestService requestService;
     private final ContactDownloadInfoService contactDownloadInfoService;
     private final FirstLoadLeadService firstLoadLeadService;
+    private final SystemVariableService systemVariableService;
+    private final BankCountSendedRequestService bankCountSendedRequestService;
 
     private final Set<String> regionCodes = new HashSet<>();
 
@@ -251,6 +255,9 @@ public class BodyProcessingService {
                     request.setStatus(IN_QUEUE);
                 }
             } else {
+                if (!validateRequestLimit(ALFA)) {
+                    return;
+                }
                 CheckLeadResult result = bankClientService.getAllFromCheckLead(request.getContactDownloadInfo().stream()
                         .map(ContactDownloadInfoEntity::getContact)
                         .map(ContactNewEntity::getInn)
@@ -298,6 +305,9 @@ public class BodyProcessingService {
 
     @Scheduled(cron = "${cron.tg-file-send-to-skorozvon}")
     public void sendToSkorozvon(/*OpeningRequestEntity request*/) {
+        if (requestService.getFirstByStatus(DOWNLOADING).isPresent()) {
+            return;
+        }
         requestService.getFirstByStatus(RequestStatus.SUCCESS_CHECK).ifPresent(request -> {
             requestService.changeStatus(request.getId(), RequestStatus.DOWNLOADING);
             FileInfoBankEntity fib = request.getFileInfoBank();
@@ -596,5 +606,29 @@ public class BodyProcessingService {
                     return sb.toString();
                 })
                 .collect(joining("\n"));
+    }
+
+    private boolean validateRequestLimit(Bank bank) {
+        if (bank == ALFA) {
+            Optional<SystemVariableEntity> alfaLimit = systemVariableService.getByCode(SystemVariable.CHECK_LIMIT_ALFA);
+            if (alfaLimit.isPresent()) {
+                SystemVariableEntity halfAlfaLimit = systemVariableService.getByCode(SystemVariable.HALF_CHECK_LIMIT_ALFA)
+                        .orElseGet(() -> {
+                            SystemVariableEntity entity = new SystemVariableEntity();
+                            entity.setName(SystemVariable.HALF_CHECK_LIMIT_ALFA);
+                            entity.setValue(String.valueOf(Integer.parseInt(alfaLimit.get().getValue()) * 0.85));
+                            return entity;
+                        });
+
+                BankCountSendedRequestEntity counter = bankCountSendedRequestService.getById(bank);
+                if ((LocalTime.now().isBefore(LocalTime.of(18, 30)) && counter.getCheckRequestCount() > Integer.parseInt(halfAlfaLimit.getValue()) - DAY_RESERVE)
+                        || (LocalTime.now().isAfter(LocalTime.of(18, 30)) && counter.getCheckRequestCount() > Integer.parseInt(alfaLimit.get().getValue()) - DAY_RESERVE)) {
+
+                    requestService.setToPause();
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

@@ -34,6 +34,7 @@ import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
 import ru.medvedev.importer.repository.WebhookStatisticRepository;
+import ru.medvedev.importer.service.BankCountSendedRequestService;
 import ru.medvedev.importer.service.CityService;
 
 import java.util.*;
@@ -58,6 +59,7 @@ public class AlfaClientService implements BankClientService {
     private final CityService cityService;
     private final WebhookStatisticRepository webhookStatisticRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final BankCountSendedRequestService bankCountSendedRequestService;
 
     public CreateLeadResult createLead(WebhookLeadDto webhookLead) {
 
@@ -83,6 +85,7 @@ public class AlfaClientService implements BankClientService {
         request.getProductInfo().add(new ProductInfoDto());
 
         try {
+            bankCountSendedRequestService.incCreateRequestCount(ALFA, 1);
             ResponseEntity<OpeningResponse> response = client.creteAddLeadRequest(request);
             if (response.getStatusCode() == HttpStatus.OK) {
                 String id = response.getBody().getId();
@@ -108,9 +111,10 @@ public class AlfaClientService implements BankClientService {
 
         try {
             if (innList.size() > 1) {
-                for (int i = 0; i < innList.size(); i += 5) {
-                    CompletableFuture.allOf(innList.subList(i, Math.min((i + 5), innList.size()))
-                            .stream()
+                for (int i = 0; i < innList.size(); i += ALFA.getBatchSize()) {
+                    List<String> innSubList = innList.subList(i, Math.min((i + ALFA.getBatchSize()), innList.size()));
+                    bankCountSendedRequestService.incCheckRequestCount(ALFA, innSubList.size());
+                    CompletableFuture.allOf(innSubList.stream()
                             .map(inn -> CompletableFuture.completedFuture(inn)
                                     .thenRun(() -> {
                                         CheckLeadInnDto request = new CheckLeadInnDto();
@@ -138,6 +142,7 @@ public class AlfaClientService implements BankClientService {
                 LeadInfoResponse info = new LeadInfoResponse();
                 info.setInn(innList.get(0));
                 try {
+                    bankCountSendedRequestService.incCheckRequestCount(ALFA, 1);
                     client.createCheckLeadsRequest(request);
                     info.setResponseCode(POSITIVE);
                     return CheckLeadResult.of(true, "", Collections.singletonList(info));
@@ -161,6 +166,7 @@ public class AlfaClientService implements BankClientService {
     @Override
     public boolean getCreateLeadResult(String id) {
 
+        bankCountSendedRequestService.incResultCreateRequestCount(ALFA, 1);
         ResponseEntity<RequestStatusResponseDto> response = client.getRequestStatus(id);
         if (response.getStatusCode() == HttpStatus.OK) {
             RequestStatusResponseDto result = response.getBody();

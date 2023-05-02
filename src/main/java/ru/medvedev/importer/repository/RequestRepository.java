@@ -41,6 +41,18 @@ public interface RequestRepository extends JpaRepository<RequestEntity, Long> {
     @Query("update RequestEntity r set r.status = :newStatus where r.id = :id")
     void updateStatusById(Long id, RequestStatus newStatus);
 
+    @Modifying
+    @Transactional
+    @Query(value = "update opening_request set status = 'PAUSE' where status = 'IN_QUEUE'",
+            nativeQuery = true)
+    void setToPause();
+
+    @Modifying
+    @Transactional
+    @Query(value = "update opening_request set status = 'IN_QUEUE' where status = 'PAUSE'",
+            nativeQuery = true)
+    void setToUnpause();
+
     @Transactional
     @Modifying
     void deleteAllByFileInfoBankIdIn(Set<Long> fibId);

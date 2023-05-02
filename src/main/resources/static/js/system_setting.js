@@ -4,6 +4,8 @@ $(document).ready(function () {
     $("#btn-save").on('click', function (e) {
         var result = new Map();
         result.set('MAX_ERROR_NUMBER', $('#maxErrorNumber').val());
+        result.set('CHECK_LIMIT_ALFA', $('#checkLimitAlfa').val());
+        result.set('HALF_CHECK_LIMIT_ALFA', $('#halfCheckLimitAlfa').val());
 
         $("#btn-save").attr('disabled', 'disabled');
 

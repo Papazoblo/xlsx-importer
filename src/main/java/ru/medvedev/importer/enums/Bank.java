@@ -14,7 +14,7 @@ public enum Bank {
     RAIFFEISEN("Райффайзен", true, 100),
     VTB("ВТБ", false, 100),
     VTB_OPENING("Открытие", false, 100),
-    ALFA("Альфа", false, 5);
+    ALFA("Альфа", false, 4);
 
     @Getter
     private final String title;

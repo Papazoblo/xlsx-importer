@@ -101,6 +101,20 @@
                     </th>
                 </tr>
                 <tr>
+                    <th><label for="checkLimitAlfa">Ежедневный лимит проверок в Альфа</label></th>
+                    <th>
+                        <input id="checkLimitAlfa" type="text" class="onlyNumbers" th:text="${name}"
+                               th:value="${variables.getOrDefault(T(ru.medvedev.importer.enums.SystemVariable).CHECK_LIMIT_ALFA, '')}"/>
+                    </th>
+                </tr>
+                <tr>
+                    <th><label for="halfCheckLimitAlfa">Ллимит проверок в Альфа до 18:30</label></th>
+                    <th>
+                        <input id="halfCheckLimitAlfa" type="text" class="onlyNumbers" th:text="${name}"
+                               th:value="${variables.getOrDefault(T(ru.medvedev.importer.enums.SystemVariable).HALF_CHECK_LIMIT_ALFA, '')}"/>
+                    </th>
+                </tr>
+                <tr>
                     <th></th>
                     <th style="text-align: right; width: 100px">
                         <button id="btn-save" class="btn-2" style="width: 50%">Сохранить</button>

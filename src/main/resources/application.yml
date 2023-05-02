@@ -70,14 +70,14 @@ cron:
   tg-initialized-new-file: '*/3 * * * * *'
   tg-file-body-processor: '*/3 * * * * *'
   tg-file-send-to-check: '2 */1 * * * *'
-  creating-request-vtb: '45 * * * * *'
+  creating-request-vtb: '*/15 * * * * *'
   creating-request-opening: '40 * * * * *'
-  creating-request-alfa: '42 * * * * *'
+  creating-request-alfa: '*/2 * * * * *'
   creating-request-raiffeisen: '50 * * * * *'
   check-request-status-vtb: '*/35 * * * * *'
-  check-request-status-alfa: '*/37 * * * * *'
+  check-request-status-alfa: '*/3 * * * * *'
   check-request-status-opening: '*/10 * * * * *'
-  tg-file-send-to-skorozvon: '*/30 * * * * *'
+  tg-file-send-to-skorozvon: '*/2 * * * * *'
   webhook-from-fixed-status: '17 */1 * * * *'
   webhook-from-try-to-create-status: '30 */1 * * * *'
   webhook-from-create-success-status: '45 */1 * * * *'
@@ -86,6 +86,8 @@ cron:
   logs-archive-delete: '0 0 2 * * *'
   first-load-lead-delete: '0 0 1 * * *'
   raiffeisen-city-dictionary: '0 10 2 * * *'
+  request-unpause: '0 10 0 * * *'
+  request-18-30-unpause: '0 30 18 * * *'
 
 telegram:
   xlsx-collector:
