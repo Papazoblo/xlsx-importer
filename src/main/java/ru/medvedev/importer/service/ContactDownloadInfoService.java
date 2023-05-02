@@ -58,10 +58,14 @@ public class ContactDownloadInfoService {
                                 !fileInfoBank.getFileInfo().getNotLoadFromVtbDedublicate() ||
                                 !firstLoadLeadService.existsByInn(contact.getInn()))
                         .filter(contact -> { //inn-exclude
-                            InnExcludeId id = new InnExcludeId();
-                            id.setInn(contact.getInn());
-                            id.setBank(fileInfoBank.getBank());
-                            return !innExcludeRepository.existsById(id);
+                            if (fileInfoBank.getFileInfo().getEnableInnExclude()) {
+                                InnExcludeId id = new InnExcludeId();
+                                id.setInn(contact.getInn());
+                                id.setBank(fileInfoBank.getBank());
+                                return !innExcludeRepository.existsById(id);
+                            } else {
+                                return true;
+                            }
                         })
                         .forEach(contact -> {
                             ContactDownloadInfoEntity downloadInfoEntity = new ContactDownloadInfoEntity();

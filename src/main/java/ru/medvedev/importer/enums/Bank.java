@@ -11,14 +11,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public enum Bank {
 
-    RAIFFEISEN("Райффайзен", true),
-    VTB("ВТБ", false),
-    VTB_OPENING("Открытие", false);
+    RAIFFEISEN("Райффайзен", true, 100),
+    VTB("ВТБ", false, 100),
+    VTB_OPENING("Открытие", false, 100),
+    ALFA("Альфа", false, 5);
 
     @Getter
     private final String title;
     @Getter
     private final boolean exclude;
+    @Getter
+    private final int batchSize;
 
     public static Bank of(String title) {
         return Arrays.stream(Bank.values())

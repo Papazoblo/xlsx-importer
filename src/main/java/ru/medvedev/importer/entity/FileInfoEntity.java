@@ -83,6 +83,8 @@ public class FileInfoEntity {
     private Boolean isFirstVtbLoadLead = false;
     @Column(name = "is_not_load_from_vtb_dedublicate")
     private Boolean notLoadFromVtbDedublicate = false;
+    @Column(name = "is_enable_inn_exclude")
+    private Boolean enableInnExclude = false;
     //енам скорозвона => список идентификаторов колонок экселя
     @Column(name = "field_links")
     private String fieldLinks;

@@ -125,10 +125,11 @@ public class ImportController {
         }
     }
 
-    @PostMapping/*("/webhook")*/
+    @PostMapping
     @ResponseBody
-    public void takeWebhook(@RequestBody String input) throws JsonProcessingException {
+    public void takeWebhook(@RequestBody WebhookDto input) {
         log.debug("*** Take a webhook {}", input);
-        leadWorkerService.processWebhook(new ObjectMapper().readValue(input, WebhookDto.class));
+        //leadWorkerService.processWebhook(new ObjectMapper().readValue(input, WebhookDto.class));
+        leadWorkerService.processWebhook(input);
     }
 }

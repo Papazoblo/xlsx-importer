@@ -14,6 +14,7 @@ public class XlsxImportInfo {
     private boolean enableWhatsAppLink;
     private boolean firstVtbLoadLead;
     private boolean notLoadFromVtbDedublicate;
+    private boolean enableInnExclude;
     //енам скорозвона => список идентификаторов колонок экселя
     private Map<SkorozvonField, List<Integer>> fieldLinks = new LinkedHashMap<>();
     private List<String> orgTags = new ArrayList<>();

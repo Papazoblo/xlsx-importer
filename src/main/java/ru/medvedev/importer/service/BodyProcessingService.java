@@ -112,9 +112,8 @@ public class BodyProcessingService {
             try {
                 fileInfoBankService.updateDownloadStatus(FileInfoBankStatus.INN_CHECK, fib.getId());
                 List<ContactDownloadInfoEntity> contacts = fib.getContactDownloadList();
-
-                for (int i = 0; i < contacts.size(); i = i + BATCH_SIZE) {
-                    List<ContactDownloadInfoEntity> contactSublist = contacts.subList(i, Math.min(i + BATCH_SIZE, contacts.size()));
+                for (int i = 0; i < contacts.size(); i = i + fib.getBank().getBatchSize()) {
+                    List<ContactDownloadInfoEntity> contactSublist = contacts.subList(i, Math.min(i + fib.getBank().getBatchSize(), contacts.size()));
 
                     RequestEntity openingRequest = new RequestEntity();
                     openingRequest.setFileInfoBank(fib);
@@ -153,7 +152,14 @@ public class BodyProcessingService {
         }
     }
 
-    @Scheduled(cron = "${cron.creating-request-raiffeisen}")
+    @Scheduled(cron = "${cron.creating-request-alfa}")
+    public void creatingRequestAlfa() {
+        if (requestService.getCountByStatusAndBank(IN_QUEUE, ALFA) < 15) {
+            requestService.getFirstByStatusAndBank(CREATING, ALFA).ifPresent(this::creatingRequest);
+        }
+    }
+
+    //@Scheduled(cron = "${cron.creating-request-raiffeisen}")
     public void creatingRequestRaiffeisen() {
         requestService.getFirstByStatusAndBank(CREATING, RAIFFEISEN).ifPresent(this::creatingRequest);
     }
@@ -164,7 +170,7 @@ public class BodyProcessingService {
             BankClientService bankClientService = bankClientServiceFactory.getBankClientService(fib.getBank());
 
             request.setStatus(IN_QUEUE);
-            if (fib.getBank() == VTB) {
+            if (fib.getBank() == VTB || fib.getBank() == ALFA) {
                 request.setRequestId("blank");
             } else if (fib.getBank() == RAIFFEISEN) {
                 request.setStatus(SUCCESS_CHECK);
@@ -211,6 +217,11 @@ public class BodyProcessingService {
     @Scheduled(cron = "${cron.check-request-status-vtb}")
     public void checkRequestStatusVtb() {
         requestService.getFirstByStatusAndBank(IN_QUEUE, VTB).ifPresent(this::checkRequestStatus);
+    }
+
+    @Scheduled(cron = "${cron.check-request-status-alfa}")
+    public void checkRequestStatusAlfa() {
+        requestService.getFirstByStatusAndBank(IN_QUEUE, ALFA).ifPresent(this::checkRequestStatus);
     }
 
     @Scheduled(cron = "${cron.check-request-status-opening}")

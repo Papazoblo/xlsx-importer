@@ -2,8 +2,10 @@ package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.client.SkorozvonAuthClient;
@@ -20,29 +22,36 @@ public class SkorozvonAuthClientService {
     private static final String BEARER = "Bearer ";
     private final SkorozvonAuthClient client;
     private final SkorozvonProperties properties;
+    @Value("${spring.profiles.active}")
+    private String activeProfile;
 
     private String login() {
-//        LoginRequest request = new LoginRequest();
-//        request.setApiKey(properties.getApiKey());
-//        request.setClient_id(properties.getApplicationId());
-//        request.setClient_secret(properties.getApplicationKey());
-//        request.setUsername(properties.getLogin());
-//        LoginResponse response = client.login(request);
-//        properties.setAccessToken(response.getAccessToken());
-//        properties.setRefreshToken(response.getRefreshToken());
-//        return properties.getAccessToken();
-        return "";
+        if (activeProfile != null && activeProfile.equals("dev")) {
+            return "";
+        }
+        LoginRequest request = new LoginRequest();
+        request.setApiKey(properties.getApiKey());
+        request.setClient_id(properties.getApplicationId());
+        request.setClient_secret(properties.getApplicationKey());
+        request.setUsername(properties.getLogin());
+        LoginResponse response = client.login(request);
+        properties.setAccessToken(response.getAccessToken());
+        properties.setRefreshToken(response.getRefreshToken());
+        return properties.getAccessToken();
     }
 
     public void refreshToken() {
-//        log.debug("*** refreshing token");
-//        RefreshRequest request = new RefreshRequest();
-//        request.setApplicationId(properties.getApplicationId());
-//        request.setApplicationKey(properties.getApplicationKey());
-//        request.setRefreshToken(properties.getRefreshToken());
-//        LoginResponse response = client.refresh(request, BEARER + properties.getAccessToken());
-//        properties.setAccessToken(response.getAccessToken());
-//        properties.setRefreshToken(response.getRefreshToken());
+        if (activeProfile != null && activeProfile.equals("dev")) {
+            return;
+        }
+        log.debug("*** refreshing token");
+        RefreshRequest request = new RefreshRequest();
+        request.setApplicationId(properties.getApplicationId());
+        request.setApplicationKey(properties.getApplicationKey());
+        request.setRefreshToken(properties.getRefreshToken());
+        LoginResponse response = client.refresh(request, BEARER + properties.getAccessToken());
+        properties.setAccessToken(response.getAccessToken());
+        properties.setRefreshToken(response.getRefreshToken());
     }
 
     @EventListener(ApplicationReadyEvent.class)

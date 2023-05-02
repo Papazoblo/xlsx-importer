@@ -19,4 +19,7 @@ public class CityEntity {
 
     @Column(name = "raiffeisen_id")
     private String raiffeisenId;
+
+    @Column(name = "alfa_id")
+    private String alfaId;
 }

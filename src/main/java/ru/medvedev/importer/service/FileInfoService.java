@@ -213,6 +213,7 @@ public class FileInfoService {
             file.setEnableWhatsAppLink(xlsxImportInfo.isEnableWhatsAppLink());
             file.setIsFirstVtbLoadLead(xlsxImportInfo.isFirstVtbLoadLead());
             file.setNotLoadFromVtbDedublicate(xlsxImportInfo.isNotLoadFromVtbDedublicate());
+            file.setEnableInnExclude(xlsxImportInfo.isEnableInnExclude());
             file.setFieldLinks(xlsxImportInfo.getFieldLinks());
             file.setOrgTags(xlsxImportInfo.getOrgTags());
             repository.save(file);

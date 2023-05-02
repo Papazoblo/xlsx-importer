@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ru.medvedev.importer.dto.DailyContactStatistic;
 import ru.medvedev.importer.entity.WebhookStatisticEntity;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.WebhookStatus;
 
 import java.time.LocalDateTime;
@@ -23,6 +24,8 @@ public interface WebhookStatisticRepository extends JpaRepository<WebhookStatist
             "group by status, webhook_statistic.bank_name", nativeQuery = true)
     List<DailyContactStatistic> findByCreateAtLessThanEqualAndCreateAtGreaterThan(LocalDateTime dateTo,
                                                                                   LocalDateTime dateFrom);
+
+    Optional<WebhookStatisticEntity> findAllByBankAndOpeningRequestId(Bank bank, String requestId);
 
     Optional<WebhookStatisticEntity> findFirstByStatusOrderByUpdateAtDesc(WebhookStatus status);
 }

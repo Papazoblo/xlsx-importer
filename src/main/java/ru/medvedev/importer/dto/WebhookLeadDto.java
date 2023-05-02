@@ -1,9 +1,6 @@
 package ru.medvedev.importer.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -27,6 +24,8 @@ public class WebhookLeadDto {
     private String inn;
     private String name;
     private String comment;
+    @JsonIgnore
+    private String orgName;
     @JsonProperty("created_at")
     private String createAt;
     private List<String> emails = new ArrayList<>();

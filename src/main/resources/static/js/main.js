@@ -64,7 +64,8 @@ $(document).ready(function () {
             "orgTags": orgTagsInput,
             "enableWhatsAppLink": $('#enableWhatsAppLink').is(":checked"),
             "isFirstVtbLoadLead": $('#isFirstVtbLoadLead').is(":checked"),
-            "notLoadFromVtbDedublicate": $('#notLoadFromVtbDedublicate').is(":checked")
+            "notLoadFromVtbDedublicate": $('#notLoadFromVtbDedublicate').is(":checked"),
+            "enableInnExclude": $('#enableInnExclude').is(":checked")
         });
 
         $("#parseXlsx").attr('disabled', 'disabled');

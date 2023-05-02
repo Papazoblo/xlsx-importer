@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.CityDto;
 import ru.medvedev.importer.entity.CityEntity;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.repository.CityRepository;
 
 import java.util.List;
@@ -24,20 +25,29 @@ public class CityService {
         return repository.findByName(name);
     }
 
-    public void refreshList(List<CityDto> cities) {
+    public void refreshList(Bank bank, List<CityDto> cities) {
         Map<String, CityEntity> mapByName = repository.findAll().stream()
-                .collect(toMap(CityEntity::getName, item -> item));
+                .collect(toMap(item -> item.getName().toLowerCase().trim(), item -> item));
 
         repository.saveAll(cities.stream()
-                .map(newCity -> Optional.ofNullable(mapByName.get(newCity.getName()))
+                .map(newCity -> Optional.ofNullable(mapByName.get(newCity.getName().toLowerCase().trim()))
                         .map(oldCity -> {
-                            oldCity.setRaiffeisenId(newCity.getRaiffeisenId());
+                            if (bank == Bank.RAIFFEISEN) {
+                                oldCity.setRaiffeisenId(newCity.getRaiffeisenId());
+                            } else if (bank == Bank.ALFA) {
+                                oldCity.setAlfaId(newCity.getAlfaId());
+                            }
                             return oldCity;
                         })
                         .orElseGet(() -> {
                             CityEntity city = new CityEntity();
                             city.setName(newCity.getName());
-                            city.setRaiffeisenId(newCity.getRaiffeisenId());
+                            if (bank == Bank.RAIFFEISEN) {
+                                city.setRaiffeisenId(newCity.getRaiffeisenId());
+                            } else if (bank == Bank.ALFA) {
+                                city.setAlfaId(newCity.getAlfaId());
+                            }
+                            mapByName.put(city.getName().toLowerCase().trim(), city);
                             return city;
                         }))
                 .collect(Collectors.toList()));

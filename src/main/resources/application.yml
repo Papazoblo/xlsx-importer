@@ -19,6 +19,8 @@ feign:
         loggerLevel: full
       vtbApi:
         loggerLevel: full
+      alfaApi:
+        loggerLevel: full
       raiffeisenApi:
         loggerLevel: full
       skorozvon:
@@ -33,6 +35,8 @@ logging:
     ru.medvedev.importer: DEBUG
 
 spring:
+  profiles:
+    active: default
   task:
     scheduling:
       pool:
@@ -68,8 +72,10 @@ cron:
   tg-file-send-to-check: '2 */1 * * * *'
   creating-request-vtb: '45 * * * * *'
   creating-request-opening: '40 * * * * *'
+  creating-request-alfa: '42 * * * * *'
   creating-request-raiffeisen: '50 * * * * *'
   check-request-status-vtb: '*/35 * * * * *'
+  check-request-status-alfa: '*/37 * * * * *'
   check-request-status-opening: '*/10 * * * * *'
   tg-file-send-to-skorozvon: '*/30 * * * * *'
   webhook-from-fixed-status: '17 */1 * * * *'
@@ -106,3 +112,11 @@ raiffeisen:
   url: https://api.raiffeisen.ru/private/openapi-013-ssl/corporate-leads-xs/app
   dict-url: https://api.raiffeisen.ru/private/openapi-006/dictionaries/cities
   partner-id: "000117"
+
+alfa:
+  api-key: 5d590b3b-3174-42ed-a080-241f4864f19f
+  url: https://partner.alfabank.ru/public-api/v2
+  url-add-request: /leads
+  url-request-status: /leads/{id}
+  url-check-inn: /checks
+  dict-url: /dictionaries?code=cities

@@ -170,16 +170,18 @@ public class LeadWorkerService {
             Optional<ContactNewEntity> contactEntity = contactNewService.getByInn(item.getInn());
             if (contactEntity.isPresent()) {
                 leadDto.setName(getFioStringFromContact(contactEntity.get()));
+                leadDto.setOrgName(contactEntity.get().getOrgName());
             } else {
                 leadDto.setName(isBlank(item.getFullName()) ? item.getName() : item.getFullName());
+                leadDto.setOrgName(leadDto.getName());
             }
             try {
-                if (item.getBank() == Bank.VTB_OPENING) {
+                if (item.getBank() == Bank.VTB_OPENING || item.getBank() == Bank.ALFA) {
                     leadDto.setComment(item.getComment());
                 }
                 CreateLeadResult result = clientService.createLead(leadDto);
                 if (result.getStatus()) {
-                    if (item.getBank() == Bank.VTB_OPENING) {
+                    if (item.getBank() == Bank.VTB_OPENING || item.getBank() == Bank.ALFA) {
                         item.setStatus(WebhookStatus.WAIT_CREATE_LEAD_RESPONSE);
                         item.setOpeningRequestId(result.getAdditionalInfo());
                     } else if (item.getBank() == Bank.RAIFFEISEN) {

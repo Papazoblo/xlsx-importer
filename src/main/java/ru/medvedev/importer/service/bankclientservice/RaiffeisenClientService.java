@@ -11,6 +11,7 @@ import ru.medvedev.importer.client.RaiffeisenRequestApiClient;
 import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.raiffeisen.*;
 import ru.medvedev.importer.entity.CityEntity;
+import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.service.CityService;
 import ru.medvedev.importer.service.ContactNewService;
 
@@ -76,11 +77,11 @@ public class RaiffeisenClientService implements BankClientService {
     }
 
     @Override
-    @Scheduled(cron = "${cron.raiffeisen-city-dictionary}")
+    //@Scheduled(cron = "${cron.raiffeisen-city-dictionary}")
     public void getCityDictionary() {
         ResponseEntity<RaiffeisenCityResponseDto> cityResponse = dictionaryApiClient.getCitiesList();
         if (cityResponse.getStatusCode().is2xxSuccessful()) {
-            cityService.refreshList(cityResponse.getBody().getData().stream()
+            cityService.refreshList(Bank.RAIFFEISEN, cityResponse.getBody().getData().stream()
                     .map(item -> {
                         CityDto cityDto = new CityDto();
                         cityDto.setName(item.getText());
