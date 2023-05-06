@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 @Getter
 public enum SkorozvonField {
 
+    CREATE_DATE("Дата создания", false, FieldType.SELECT, "полльз."),
     USR_FIO("ФИО", true, FieldType.SELECT, "польз."),
     USR_PHONE("Телефон", true, FieldType.SELECT, "польз."),
     USR_EMAIL("E-mail", false, FieldType.SELECT, "польз."),

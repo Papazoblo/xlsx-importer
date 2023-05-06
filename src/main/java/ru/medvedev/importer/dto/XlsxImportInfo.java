@@ -15,6 +15,7 @@ public class XlsxImportInfo {
     private boolean firstVtbLoadLead;
     private boolean notLoadFromVtbDedublicate;
     private boolean enableInnExclude;
+    private boolean setCurrentDate;
     //енам скорозвона => список идентификаторов колонок экселя
     private Map<SkorozvonField, List<Integer>> fieldLinks = new LinkedHashMap<>();
     private List<String> orgTags = new ArrayList<>();

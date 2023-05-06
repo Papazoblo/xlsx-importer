@@ -85,6 +85,8 @@ public class FileInfoEntity {
     private Boolean notLoadFromVtbDedublicate = false;
     @Column(name = "is_enable_inn_exclude")
     private Boolean enableInnExclude = false;
+    @Column(name = "set_current_date")
+    private Boolean setCurrentDate = false;
     //енам скорозвона => список идентификаторов колонок экселя
     @Column(name = "field_links")
     private String fieldLinks;

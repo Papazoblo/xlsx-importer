@@ -214,6 +214,7 @@ public class FileInfoService {
             file.setIsFirstVtbLoadLead(xlsxImportInfo.isFirstVtbLoadLead());
             file.setNotLoadFromVtbDedublicate(xlsxImportInfo.isNotLoadFromVtbDedublicate());
             file.setEnableInnExclude(xlsxImportInfo.isEnableInnExclude());
+            file.setSetCurrentDate(xlsxImportInfo.isSetCurrentDate());
             file.setFieldLinks(xlsxImportInfo.getFieldLinks());
             file.setOrgTags(xlsxImportInfo.getOrgTags());
             repository.save(file);

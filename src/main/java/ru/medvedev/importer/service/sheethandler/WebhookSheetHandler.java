@@ -20,7 +20,7 @@ import static org.apache.logging.log4j.util.Strings.isBlank;
 @Slf4j
 public class WebhookSheetHandler extends BaseItemSheetHandler {
 
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyyHH:mm");
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyyHH:mm");
 
     @Getter
     private final List<WebhookDto> webhooks = new ArrayList<>();
@@ -49,7 +49,7 @@ public class WebhookSheetHandler extends BaseItemSheetHandler {
             CallDto callDto = new CallDto();
 
 
-            leadDto.setCreateAt(LocalDateTime.parse(value + rowMap.get("B"), formatter)
+            leadDto.setCreateAt(LocalDateTime.parse(value + rowMap.get("B"), DATE_TIME_FORMATTER)
                     .format(DateTimeFormatter.ofPattern("yyyy-MM-ddHH:mm:ss")));
             setValue("AB", leadDto::setInn);
             setValue("O", item -> leadDto.setEmails(Optional.ofNullable(item)

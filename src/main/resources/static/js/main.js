@@ -65,7 +65,8 @@ $(document).ready(function () {
             "enableWhatsAppLink": $('#enableWhatsAppLink').is(":checked"),
             "isFirstVtbLoadLead": $('#isFirstVtbLoadLead').is(":checked"),
             "notLoadFromVtbDedublicate": $('#notLoadFromVtbDedublicate').is(":checked"),
-            "enableInnExclude": $('#enableInnExclude').is(":checked")
+            "enableInnExclude": $('#enableInnExclude').is(":checked"),
+            "setCurrentDate": $('#setCurrentDate').is(":checked")
         });
 
         $("#parseXlsx").attr('disabled', 'disabled');

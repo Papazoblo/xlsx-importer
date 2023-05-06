@@ -424,6 +424,7 @@ public class LeadWorkerService {
                     contact.setMiddleName(fioSplit.length >= 3 ? fioSplit[2] : null);
                     contact.setOgrn(record.getOrgKpp());
                     contact.setPhone(isNotBlank(record.getPhone()) ? record.getPhone() : record.getOrgPhone());
+                    contact.setCreateAt(record.getCreateAt());
 //                    contact.setBank(fileBank.getBank());
                     return contact;
                 })

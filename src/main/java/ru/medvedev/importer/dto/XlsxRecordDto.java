@@ -2,6 +2,8 @@ package ru.medvedev.importer.dto;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 public class XlsxRecordDto {
 
@@ -26,4 +28,5 @@ public class XlsxRecordDto {
     private String orgKpp;
     private String[] orgTags;
     private String orgDescription;
+    private LocalDateTime createAt;
 }

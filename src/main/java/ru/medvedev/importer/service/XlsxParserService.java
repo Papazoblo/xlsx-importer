@@ -17,12 +17,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import static org.hibernate.internal.util.StringHelper.isBlank;
+import static ru.medvedev.importer.service.sheethandler.WebhookSheetHandler.DATE_TIME_FORMATTER;
 import static ru.medvedev.importer.utils.StringUtils.addPhoneCountryCode;
 import static ru.medvedev.importer.utils.StringUtils.replaceSpecialCharacters;
 
@@ -77,6 +79,9 @@ public class XlsxParserService {
             fileInfo.getFieldLinks().keySet().stream()
                     .filter(key -> !fileInfo.getFieldLinks().get(key).isEmpty())
                     .forEach(item -> addFieldValue(record, row, item, fileInfo.getFieldLinks().get(item)));
+            if (fileInfo.getSetCurrentDate()) {
+                record.setCreateAt(LocalDateTime.now());
+            }
             if (isNotBlank(record.getOrgInn())) {
                 list.add(record);
             }
@@ -95,6 +100,9 @@ public class XlsxParserService {
 
     private static void addFieldValue(XlsxRecordDto record, Row row, SkorozvonField field, List<Integer> cells) {
         switch (field) {
+            case CREATE_DATE:
+                record.setCreateAt(cellValueToLocalDatetime(row, cells));
+                break;
             case USR_FIO:
                 record.setFio(cellValueToString(row, cells));
                 break;
@@ -166,6 +174,14 @@ public class XlsxParserService {
             }
         }
         return sb.toString().trim();
+    }
+
+    private static LocalDateTime cellValueToLocalDatetime(Row row, List<Integer> cells) {
+        String value = cellValueToString(row, cells);
+        if (isNotBlank(value)) {
+            return LocalDateTime.parse(value, DATE_TIME_FORMATTER);
+        }
+        return null;
     }
 
     private static String getValueFromCellByType(Cell cell) {

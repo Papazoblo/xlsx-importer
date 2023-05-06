@@ -53,7 +53,9 @@ public class ContactNewEntity implements Cloneable {
 
     @PrePersist
     public void prePersist() {
-        createAt = LocalDateTime.now();
+        if (createAt == null) {
+            createAt = LocalDateTime.now();
+        }
     }
 
     @Override
