@@ -31,6 +31,11 @@
                     <a class="nav-link" href="/xlsx/import">Загрузка
                     </a>
                 </li>
+                <li class="nav-item" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
+                    <a class="nav-link" href="/parts-load">Пакетная загрузка
+                    </a>
+                </li>
+
                 <li class="nav-item" th:if="*{authority.contains('FILE_STORAGE')}">
                     <a class="nav-link" href="/file-storage">Хранилище
                     </a>
@@ -222,7 +227,8 @@
             nonSelectedText: 'Не выбрано',
             nSelectedText: 'выбран(о)',
             allSelectedText: 'Все выбрано',
-            resetText: 'Сбросить'
+            resetText: 'Сбросить',
+            maxHeight: 500
         });
     });
 </script>

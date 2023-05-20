@@ -88,6 +88,7 @@ cron:
   raiffeisen-city-dictionary: '0 10 2 * * *'
   request-unpause: '0 10 0 * * *'
   request-18-30-unpause: '0 30 18 * * *'
+  close-parts-load: '10 */2 * * * *'
 
 telegram:
   xlsx-collector:

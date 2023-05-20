@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import ru.medvedev.importer.entity.WebhookStatisticEntity;
 import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.WebhookType;
@@ -15,6 +16,9 @@ import java.util.Optional;
 public interface WebhookSuccessStatusRepository extends JpaRepository<WebhookSuccessStatusEntity, Long>,
         JpaSpecificationExecutor<WebhookSuccessStatusEntity> {
 
+    @Query("select w from WebhookSuccessStatusEntity w " +
+            "where w.bank = :bank and w.type = ru.medvedev.importer.enums.WebhookType.SUCCESS")
+    List<WebhookSuccessStatusEntity> findFirstByBank(Bank bank);
 
     @Query("select w from WebhookSuccessStatusEntity w " +
             "where w.webhookId = :webhookId " +

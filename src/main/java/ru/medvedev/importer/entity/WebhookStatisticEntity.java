@@ -2,6 +2,7 @@ package ru.medvedev.importer.entity;
 
 import lombok.Data;
 import ru.medvedev.importer.enums.Bank;
+import ru.medvedev.importer.enums.PartsLoadStatus;
 import ru.medvedev.importer.enums.WebhookStatus;
 
 import javax.persistence.*;
@@ -65,6 +66,10 @@ public class WebhookStatisticEntity {
 
     @Column(name = "update_at")
     private LocalDateTime updateAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "part_load_id", insertable = false, updatable = false)
+    private PartsLoadEntity partLoad;
 
     @PrePersist
     public void prePersist() {

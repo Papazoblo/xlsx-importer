@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import ru.medvedev.importer.dto.ContactStatistic;
 import ru.medvedev.importer.entity.ContactNewEntity;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +19,9 @@ public interface ContactNewRepository extends JpaRepository<ContactNewEntity, Lo
     Optional<ContactNewEntity> findFirstByInn(String inn);
 
     boolean existsByInn(String inn);
+
+    List<ContactNewEntity> findAllByCreateAtGreaterThanEqualAndCreateAtLessThanEqualOrderByCreateAt(LocalDateTime dateFrom,
+                                                                                                    LocalDateTime dateTo);
 
     @Query("select c from ContactNewEntity c where c.inn in :innList")
     List<ContactNewEntity> findAllContactByInn(List<String> innList);

@@ -51,6 +51,10 @@ public class WebhookSuccessStatusService {
         return repository.findAllByBankAndWebhookId(webhookId);
     }
 
+    public WebhookSuccessStatusEntity getByBank(Bank bank) {
+        return repository.findFirstByBank(bank).get(0);
+    }
+
     public List<WebhookSuccessStatusEntity> getByBankAndWebhook(Bank bank, Long webhookId) {
         return repository.findAllByBankAndWebhookId(bank, webhookId);
     }

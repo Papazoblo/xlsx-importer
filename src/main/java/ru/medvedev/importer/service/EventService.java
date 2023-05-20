@@ -35,9 +35,19 @@ public class EventService {
     public static final String BANK_NAME_PATTERN = "Банк: `%s`\n";
     public static final String NOTIFICATION_PATTERN = BANK_NAME_PATTERN + "Статус: `%s`\n\nИНН: `%s`\nГород: `%s`\nИмя: `%s`";
     public static final String STATISTIC_LINE_PATTERN = "%s: `%d`\n";
+    public static final String STATISTIC_STRING_LINE_PATTERN = "%s: `%s`\n";
     private static final String MESSAGE_SIMPLE_PATTERN = "%s";
     private static final String MESSAGE_HEADER_PATTERN = "*%s* %s\nФайл: `%s`\nИсточник: `%s`\n%s";
     private static final String MESSAGE_STATISTIC_PATTERN = "Статистика загрузки `%s`\nФайл: `%s`\nИсточник: `%s`\n" + STATISTIC_LINE_PATTERN + STATISTIC_LINE_PATTERN + STATISTIC_LINE_PATTERN;
+    public static final String MESSAGE_PARTS_STATISTIC_PATTERN = "Статистика пакетной загрузки `%s`\n"
+            + STATISTIC_STRING_LINE_PATTERN //дата с
+            + STATISTIC_STRING_LINE_PATTERN //дата с
+            + STATISTIC_STRING_LINE_PATTERN //банк
+            + STATISTIC_LINE_PATTERN + "\n" //количество
+            + STATISTIC_LINE_PATTERN //фактическое количество
+            + STATISTIC_LINE_PATTERN //успешных
+            + STATISTIC_LINE_PATTERN //отклоненных
+            + STATISTIC_LINE_PATTERN; //ошибки
 
     private final EventRepository repository;
     private final TelegramPollingService telegramPollingService;
@@ -119,7 +129,7 @@ public class EventService {
                 null, null, chatId, false);
     }
 
-    private static String getCurDateTime() {
+    public static String getCurDateTime() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
     }
 }
