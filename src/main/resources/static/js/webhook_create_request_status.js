@@ -1,5 +1,31 @@
 $(document).ready(function () {
 
+    $('select[name^=product-]').on('change', function (e) {
+        var itemId = $(this).attr("name").split('-')[1];
+
+        var products = [];
+        var options = $(this).get(0).selectedOptions;
+        for (var i = 0; i < options.length; i++) {
+            if (options[i] !== undefined) {
+                products.push(options[i].value);
+            }
+        }
+
+        $.ajax({
+            url: '/settings/webhook-create-request-statuses/' + itemId + '/products',
+            dataType: 'json',
+            contentType: "application/json; charset=utf-8",
+            cache: false,
+            data: JSON.stringify({
+                "products": products
+            }),
+            type: 'PUT',
+            error: function (e) {
+
+            }
+        });
+    });
+
     $('#btn-add-project').on('click', function () {
         var statusId = $('select[id=statusName]').get(0).selectedOptions[0].value;
         var btn = $(this);

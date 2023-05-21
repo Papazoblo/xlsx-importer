@@ -36,12 +36,20 @@ public class AlfaErrorDecoder implements ErrorDecoder {
     public Exception decode(String s, Response response) {
 
         if (response.status() == 400 || response.status() == 403) {
-            if (response.request().url().contains("/checks") && response.request().httpMethod() == Request.HttpMethod.POST) {
+            if ((response.request().url().contains("/checks") || response.request().url().contains("/leads"))
+                    && response.request().httpMethod() == Request.HttpMethod.POST) {
                 try {
-                    CheckResponseDto responseDto = objectMapper.readValue(response.body().asInputStream(), CheckResponseDto.class);
-                    throw new ErrorCheckLeadException(responseDto.getErrors().isEmpty() ? "" : responseDto.getErrors().stream()
-                            .map(CheckErrorDto::getDetail)
-                            .collect(Collectors.joining("\n")), -1L);
+                    if (response.request().url().contains("/checks")) {
+                        CheckResponseDto responseDto = objectMapper.readValue(response.body().asInputStream(), CheckResponseDto.class);
+                        throw new ErrorCheckLeadException(responseDto.getErrors().isEmpty() ? "" : responseDto.getErrors().stream()
+                                .map(CheckErrorDto::getDetail)
+                                .collect(Collectors.joining("\n")), -1L);
+                    } else {
+                        CheckResponseDto responseDto = objectMapper.readValue(response.body().asInputStream(), CheckResponseDto.class);
+                        throw new ErrorCreateLeadException(responseDto.getErrors().isEmpty() ? "" : responseDto.getErrors().stream()
+                                .map(CheckErrorDto::getDetail)
+                                .collect(Collectors.joining("\n")), -1L);
+                    }
                 } catch (IOException e) {
                     throw new ErrorCreateLeadException("Невозможно распарсить ответ", -1L);
                 }

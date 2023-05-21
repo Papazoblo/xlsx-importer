@@ -1,10 +1,13 @@
 package ru.medvedev.importer.entity;
 
 import lombok.Data;
+import lombok.ToString;
 import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.WebhookType;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "webhook_success_status")
@@ -31,6 +34,12 @@ public class WebhookSuccessStatusEntity implements Cloneable {
     @Column(name = "bank_name")
     @Enumerated(EnumType.STRING)
     private Bank bank;
+
+    @ManyToMany
+    @JoinTable(name = "webhook_success_status_product",
+            joinColumns = @JoinColumn(name = "webhook_success_id"),
+            inverseJoinColumns = @JoinColumn(name = "product_id"))
+    private List<BankProductEntity> products = new ArrayList<>();
 
     @Override
     public WebhookSuccessStatusEntity clone() throws CloneNotSupportedException {

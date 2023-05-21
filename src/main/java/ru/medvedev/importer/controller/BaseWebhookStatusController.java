@@ -11,6 +11,7 @@ import ru.medvedev.importer.dto.PagingDto;
 import ru.medvedev.importer.dto.WebhookStatusDto;
 import ru.medvedev.importer.dto.WebhookSuccessFilter;
 import ru.medvedev.importer.dto.WebhookSuccessStatusDto;
+import ru.medvedev.importer.enums.BankProduct;
 import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.WebhookType;
 import ru.medvedev.importer.service.WebhookStatusService;
@@ -45,6 +46,7 @@ public abstract class BaseWebhookStatusController {
         model.addAttribute("statuses", statusDtoList);
         model.addAttribute("authority", getAuthorityList());
         model.addAttribute("paging", PagingDto.of(resultPage.getTotalPages(), page, size));
+        model.addAttribute("products", BankProduct.values());
         return getTemplateName();
     }
 
@@ -53,6 +55,13 @@ public abstract class BaseWebhookStatusController {
         input.setType(getWebhookType());
         service.create(input);
         return getAllPage();
+    }
+
+    @PutMapping("/{itemId}/products")
+    @ResponseBody
+    public void putProducts(@PathVariable("itemId") Long itemId,
+                            @RequestBody WebhookSuccessStatusDto input) throws CloneNotSupportedException {
+        service.putProjects(itemId, input);
     }
 
     @DeleteMapping("/{id}")

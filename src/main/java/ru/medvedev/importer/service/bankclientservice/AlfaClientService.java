@@ -82,7 +82,17 @@ public class AlfaClientService implements BankClientService {
         requestInfoDto.setComment(webhookLead.getComment());
         requestInfoDto.setCityCode(city.get().getAlfaId()); // код города
         request.setRequestInfo(requestInfoDto);
-        request.getProductInfo().add(new ProductInfoDto());
+        //добавить продукты
+        if (webhookLead.getProducts().isEmpty()) {
+            request.getProductInfo().add(new ProductInfoDto());
+        } else {
+            webhookLead.getProducts().forEach(item -> {
+                ProductInfoDto productInfoDto = new ProductInfoDto();
+                productInfoDto.setProductCode(item);
+                request.getProductInfo().add(productInfoDto);
+            });
+            request.getProductInfo().add(new ProductInfoDto());
+        }
 
         try {
             bankCountSendedRequestService.incCreateRequestCount(ALFA, 1);
@@ -170,7 +180,7 @@ public class AlfaClientService implements BankClientService {
         ResponseEntity<RequestStatusResponseDto> response = client.getRequestStatus(id);
         if (response.getStatusCode() == HttpStatus.OK) {
             RequestStatusResponseDto result = response.getBody();
-            if (result.getProductInfo().isEmpty()) {
+            if (result.getProductInfo() == null || result.getProductInfo().isEmpty()) {
                 throw new ErrorCreateLeadException(result.getStatus() + ". Отсутствует информация о продукте.", -1L);
             }
 
@@ -178,11 +188,11 @@ public class AlfaClientService implements BankClientService {
             if (webhookStatisticEntity.isPresent() && !response.getBody().getProductInfo().isEmpty()) {
                 LeadInfoResponse leadInfo = new LeadInfoResponse();
                 leadInfo.setInn(webhookStatisticEntity.get().getInn());
-                if (Stream.of(DECLINED, UNDEFINED)
-                        .anyMatch(status -> status == response.getBody().getProductInfo().get(0).getState())) {
-                    throw new ErrorCreateLeadException(response.getBody().getProductInfo().get(0).getStatus() + ". Статус заявки: `" + response.getBody().getProductInfo().get(0).getState() + "`", -1L);
-                } else if (response.getBody().getProductInfo().get(0).getState() == IN_PROGRESS/*COMPLETED*/) {
+                if (response.getBody().getProductInfo().stream().anyMatch(item -> item.getState() == IN_PROGRESS)) {
                     return true;
+                } else if (response.getBody().getProductInfo().stream().anyMatch(item -> item.getState() == DECLINED || item.getState() == UNDEFINED)) {
+                    throw new ErrorCreateLeadException(response.getBody().getProductInfo().get(0).getStatus() +
+                            ". Статус заявки: `" + response.getBody().getProductInfo().get(0).getState() + "`", -1L);
                 }
             }
         }

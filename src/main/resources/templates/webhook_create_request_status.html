@@ -142,6 +142,7 @@
                     <th>ID</th>
                     <th>Название</th>
                     <th>Банк</th>
+                    <th>Продукт</th>
                     <th class="action-td"></th>
                 </tr>
                 </thead>
@@ -150,6 +151,18 @@
                     <td th:text="${item.getId()}">id</td>
                     <td th:text="${item.getName()}">date</td>
                     <td th:text="${item.getBank().title}">bank</td>
+                    <td>
+                        <select data-style="bg-white rounded-pill px-4 py-3 shadow-sm "
+                                class="selectpicker w-100"
+                                multiple
+                                th:name="'product-' + ${item.getId()}">
+                            <option th:each="product : ${products}"
+                                    th:value="${product}"
+                                    th:text="${product.title}"
+                                    th:selected="${item.getProducts().contains(product)}">
+                            </option>
+                        </select>
+                    </td>
                     <td>
                         <button class="btn btn-delete" title="Удалить" th:id="${item.getId()}">
                             <i class="fa-solid fa-trash-can"></i>
@@ -160,31 +173,7 @@
             </table>
         </div>
     </div>
-
-
-<!--    <nav aria-label="Page navigation" class="paging">-->
-<!--        <ul class="pagination" th:if="${data.totalPages > 1}">-->
-<!--            <li class="page-item" th:classappend="${!paging.isPrevEnabled()? 'disabled' : ''}">-->
-<!--                <a class="page-link" th:href="@{'/file-storage?page=' + ${paging.pageNumber - 1}}"-->
-<!--                   tabindex="-1">Previous</a>-->
-<!--            </li>-->
-<!--            <th:block th:each="item : ${paging.getItems()}">-->
-<!--                <li class="page-item" th:classappend="${item.index == paging.pageNumber? 'active' : ''}"-->
-<!--                    th:if="${item.pageItemType.name() == 'PAGE'}">-->
-<!--                    <a class="page-link" th:href="@{'/file-storage?page=' + ${item.index}}"-->
-<!--                       th:text="${item.index}"></a>-->
-<!--                </li>-->
-<!--                <li class="page-item disabled" th:if="${item.pageItemType.name() == 'DOTS'}">-->
-<!--                    <a class="page-link" href="#">...</a>-->
-<!--                </li>-->
-<!--            </th:block>-->
-<!--            <li class="page-item" th:classappend="${!paging.isNextEnabled()? 'disabled' : ''}">-->
-<!--                <a class="page-link" th:href="@{'/file-storage?page=' + ${paging.pageNumber + 1}}">Next</a>-->
-<!--            </li>-->
-<!--        </ul>-->
-<!--    </nav>-->
 </main>
-<!-- /.container -->
 
 <script type="text/javascript" th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>

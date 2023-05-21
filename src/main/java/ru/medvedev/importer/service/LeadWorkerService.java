@@ -14,10 +14,7 @@ import org.xml.sax.XMLReader;
 import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.events.NotificationEvent;
-import ru.medvedev.importer.entity.ContactNewEntity;
-import ru.medvedev.importer.entity.FileInfoEntity;
-import ru.medvedev.importer.entity.WebhookStatusEntity;
-import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
+import ru.medvedev.importer.entity.*;
 import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateLeadException;
@@ -174,6 +171,9 @@ public class LeadWorkerService {
             leadDto.setInn(item.getInn());
             leadDto.setPhones(item.getPhone().split("\\|")[0]);
             leadDto.setEmails(isNotBlank(item.getEmail()) ? Collections.singletonList(item.getEmail()) : Collections.emptyList());
+            leadDto.setProducts(item.getSuccessStatus().getProducts().stream()
+                    .map(BankProductEntity::getCode)
+                    .collect(Collectors.toList()));
             Optional<ContactNewEntity> contactEntity = contactNewService.getByInn(item.getInn());
             if (contactEntity.isPresent()) {
                 leadDto.setName(getFioStringFromContact(contactEntity.get()));
@@ -340,7 +340,7 @@ public class LeadWorkerService {
                         webhookStatisticService.addStatistic(WebhookStatus.FIXED, webhookDto, successStatusOptional.get());
                     } else {
                         eventPublisher.publishEvent(new NotificationEvent(this,
-                                String.format(NOTIFICATION_PATTERN, successStatusOptional.get().getBank(),
+                                String.format(NOTIFICATION_PATTERN, successStatusOptional.get().getBank().getTitle(),
                                         "Невозможно добавить. Некорректные данные. ",
                                         webhookDto.getLead().getInn(),
                                         webhookDto.getLead().getCity(),

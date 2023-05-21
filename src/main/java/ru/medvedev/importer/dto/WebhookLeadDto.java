@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.*;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import ru.medvedev.importer.enums.BankProduct;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -26,6 +27,8 @@ public class WebhookLeadDto {
     private String comment;
     @JsonIgnore
     private String orgName;
+    @JsonIgnore
+    private List<BankProduct> products = new ArrayList<>();
     @JsonProperty("created_at")
     private String createAt;
     private List<String> emails = new ArrayList<>();

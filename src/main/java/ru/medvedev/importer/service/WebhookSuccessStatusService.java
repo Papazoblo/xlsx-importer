@@ -12,11 +12,14 @@ import ru.medvedev.importer.dto.WebhookSuccessStatusDto;
 import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.WebhookType;
+import ru.medvedev.importer.repository.BankProductRepository;
 import ru.medvedev.importer.repository.WebhookSuccessStatusRepository;
 import ru.medvedev.importer.specification.WebhookSuccessSpecification;
 
+import javax.persistence.EntityNotFoundException;
 import javax.validation.ConstraintViolationException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -29,6 +32,7 @@ import static java.util.stream.Collectors.toList;
 public class WebhookSuccessStatusService {
 
     private final WebhookSuccessStatusRepository repository;
+    private final BankProductRepository bankProductRepository;
 
     public List<WebhookStatusDto> findWebhookStatusByType(List<WebhookType> type) {
         List<WebhookStatusDto> statusList = new ArrayList<>();
@@ -96,6 +100,19 @@ public class WebhookSuccessStatusService {
         } catch (ConstraintViolationException ex) {
             log.debug("Такая связка Вебхука, типа и банка уже добавлена: {}", input);
         }
+    }
+
+    public void putProjects(Long itemId, WebhookSuccessStatusDto input) {
+
+        WebhookSuccessStatusEntity entity = repository.findById(itemId).orElseThrow(EntityNotFoundException::new);
+        if (entity.getType() == WebhookType.CREATE_REQUEST) {
+            entity.getProducts().clear();
+            entity.setProducts(input.getProducts().isEmpty()
+                    ? Collections.emptyList()
+                    : bankProductRepository.findAllByBankAndCodeIn(entity.getBank(), input.getProducts()));
+        }
+
+        repository.save(entity);
     }
 
     public void delete(Long id) {

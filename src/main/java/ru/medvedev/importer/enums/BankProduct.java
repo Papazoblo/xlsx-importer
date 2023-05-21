@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum AlfaProduct {
+public enum BankProduct {
 
     LP_RKO("РКО"),
     LP_ACQ_TR("Эквайринг (Торговый)"),
