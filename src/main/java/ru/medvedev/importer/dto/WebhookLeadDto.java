@@ -28,7 +28,7 @@ public class WebhookLeadDto {
     @JsonIgnore
     private String orgName;
     @JsonIgnore
-    private List<BankProduct> products = new ArrayList<>();
+    private BankProduct product;
     @JsonProperty("created_at")
     private String createAt;
     private List<String> emails = new ArrayList<>();

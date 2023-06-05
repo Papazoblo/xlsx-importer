@@ -17,7 +17,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -79,9 +81,6 @@ public class XlsxParserService {
             fileInfo.getFieldLinks().keySet().stream()
                     .filter(key -> !fileInfo.getFieldLinks().get(key).isEmpty())
                     .forEach(item -> addFieldValue(record, row, item, fileInfo.getFieldLinks().get(item)));
-            if (fileInfo.getSetCurrentDate()) {
-                record.setCreateAt(LocalDateTime.now());
-            }
             if (isNotBlank(record.getOrgInn())) {
                 list.add(record);
             }
@@ -179,7 +178,8 @@ public class XlsxParserService {
     private static LocalDateTime cellValueToLocalDatetime(Row row, List<Integer> cells) {
         String value = cellValueToString(row, cells);
         if (isNotBlank(value)) {
-            return LocalDateTime.parse(value, DATE_TIME_FORMATTER);
+            return LocalDateTime.of(LocalDate.parse(value, DATE_TIME_FORMATTER),
+                    LocalTime.of(12, 0));
         }
         return null;
     }
@@ -192,7 +192,7 @@ public class XlsxParserService {
 
         switch (cell.getCellType()) {
             case NUMERIC:
-                return String.valueOf(new BigDecimal(cell.getNumericCellValue()));
+                return String.valueOf(BigDecimal.valueOf(cell.getNumericCellValue()));
             case STRING:
                 return cell.getStringCellValue();
             default:

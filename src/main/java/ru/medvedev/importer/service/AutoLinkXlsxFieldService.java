@@ -39,7 +39,7 @@ public class AutoLinkXlsxFieldService {
                 }));
     }
 
-    @Transactional
+    @Transactional("transactionManager")
     public void create(List<AutoLinkXlsxFieldDto> input) {
         repository.deleteAll();
         List<AutoLinkXlsxFieldEntity> entities = input.stream()

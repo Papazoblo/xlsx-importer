@@ -1,5 +1,21 @@
 $(document).ready(function () {
 
+    $('#btnSendFile').on('click', function () {
+        $('input[name=action]').val($(this).attr('value'));
+    });
+
+    $('#btnSystemLoad').on('click', function () {
+        $('input[name=action]').val('ACTION_SYSTEM_DOWNLOAD');
+    });
+
+    $('#btnLoadWebhook').on('click', function () {
+        $('input[name=action]').val('ACTION_WEBHOOK_DOWNLOAD');
+    });
+
+    $('#parseXlsx').on('click', function () {
+        $('input[name=action]').val($(this).attr('value'));
+    });
+
     $('#btnLogout').on('click', function (e) {
         e.preventDefault();
         var xmlHttp = new XMLHttpRequest();
@@ -8,19 +24,22 @@ $(document).ready(function () {
         window.location.replace("/login");
     });
 
-    $("#parseXlsx").on('click', function (e) {
+    $("#parseXlsx,#btnSystemLoad").on('click', function (e) {
 
+        var action = $('input[name=action]').val();
         var result = new Map();
         var elements = $('select[name=ORG_TAGS], .SELECT');
-        var projectIdElements = $('.projectId');
         var fileId = $('#fileId').val();
         var bankProjectId = new Map();
 
-        for (var i = 0; i < projectIdElements.length; i++) {
-            var input = projectIdElements.get(i);
-            var bank = input.getAttribute('name');
-            if (input.value.length > 0) {
-                bankProjectId.set(bank, input.value);
+        if (action !== 'ACTION_ALFA_SYSTEM_DOWNLOAD') {
+            var projectIdElements = $('.projectId');
+            for (var i = 0; i < projectIdElements.length; i++) {
+                var input = projectIdElements.get(i);
+                var bank = input.getAttribute('name');
+                if (input.value.length > 0) {
+                    bankProjectId.set(bank, input.value);
+                }
             }
         }
 
@@ -46,13 +65,13 @@ $(document).ready(function () {
             orgTagsInput = undefined;
         }
 
-        if (result.get('USR_FIO') === undefined || result.get('ORG_INN') === undefined ||
-            result.get('USR_PHONE') === undefined || result.get('ORG_PHONE') === undefined) {
+        if (action === 'ACTION_LEAD_DOWNLOAD' && (result.get('USR_FIO') === undefined || result.get('ORG_INN') === undefined ||
+            result.get('USR_PHONE') === undefined || result.get('ORG_PHONE') === undefined)) {
             alert("Необходимо заполнить обязательные поля");
             return;
         }
 
-        if (bankProjectId.size === 0) {
+        if (action === 'ACTION_LEAD_DOWNLOAD' && bankProjectId.size === 0) {
             alert("Необходимо указать хотя бы 1 проект");
             return;
         }
@@ -63,16 +82,15 @@ $(document).ready(function () {
             "fieldLinks": Object.fromEntries(result),
             "orgTags": orgTagsInput,
             "enableWhatsAppLink": $('#enableWhatsAppLink').is(":checked"),
-            "isFirstVtbLoadLead": $('#isFirstVtbLoadLead').is(":checked"),
-            "notLoadFromVtbDedublicate": $('#notLoadFromVtbDedublicate').is(":checked"),
-            "enableInnExclude": $('#enableInnExclude').is(":checked"),
-            "setCurrentDate": $('#setCurrentDate').is(":checked")
+            "isFirstVtbLoadLead": action !== 'ACTION_ALFA_SYSTEM_DOWNLOAD' ? $('#isFirstVtbLoadLead').is(":checked") : '',
+            "notLoadFromVtbDedublicate": action !== 'ACTION_ALFA_SYSTEM_DOWNLOAD' ? $('#notLoadFromVtbDedublicate').is(":checked") : '',
+            "enableInnExclude": action !== 'ACTION_ALFA_SYSTEM_DOWNLOAD' ? $('#enableInnExclude').is(":checked") : ''
         });
 
         $("#parseXlsx").attr('disabled', 'disabled');
 
         $.ajax({
-            url: '/xlsx/import',
+            url: '/xlsx/import/' + action,
             data: data,
             dataType: 'json',
             contentType: "application/json; charset=utf-8",
@@ -81,13 +99,13 @@ $(document).ready(function () {
             success: function (data) {
                 $("#parseXlsx").removeAttr('disabled');
                 alert("Файл поставлен в очередь на обработку");
-                window.location.replace("/xlsx/import");
+                window.location.replace("/xlsx/import/" + action);
             },
             error: function (e) {
                 $("#parseXlsx").removeAttr('disabled');
                 if (e.status === 200) {
                     alert("Файл поставлен в очередь на обработку");
-                    window.location.replace("/xlsx/import");
+                    window.location.replace("/xlsx/import/" + action);
                 } else {
                     alert("Ошибка");
                 }
@@ -95,22 +113,14 @@ $(document).ready(function () {
         });
     });
 
-    $('#btnSendFile').on('click', function () {
-        $('input[name=action]').val('ACTION_LEAD_DOWNLOAD');
-    });
-
-    $('#btnLoadWebhook').on('click', function () {
-        $('input[name=action]').val('ACTION_WEBHOOK_DOWNLOAD');
-    });
-
     $("#formSendFile").submit(function (e) {
         e.preventDefault();
+        var action = $('input[name=action]').val();
         var data = new FormData($('#formSendFile')[0]);
         data.append('file', $('#file')[0].files[0]);
-        data.append('action', $('input[name=action]').val());
 
         $.ajax({
-            url: '/xlsx/upload',
+            url: '/xlsx/upload/' + action,
             data: data,
             dataType: 'text',
             cache: false,
@@ -118,7 +128,7 @@ $(document).ready(function () {
             processData: false,
             type: 'POST',
             success: function (data) {
-                window.location.replace("/xlsx/import");
+                window.location.replace("/xlsx/import/" + action);
             },
             error: function (e) {
                 if (e.status !== 200) {

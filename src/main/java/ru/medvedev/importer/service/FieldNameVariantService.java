@@ -54,7 +54,7 @@ public class FieldNameVariantService {
         return dto;
     }
 
-    @Transactional
+    @Transactional("transactionManager")
     public void create(List<FieldNameVariantDto> input) {
         repository.deleteAll();
         List<FieldNameVariantEntity> entities = input.stream()

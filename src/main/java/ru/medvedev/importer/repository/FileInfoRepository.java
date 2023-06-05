@@ -10,10 +10,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
-import ru.medvedev.importer.enums.Bank;
-import ru.medvedev.importer.enums.FileProcessingStep;
-import ru.medvedev.importer.enums.FileSource;
-import ru.medvedev.importer.enums.FileStatus;
+import ru.medvedev.importer.enums.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -59,6 +56,11 @@ public interface FileInfoRepository extends JpaRepository<FileInfoEntity, Long> 
     Optional<FileInfoEntity> findFirstByStatusAndSourceAndProcessingStep(FileStatus status,
                                                                          FileSource source,
                                                                          FileProcessingStep processingStep);
+
+    Optional<FileInfoEntity> findFirstByStatusAndSourceAndProcessingStepAndAction(FileStatus status,
+                                                                                  FileSource source,
+                                                                                  FileProcessingStep processingStep,
+                                                                                  DownloadAction downloadAction);
 
     @Query("select (count(fi) > 0) from FileInfoEntity fi " +
             "where lower(fi.hash) = lower(:hash) and " +

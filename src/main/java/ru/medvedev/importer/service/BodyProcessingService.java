@@ -21,6 +21,7 @@ import ru.medvedev.importer.exception.FileProcessingException;
 import ru.medvedev.importer.exception.IllegalCellTypeException;
 import ru.medvedev.importer.exception.NumberProjectNotFoundException;
 import ru.medvedev.importer.exception.TimeOutException;
+import ru.medvedev.importer.repository.ContactNewRepository;
 import ru.medvedev.importer.service.bankclientservice.BankClientService;
 import ru.medvedev.importer.service.bankclientservice.BankClientServiceFactory;
 
@@ -68,6 +69,7 @@ public class BodyProcessingService {
     private final FirstLoadLeadService firstLoadLeadService;
     private final SystemVariableService systemVariableService;
     private final BankCountSendedRequestService bankCountSendedRequestService;
+    private final ContactNewRepository contactNewRepository;
 
     private final Set<String> regionCodes = new HashSet<>();
 
@@ -179,7 +181,7 @@ public class BodyProcessingService {
             } else if (fib.getBank() == RAIFFEISEN) {
                 request.setStatus(SUCCESS_CHECK);
             } else {
-                CheckLeadResult result = bankClientService.getAllFromCheckLead(request.getContactDownloadInfo().stream()
+                CheckLeadResult result = bankClientService.getAllFromCheckLead(null, request.getContactDownloadInfo().stream()
                         .map(ContactDownloadInfoEntity::getContact)
                         .map(ContactNewEntity::getInn)
                         .collect(toList()), fib.getFileInfoId());
@@ -258,7 +260,7 @@ public class BodyProcessingService {
                 if (!validateRequestLimit(ALFA)) {
                     return;
                 }
-                CheckLeadResult result = bankClientService.getAllFromCheckLead(request.getContactDownloadInfo().stream()
+                CheckLeadResult result = bankClientService.getAllFromCheckLead(null, request.getContactDownloadInfo().stream()
                         .map(ContactDownloadInfoEntity::getContact)
                         .map(ContactNewEntity::getInn)
                         .collect(toList()), fib.getFileInfoId());
@@ -395,12 +397,17 @@ public class BodyProcessingService {
             }
 
             if (file.getStatus() == FileStatus.SUCCESS) {
-
-                eventPublisher.publishEvent(new ImportEvent(this, "Обработка завершена\n" +
-                        fileInfoBankService.getDownloadStatistic(file.getId()).entrySet().stream()
-                                .map(entry -> entry.getKey().getTitle() + ": " + entry.getValue())
-                                .collect(Collectors.joining("\n")),
-                        EventType.SUCCESS, file.getId()));
+                if (file.getAction() == DownloadAction.ACTION_LEAD_DOWNLOAD) {
+                    eventPublisher.publishEvent(new ImportEvent(this, "Обработка завершена\n" +
+                            fileInfoBankService.getDownloadStatistic(file.getId()).entrySet().stream()
+                                    .map(entry -> entry.getKey().getTitle() + ": " + entry.getValue())
+                                    .collect(Collectors.joining("\n")),
+                            EventType.SUCCESS, file.getId()));
+                } else if (file.getAction() == DownloadAction.ACTION_SYSTEM_DOWNLOAD) {
+                    eventPublisher.publishEvent(new ImportEvent(this, "Обработка завершена\nЗагружено новых: " +
+                            contactNewRepository.countByFileInfoId(file.getId()),
+                            EventType.SUCCESS, file.getId()));
+                }
             }
         });
     }

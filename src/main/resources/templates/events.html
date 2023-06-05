@@ -19,7 +19,7 @@
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
     <div class="container">
-        <a class="navbar-brand" href="/xlsx/import">Importer service</a>
+        <a class="navbar-brand" href="/xlsx/import/ACTION_LEAD_DOWNLOAD">Importer service</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive"
                 aria-controls="navbarResponsive"
                 aria-expanded="false" aria-label="Toggle navigation">
@@ -27,22 +27,39 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarResponsive">
             <ul class="navbar-nav ml-auto">
-                <li class="nav-item" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
-                    <a class="nav-link" href="/xlsx/import">Загрузка
-                    </a>
+                <li class="nav-item">
+                    <div class="dropdown" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown1" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Загрузка
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown1">
+                            <a class="dropdown-item" href="/xlsx/import/ACTION_LEAD_DOWNLOAD">Загрузка в скорозвон</a>
+                            <a class="dropdown-item" href="/xlsx/import/ACTION_ALFA_SYSTEM_DOWNLOAD">Загрузка в систему
+                                (Альфа)</a>
+                            <a class="dropdown-item" href="/parts-load">Пакетная загрузка</a>
+                        </div>
+                    </div>
                 </li>
-                <li class="nav-item" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
-                    <a class="nav-link" href="/parts-load">Пакетная загрузка
-                    </a>
-                </li>
+
 
                 <li class="nav-item" th:if="*{authority.contains('FILE_STORAGE')}">
                     <a class="nav-link" href="/file-storage">Хранилище
                     </a>
                 </li>
-                <li class="nav-item" th:if="*{authority.contains('CONTACTS')}">
-                    <a class="nav-link" href="/contacts">Контакты
-                    </a>
+
+                <li class="nav-item">
+                    <div class="dropdown" th:if="*{authority.contains('CONTACTS')}">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown3" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Контакты
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+                            <a class="dropdown-item" href="/contacts">Список контактов</a>
+                            <a class="dropdown-item" href="/contacts/count-date-statistic">Статистика по количеству
+                                созданных</a>
+                        </div>
+                    </div>
                 </li>
                 <li class="nav-item active" th:if="*{authority.contains('EVENTS')}">
                     <a class="nav-link" href="/events">События</a>

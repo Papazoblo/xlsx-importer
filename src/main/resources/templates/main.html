@@ -16,7 +16,7 @@
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
     <div class="container">
-        <a class="navbar-brand" href="/xlsx/import">Importer service</a>
+        <a class="navbar-brand" href="/xlsx/import/ACTION_LEAD_DOWNLOAD">Importer service</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive"
                 aria-controls="navbarResponsive"
                 aria-expanded="false" aria-label="Toggle navigation">
@@ -24,21 +24,39 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarResponsive">
             <ul class="navbar-nav ml-auto">
-                <li class="nav-item active" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
-                    <a class="nav-link" href="/xlsx/import">Загрузка
-                    </a>
+                <li class="nav-item">
+                    <div class="dropdown" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
+                        <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown1" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Загрузка
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown1">
+                            <a class="dropdown-item active" href="/xlsx/import/ACTION_LEAD_DOWNLOAD">Загрузка в
+                                скорозвон</a>
+                            <a class="dropdown-item" href="/xlsx/import/ACTION_ALFA_SYSTEM_DOWNLOAD">Загрузка в систему
+                                (Альфа)</a>
+                            <a class="dropdown-item" href="/parts-load">Пакетная загрузка</a>
+                        </div>
+                    </div>
                 </li>
-                <li class="nav-item" th:if="*{authority.contains('DOWNLOAD_XLSX')}">
-                    <a class="nav-link" href="/parts-load">Пакетная загрузка
-                    </a>
-                </li>
+
                 <li class="nav-item" th:if="*{authority.contains('FILE_STORAGE')}">
                     <a class="nav-link" href="/file-storage">Хранилище
                     </a>
                 </li>
-                <li class="nav-item" th:if="*{authority.contains('CONTACTS')}">
-                    <a class="nav-link" href="/contacts">Контакты
-                    </a>
+
+                <li class="nav-item">
+                    <div class="dropdown" th:if="*{authority.contains('CONTACTS')}">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown3" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Контакты
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown3">
+                            <a class="dropdown-item" href="/contacts">Список контактов</a>
+                            <a class="dropdown-item " href="/contacts/count-date-statistic">Статистика по количеству
+                                созданных</a>
+                        </div>
+                    </div>
                 </li>
                 <li class="nav-item" th:if="*{authority.contains('EVENTS')}">
                     <a class="nav-link" href="/events">События</a>
@@ -95,7 +113,7 @@
 
 <main role="main" class="container">
     <div th:class="row">
-        <div class="col-md-8 offset-md-2">
+        <div class="col-md-10 offset-md-1">
             <form id="formSendFile" enctype="multipart/form-data" class="mt-4">
                 <table id="uploadTable">
                     <tr>
@@ -105,15 +123,16 @@
                                 <label class="custom-file-label" for="file"></label>
                             </div>
                         </th>
+                    </tr>
+                    <tr>
                         <th style="text-align: right">
                             <input name="action" type="hidden"/>
                             <button class="btn-2" type="submit" id="btnSendFile" name="action"
                                     value="ACTION_LEAD_DOWNLOAD">
-                                Загрузить лиды
+                                Загрузить файл
                             </button>
-                            <br/>
                             <button type="submit" id="btnLoadWebhook" name="action" value="ACTION_WEBHOOK_DOWNLOAD"
-                                    th:class="'row mt-4 ' + (${fileExist} ? '' : 'hide-block')">
+                                    th:class="'btn-2 ' + (${fileExist} ? 'hide-block' : '')">
                                 Загрузить вебхуки
                             </button>
                         </th>
@@ -132,7 +151,7 @@
         </div>
     </div>
     <div th:class="'row mt-4 ' + (${fileExist} ? '' : 'hide-block')">
-        <div class="col-md-8 offset-md-2">
+        <div class="col-md-10 offset-md-1">
             <input type="hidden" id="fileId" th:value="${fileId}"/>
             <table id="projectTable">
                 <tr th:each="bankRow : ${banks}">
@@ -152,7 +171,7 @@
         </div>
     </div>
     <div th:class="'row mt-4 ' + (${fileExist} ? '' : 'hide-block')">
-        <div class="col-md-8 offset-md-2">
+        <div class="col-md-10 offset-md-1">
             <table id="mainTable">
                 <tr th:class="space-block">
                     <th>
@@ -179,14 +198,6 @@
                                    title="Учитывать исключения ИНН"
                                    checked
                                    id="enableInnExclude"/>
-                        </label>
-                        <br/>
-                        <label for="setCurrentDate">
-                            Дата регистрации - сегодня
-                            <input type="checkbox"
-                                   title="Дата регистрации - сегодня"
-                                   checked
-                                   id="setCurrentDate"/>
                         </label>
                     </th>
                 </tr>
@@ -224,7 +235,13 @@
                 <tr>
                     <th></th>
                     <th style="text-align: right">
-                        <button id="parseXlsx" class="btn-2">Отправить</button>
+                        <button type="submit" id="btnSystemLoad" name="action" value="ACTION_SYSTEM_DOWNLOAD"
+                                class="btn-2">
+                            Загрузить в систему
+                        </button>
+                        <button id="parseXlsx" class="btn-2" name="action" value="ACTION_LEAD_DOWNLOAD">Загрузить в
+                            скорозвон
+                        </button>
                     </th>
                 </tr>
             </table>

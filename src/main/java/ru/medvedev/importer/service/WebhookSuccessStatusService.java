@@ -11,6 +11,7 @@ import ru.medvedev.importer.dto.WebhookSuccessFilter;
 import ru.medvedev.importer.dto.WebhookSuccessStatusDto;
 import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.Bank;
+import ru.medvedev.importer.enums.BankProduct;
 import ru.medvedev.importer.enums.WebhookType;
 import ru.medvedev.importer.repository.BankProductRepository;
 import ru.medvedev.importer.repository.WebhookSuccessStatusRepository;
@@ -56,7 +57,12 @@ public class WebhookSuccessStatusService {
     }
 
     public WebhookSuccessStatusEntity getByBank(Bank bank) {
-        return repository.findFirstByBank(bank).get(0);
+        List<WebhookSuccessStatusEntity> successStatus = repository.findAllByBank(bank);
+        return successStatus.stream()
+                .filter(webhookSuccessStatusEntity -> webhookSuccessStatusEntity.getProducts().stream()
+                        .anyMatch(bankProductEntity -> bankProductEntity.getCode() == BankProduct.LP_RKO))
+                .findFirst()
+                .orElse(successStatus.get(0));
     }
 
     public List<WebhookSuccessStatusEntity> getByBankAndWebhook(Bank bank, Long webhookId) {

@@ -10,7 +10,7 @@ import java.util.List;
 @Entity
 @Table(name = "contact_new")
 @Data
-public class ContactNewEntity implements Cloneable {
+public class ContactNewEntity {
 
     @Id
     @SequenceGenerator(name = "contact_new_seq_gen", sequenceName = "contact_seq_id", allocationSize = 1)
@@ -47,8 +47,14 @@ public class ContactNewEntity implements Cloneable {
     @OneToMany(mappedBy = "contact", fetch = FetchType.LAZY)
     private List<ContactBankActualityEntity> actualityList = new ArrayList<>();
 
+    @Column(name = "file_info_id")
+    private Long fileInfoId;
+
     @Column(name = "create_at")
     private LocalDateTime createAt;
+
+    @Column(name = "alfa_create_at")
+    private LocalDateTime alfaCreateAt;
 
 
     @PrePersist
@@ -58,18 +64,17 @@ public class ContactNewEntity implements Cloneable {
         }
     }
 
-    @Override
-    public ContactNewEntity clone() {
+    public static ContactNewEntity of(ContactNewEntity source) {
         ContactNewEntity entity = new ContactNewEntity();
-        entity.setOrgName(this.orgName);
-        entity.setName(this.name);
-        entity.setSurname(this.surname);
-        entity.setMiddleName(this.middleName);
-        entity.setPhone(this.phone);
-        entity.setInn(this.inn);
-        entity.setOgrn(this.ogrn);
-        entity.setRegion(this.region);
-        entity.setCity(this.city);
+        entity.setOrgName(source.orgName);
+        entity.setName(source.name);
+        entity.setSurname(source.surname);
+        entity.setMiddleName(source.middleName);
+        entity.setPhone(source.phone);
+        entity.setInn(source.inn);
+        entity.setOgrn(source.ogrn);
+        entity.setRegion(source.region);
+        entity.setCity(source.city);
         return entity;
     }
 }

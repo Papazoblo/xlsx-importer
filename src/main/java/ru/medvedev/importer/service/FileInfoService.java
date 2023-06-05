@@ -80,8 +80,8 @@ public class FileInfoService {
         return Collections.emptyList();
     }
 
-    public Optional<FileInfoEntity> getNewUiFileToInitialize() {
-        return repository.findFirstByStatusAndSourceAndProcessingStep(FileStatus.NEW, UI, IN_QUEUE);
+    public Optional<FileInfoEntity> getNewUiFileToInitialize(DownloadAction downloadAction) {
+        return repository.findFirstByStatusAndSourceAndProcessingStepAndAction(FileStatus.NEW, UI, IN_QUEUE, downloadAction);
     }
 
     public Optional<FileInfoEntity> getTgFileToSelectBank() {
@@ -143,63 +143,66 @@ public class FileInfoService {
     public FileInfoEntity create(Document document, Long chatId, File file, FileSource source) {
 
         String hash = hashFile(file.toPath());
-        if (repository.existsByHashAndStatusNot(hash, FileStatus.ERROR)) {
-            eventPublisher.publishEvent(new ImportEvent(this, "Файл `" + file.getName() + "` ранее был успешно обработан системой",
-                    EventType.LOG_TG, null));
-            log.debug("*** file with hash {} already exist", hash);
-            return null;
-        } else {
-            FileInfoEntity entity = new FileInfoEntity();
-            entity.setName(document.getFileName());
-            entity.setSize(Long.valueOf(document.getFileSize()));
-            entity.setType(document.getMimeType());
-            entity.setUniqueId(document.getFileUniqueId());
-            entity.setTgFileId(document.getFileId());
-            entity.setHash(hash);
-            entity.setPath(file.getPath());
-            entity.setChatId(chatId);
-            entity.setSource(source);
+        //todo оказалось ненужным
+//        if (repository.existsByHashAndStatusNot(hash, FileStatus.ERROR)) {
+//            eventPublisher.publishEvent(new ImportEvent(this, "Файл `" + file.getName() + "` ранее был успешно обработан системой",
+//                    EventType.LOG_TG, null));
+//            log.debug("*** file with hash {} already exist", hash);
+//            return null;
+//        } else {
+        FileInfoEntity entity = new FileInfoEntity();
+        entity.setName(document.getFileName());
+        entity.setSize(Long.valueOf(document.getFileSize()));
+        entity.setType(document.getMimeType());
+        entity.setUniqueId(document.getFileUniqueId());
+        entity.setTgFileId(document.getFileId());
+        entity.setHash(hash);
+        entity.setPath(file.getPath());
+        entity.setChatId(chatId);
+        entity.setSource(source);
             entity.setProcessingStep(INITIALIZE);
             entity = repository.save(entity);
             eventPublisher.publishEvent(new ImportEvent(this, "Добавлен в систему и ждет своей очереди",
                     EventType.FILE_PROCESS, entity.getId()));
             log.debug("*** create file with hash {}", hash);
             return entity;
-        }
+//        }
     }
 
     //интерфейс
-    public FileInfoEntity create(MultipartFile multipartFile, Long chatId, File file, FileSource source) {
+    public FileInfoEntity create(DownloadAction downloadAction, MultipartFile multipartFile, Long chatId, File file, FileSource source) {
 
         String hash = hashFile(file.toPath());
-        if (repository.existsByHashAndStatusNot(hash, FileStatus.ERROR)) {
-            eventPublisher.publishEvent(new ImportEvent(this, "Файл `" + file.getName() + "` ранее был успешно обработан системой",
-                    EventType.LOG_TG, null));
-            log.debug("*** file with hash {} already exist", hash);
-            return null;
-        } else {
-            FileInfoEntity entity = new FileInfoEntity();
-            entity.setName(multipartFile.getOriginalFilename());
-            entity.setSize(multipartFile.getSize());
-            entity.setType(multipartFile.getContentType());
-            entity.setHash(hash);
-            entity.setPath(file.getPath());
-            entity.setChatId(chatId);
-            entity.setSource(source);
-            entity.setUniqueId("");
-            entity.setTgFileId("");
-            entity.setProcessingStep(IN_QUEUE);
-            entity = repository.save(entity);
+        //todo оказалось ненужным
+//        if (repository.existsByHashAndStatusNot(hash, FileStatus.ERROR)) {
+//            eventPublisher.publishEvent(new ImportEvent(this, "Файл `" + file.getName() + "` ранее был успешно обработан системой",
+//                    EventType.LOG_TG, null));
+//            log.debug("*** file with hash {} already exist", hash);
+//            return null;
+//        } else {
+        FileInfoEntity entity = new FileInfoEntity();
+        entity.setName(multipartFile.getOriginalFilename());
+        entity.setSize(multipartFile.getSize());
+        entity.setType(multipartFile.getContentType());
+        entity.setHash(hash);
+        entity.setPath(file.getPath());
+        entity.setChatId(chatId);
+        entity.setSource(source);
+        entity.setUniqueId("");
+        entity.setTgFileId("");
+        entity.setProcessingStep(IN_QUEUE);
+        entity.setAction(downloadAction);
+        entity = repository.save(entity);
             eventPublisher.publishEvent(new ImportEvent(this, source == UI ? "Добавлен в систему и ждет указания столбцов для дальнейшей обратки"
                     : "Добавлен в систему",
                     EventType.FILE_PROCESS, entity.getId()));
             log.debug("*** create file with hash {}", hash);
             return entity;
-        }
+//        }
     }
 
     //добавляем информацию о столбцах
-    public void addUiColumnInfo(XlsxImportInfo xlsxImportInfo) {
+    public void addUiColumnInfo(DownloadAction downloadAction, XlsxImportInfo xlsxImportInfo) {
         repository.findById(xlsxImportInfo.getFileId()).map(file -> {
             file.setProcessingStep(INITIALIZE);
             file.getBankList().addAll(xlsxImportInfo.getBanksProject().entrySet().stream()
@@ -214,8 +217,8 @@ public class FileInfoService {
             file.setIsFirstVtbLoadLead(xlsxImportInfo.isFirstVtbLoadLead());
             file.setNotLoadFromVtbDedublicate(xlsxImportInfo.isNotLoadFromVtbDedublicate());
             file.setEnableInnExclude(xlsxImportInfo.isEnableInnExclude());
-            file.setSetCurrentDate(xlsxImportInfo.isSetCurrentDate());
             file.setFieldLinks(xlsxImportInfo.getFieldLinks());
+            file.setAction(downloadAction);
             file.setOrgTags(xlsxImportInfo.getOrgTags());
             repository.save(file);
             eventPublisher.publishEvent(new ImportEvent(this, "Добавлена информация о столбцах. " +

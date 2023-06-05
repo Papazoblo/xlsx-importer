@@ -20,7 +20,7 @@ import static org.apache.logging.log4j.util.Strings.isBlank;
 @Slf4j
 public class WebhookSheetHandler extends BaseItemSheetHandler {
 
-    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyyHH:mm");
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     @Getter
     private final List<WebhookDto> webhooks = new ArrayList<>();

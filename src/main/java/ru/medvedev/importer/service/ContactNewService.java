@@ -10,16 +10,14 @@ import org.apache.poi.xssf.model.SharedStringsTable;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
-import ru.medvedev.importer.dto.ContactDto;
-import ru.medvedev.importer.dto.ContactFilter;
-import ru.medvedev.importer.dto.ContactReloadDto;
-import ru.medvedev.importer.dto.ContactStatistic;
+import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.entity.*;
 import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.repository.ContactBankActualityRepository;
@@ -30,6 +28,7 @@ import ru.medvedev.importer.specification.ContactSpecification;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -55,6 +54,13 @@ public class ContactNewService {
         return new PageImpl<>(page.getContent().stream()
                 .map(ContactDto::of).collect(Collectors.toList()),
                 page.getPageable(), page.getTotalElements());
+    }
+
+    public Page<ContactCountDateProjection> getContactCountDateStatistic(ContactCountDateStatisticFilter filter) {
+        return new PageImpl<>(repository.getCountDateStatistic(Optional.ofNullable(filter.getDateFrom()).map(LocalDate::toString).orElse(null),
+                Optional.ofNullable(filter.getDateTo()).map(LocalDate::toString).orElse(null), (filter.getOffset() - 1) * filter.getLimit(), filter.getLimit()),
+                PageRequest.of(filter.getOffset(), filter.getLimit()),
+                repository.getTotalRecordCountDateStatistic());
     }
 
     public void updateActuality(String inn, Bank bank, WebhookStatusEntity newWebhook) {

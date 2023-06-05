@@ -17,6 +17,7 @@ import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.dto.response.OpeningCheckInnResponse;
 import ru.medvedev.importer.dto.response.OpeningCheckResultResponse;
 import ru.medvedev.importer.dto.response.OpeningResponse;
+import ru.medvedev.importer.entity.WebhookStatisticEntity;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.OpeningInnStatus;
 import ru.medvedev.importer.enums.OpeningRequestStatus;
@@ -75,7 +76,7 @@ public class OpeningClientService implements BankClientService {
     }
 
     @Override
-    public CheckLeadResult getAllFromCheckLead(List<String> innList, Long fileId) {
+    public CheckLeadResult getAllFromCheckLead(WebhookStatisticEntity webhookStatisticEntity, List<String> innList, Long fileId) {
 
         log.debug("*** Check duplicate in Opening");
 
@@ -131,8 +132,8 @@ public class OpeningClientService implements BankClientService {
     }
 
     @Override
-    public boolean getCreateLeadResult(String id) {
-        ResponseEntity<OpeningCheckResultResponse> response = client.getAddLeadResponse(id);
+    public boolean getCreateLeadResult(WebhookStatisticEntity webhookStatisticEntity) {
+        ResponseEntity<OpeningCheckResultResponse> response = client.getAddLeadResponse(webhookStatisticEntity.getOpeningRequestId());
         if (response.getStatusCode() == HttpStatus.OK) {
             OpeningCheckResultResponse result = response.getBody();
             if (result.getStatus().equals("new") ||

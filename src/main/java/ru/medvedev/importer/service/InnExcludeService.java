@@ -65,7 +65,7 @@ public class InnExcludeService {
         deleteByInnListAndBank(new ArrayList<>(readInnList(file, bank)), bank);
     }
 
-    @Transactional
+    @Transactional("transactionManager")
     public void deleteByInnListAndBank(ArrayList<String> innList, Bank bank) {
 
         int MAX_BATCH_SIZE = 1000;

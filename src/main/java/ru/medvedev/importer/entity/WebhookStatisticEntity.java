@@ -2,6 +2,7 @@ package ru.medvedev.importer.entity;
 
 import lombok.Data;
 import ru.medvedev.importer.enums.Bank;
+import ru.medvedev.importer.enums.BankProduct;
 import ru.medvedev.importer.enums.PartsLoadStatus;
 import ru.medvedev.importer.enums.WebhookStatus;
 
@@ -60,6 +61,10 @@ public class WebhookStatisticEntity {
 
     @Column(name = "skorozvon_create_at")
     private LocalDateTime skorozvonCreateAt;
+
+    @Column(name = "bank_product")
+    @Enumerated(EnumType.STRING)
+    private BankProduct bankProduct;
 
     @Column(name = "create_at")
     private LocalDateTime createAt;

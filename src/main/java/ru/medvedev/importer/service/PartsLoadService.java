@@ -8,7 +8,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.PartsLoadDto;
-import ru.medvedev.importer.dto.WebhookSuccessFilter;
 import ru.medvedev.importer.dto.events.NotificationEvent;
 import ru.medvedev.importer.entity.ContactNewEntity;
 import ru.medvedev.importer.entity.PartsLoadEntity;
@@ -18,8 +17,6 @@ import ru.medvedev.importer.repository.ContactNewRepository;
 import ru.medvedev.importer.repository.PartsLoadRepository;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -88,7 +85,7 @@ public class PartsLoadService {
         LocalDateTime from = input.getDateFrom().minusMinutes(ZonedDateTime.now().getOffset().getTotalSeconds() / 60).plusMinutes(input.getTimeZone());
         LocalDateTime to = input.getDateTo().minusMinutes(ZonedDateTime.now().getOffset().getTotalSeconds() / 60).plusMinutes(input.getTimeZone());
 
-        List<ContactNewEntity> contacts = contactRepository.findAllByCreateAtGreaterThanEqualAndCreateAtLessThanEqualOrderByCreateAt(from, to);
+        List<ContactNewEntity> contacts = contactRepository.findAllByAlfaCreateAtGreaterThanEqualAndAlfaCreateAtLessThanEqualOrderByCreateAt(from, to);
         if (contacts.size() > input.getCount()) {
             contacts = contacts.subList(0, input.getCount());
         }

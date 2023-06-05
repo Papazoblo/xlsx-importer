@@ -13,10 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import ru.medvedev.importer.dto.ContactDto;
-import ru.medvedev.importer.dto.ContactFilter;
-import ru.medvedev.importer.dto.PagingDto;
-import ru.medvedev.importer.dto.XlsxImportInfo;
+import ru.medvedev.importer.dto.*;
 import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.ContactActuality;
 import ru.medvedev.importer.enums.ContactStatus;
@@ -58,6 +55,18 @@ public class ContactController {
         model.addAttribute("webhooks", statusService.findWebhookStatusByType(Collections.singletonList(WebhookType.SUCCESS)));
         model.addAttribute("paging", PagingDto.of(resultPage.getTotalPages(), page, size));
         return "contacts";
+    }
+
+    @GetMapping("/count-date-statistic")
+    public String getPage(Model model,
+                          ContactCountDateStatisticFilter filter) {
+
+        Page<ContactCountDateProjection> resultPage = service.getContactCountDateStatistic(filter);
+        model.addAttribute("contacts", resultPage);
+        model.addAttribute("authority", getAuthorityList());
+        model.addAttribute("paging", PagingDto.of(resultPage.getTotalPages(), resultPage.getNumber(), resultPage.getSize()));
+        model.addAttribute("filter", filter);
+        return "count_date_statistic";
     }
 
     @GetMapping(value = "/import", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})

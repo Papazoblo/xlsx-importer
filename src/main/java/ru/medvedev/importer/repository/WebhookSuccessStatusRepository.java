@@ -18,7 +18,7 @@ public interface WebhookSuccessStatusRepository extends JpaRepository<WebhookSuc
 
     @Query("select w from WebhookSuccessStatusEntity w " +
             "where w.bank = :bank and w.type = ru.medvedev.importer.enums.WebhookType.SUCCESS")
-    List<WebhookSuccessStatusEntity> findFirstByBank(Bank bank);
+    List<WebhookSuccessStatusEntity> findAllByBank(Bank bank);
 
     @Query("select w from WebhookSuccessStatusEntity w " +
             "where w.webhookId = :webhookId " +

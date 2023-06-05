@@ -5,10 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import ru.medvedev.importer.dto.ColumnInfoDto;
-import ru.medvedev.importer.enums.FileProcessingStep;
-import ru.medvedev.importer.enums.FileSource;
-import ru.medvedev.importer.enums.FileStatus;
-import ru.medvedev.importer.enums.SkorozvonField;
+import ru.medvedev.importer.enums.*;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -85,8 +82,9 @@ public class FileInfoEntity {
     private Boolean notLoadFromVtbDedublicate = false;
     @Column(name = "is_enable_inn_exclude")
     private Boolean enableInnExclude = false;
-    @Column(name = "set_current_date")
-    private Boolean setCurrentDate = false;
+    @Column(name = "action_type")
+    @Enumerated(EnumType.STRING)
+    private DownloadAction action;
     //енам скорозвона => список идентификаторов колонок экселя
     @Column(name = "field_links")
     private String fieldLinks;
@@ -97,10 +95,10 @@ public class FileInfoEntity {
     @Column(name = "message_id")
     private Integer messageId;
 
-    @OneToMany(mappedBy = "fileInfoEntity", fetch = FetchType.EAGER, orphanRemoval = true, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "fileInfoEntity", fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
     private Set<FileRequestEmptyRequireFieldEntity> fileRequestEmptyRequireFieldEntities = new HashSet<>();
 
-    @OneToMany(mappedBy = "fileInfo", fetch = FetchType.EAGER, orphanRemoval = true, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "fileInfo", fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
     private List<FileInfoBankEntity> bankList = new ArrayList<>();
 
     @PrePersist

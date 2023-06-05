@@ -3,6 +3,7 @@ package ru.medvedev.importer.service.bankclientservice;
 import ru.medvedev.importer.dto.CheckLeadResult;
 import ru.medvedev.importer.dto.CreateLeadResult;
 import ru.medvedev.importer.dto.WebhookLeadDto;
+import ru.medvedev.importer.entity.WebhookStatisticEntity;
 
 import javax.naming.OperationNotSupportedException;
 import java.util.List;
@@ -16,14 +17,7 @@ public interface BankClientService {
         throw new OperationNotSupportedException();
     }
 
-    default CheckLeadResult getPositiveFromCheckLead(List<String> innList, Long fileId) throws OperationNotSupportedException {
-        CheckLeadResult result = getAllFromCheckLead(innList, fileId);
-        result.setLeadResponse(result.getLeadResponse().stream().filter(item -> item.getResponseCode() == POSITIVE)
-                .collect(Collectors.toList()));
-        return result;
-    }
-
-    default CheckLeadResult getAllFromCheckLead(List<String> innList, Long fileId) throws OperationNotSupportedException {
+    default CheckLeadResult getAllFromCheckLead(WebhookStatisticEntity webhookStatisticEntity, List<String> innList, Long fileId) throws OperationNotSupportedException {
         throw new OperationNotSupportedException();
     }
 
@@ -31,7 +25,7 @@ public interface BankClientService {
         throw new OperationNotSupportedException();
     }
 
-    default boolean getCreateLeadResult(String id) throws OperationNotSupportedException {
+    default boolean getCreateLeadResult(WebhookStatisticEntity webhookStatisticEntity) throws OperationNotSupportedException {
         throw new OperationNotSupportedException();
     }
 

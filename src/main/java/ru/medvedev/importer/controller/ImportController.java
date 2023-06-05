@@ -1,15 +1,9 @@
 package ru.medvedev.importer.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.json.GsonJsonParser;
-import org.springframework.boot.json.JacksonJsonParser;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.codec.json.Jackson2JsonDecoder;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -42,11 +36,12 @@ public class ImportController {
     private final FileInfoService fileInfoService;
     private final AutoLinkXlsxFieldService autoLinkXlsxFieldService;
 
-    @GetMapping("/xlsx/import")
-    public String importXlsx(Model model) {
+    @GetMapping("/xlsx/import/{downloadAction}")
+    public String importXlsx(Model model,
+                             @PathVariable("downloadAction") DownloadAction downloadAction) {
         try {
-            Optional<FileInfoEntity> fileInfoOptional = fileInfoService.getNewUiFileToInitialize();
-            if (fileInfoOptional.isPresent()) {
+            Optional<FileInfoEntity> fileInfoOptional = fileInfoService.getNewUiFileToInitialize(downloadAction);
+            if (fileInfoOptional.isPresent() && fileInfoOptional.get().getAction() == downloadAction) {
                 FileInfoEntity fileInfo = fileInfoOptional.get();
                 File file = new File(fileInfo.getPath());
 
@@ -86,38 +81,39 @@ public class ImportController {
         model.addAttribute("authority", getAuthorityList());
         model.addAttribute("fields", SkorozvonField.values());
 
-        List<List<Bank>> banks = new ArrayList<>();
-        Bank[] bankArray = Bank.valuesNotExclude();
-        for (int i = 0; i < bankArray.length; i += 3) {
-            List<Bank> bankInner = new ArrayList<>();
-            for (int j = 0; j < 3; j++) {
-                if (i + j < bankArray.length) {
-                    bankInner.add(bankArray[i + j]);
+        if (downloadAction != DownloadAction.ACTION_ALFA_SYSTEM_DOWNLOAD) {
+            List<List<Bank>> banks = new ArrayList<>();
+            Bank[] bankArray = Bank.valuesNotExclude();
+            for (int i = 0; i < bankArray.length; i += 3) {
+                List<Bank> bankInner = new ArrayList<>();
+                for (int j = 0; j < 3; j++) {
+                    if (i + j < bankArray.length) {
+                        bankInner.add(bankArray[i + j]);
+                    }
                 }
+                banks.add(bankInner);
             }
-            banks.add(bankInner);
+            model.addAttribute("banks", banks);
         }
-        model.addAttribute("banks", banks);
-        return "main";
+        return downloadAction != DownloadAction.ACTION_ALFA_SYSTEM_DOWNLOAD ? "main" : "alfa_main";
     }
 
-    @PostMapping("/xlsx/import")
+    @PostMapping("/xlsx/import/{downloadAction}")
     @ResponseBody
-    public void startImport(@RequestBody XlsxImportInfo importInfo) {
-        fileInfoService.addUiColumnInfo(importInfo);
+    public void startImport(@PathVariable("downloadAction") DownloadAction downloadAction,
+                            @RequestBody XlsxImportInfo importInfo) {
+        fileInfoService.addUiColumnInfo(downloadAction, importInfo);
     }
 
-    @PostMapping(value = "/xlsx/upload", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/xlsx/upload/{downloadAction}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file,
-                                         @RequestParam("action") DownloadAction action) {
+    public ResponseEntity<String> upload(@PathVariable("downloadAction") DownloadAction downloadAction,
+                                         @RequestParam("file") MultipartFile file) {
         try {
-            if (action == DownloadAction.ACTION_LEAD_DOWNLOAD) {
-                xlsxStorageService.upload(file);
-            } else if (action == DownloadAction.ACTION_WEBHOOK_DOWNLOAD) {
+            if (downloadAction == DownloadAction.ACTION_WEBHOOK_DOWNLOAD) {
                 leadWorkerService.massLoadWebhooks(file);
             } else {
-                return ResponseEntity.badRequest().build();
+                xlsxStorageService.upload(downloadAction, file);
             }
             return ResponseEntity.ok(file.getOriginalFilename());
         } catch (IOException io) {

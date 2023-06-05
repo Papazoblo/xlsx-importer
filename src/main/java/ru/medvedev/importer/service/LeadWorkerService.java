@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -37,7 +38,10 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.logging.log4j.util.Strings.isBlank;
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
+import static ru.medvedev.importer.enums.DownloadAction.ACTION_ALFA_SYSTEM_DOWNLOAD;
+import static ru.medvedev.importer.enums.DownloadAction.ACTION_LEAD_DOWNLOAD;
 import static ru.medvedev.importer.enums.FileInfoBankStatus.IN_QUEUE;
+import static ru.medvedev.importer.enums.WebhookStatus.FIXED;
 import static ru.medvedev.importer.enums.WebhookStatus.SUCCESS;
 import static ru.medvedev.importer.service.ContactNewService.readDataFromSheet;
 import static ru.medvedev.importer.service.EventService.NOTIFICATION_PATTERN;
@@ -72,7 +76,7 @@ public class LeadWorkerService {
                 if (item.getBank() == Bank.RAIFFEISEN) {
                     item.setStatus(WebhookStatus.TRY_TO_CREATE_LEAD);
                 } else {
-                    CheckLeadResult result = clientService.getAllFromCheckLead(Collections.singletonList(item.getInn()), null);
+                    CheckLeadResult result = clientService.getAllFromCheckLead(item, Collections.singletonList(item.getInn()), null);
                     if (item.getBank() == Bank.VTB_OPENING) {
                         item.setStatus(WebhookStatus.WAIT_CHECK_LEAD_AFTER_FIXED_RESPONSE);
                         item.setOpeningRequestId(result.getAdditionalInfo());
@@ -171,9 +175,25 @@ public class LeadWorkerService {
             leadDto.setInn(item.getInn());
             leadDto.setPhones(item.getPhone().split("\\|")[0]);
             leadDto.setEmails(isNotBlank(item.getEmail()) ? Collections.singletonList(item.getEmail()) : Collections.emptyList());
-            leadDto.setProducts(item.getSuccessStatus().getProducts().stream()
-                    .map(BankProductEntity::getCode)
-                    .collect(Collectors.toList()));
+            /*SetProduct*/
+            if (item.getBank() == Bank.ALFA) {
+                if (item.getBankProduct() == null) {
+                    item.setBankProduct(BankProduct.LP_RKO);
+                } else {
+                    Optional<BankProductEntity> bankProductOptional = item.getSuccessStatus().getProducts().stream()
+                            .filter(bankProductEntity -> bankProductEntity.getCode() != BankProduct.LP_RKO)
+                            .findFirst();
+                    if (!bankProductOptional.isPresent()) {
+                        item.setBankProduct(bankProductOptional.get().getCode());
+                    } else {
+                        item.setStatus(SUCCESS);
+                        webhookStatisticService.save(item);
+                        return;
+                    }
+                }
+                leadDto.setProduct(item.getBankProduct());
+            }
+            /**/
             Optional<ContactNewEntity> contactEntity = contactNewService.getByInn(item.getInn());
             if (contactEntity.isPresent()) {
                 leadDto.setName(getFioStringFromContact(contactEntity.get()));
@@ -230,7 +250,7 @@ public class LeadWorkerService {
             log.debug("fromStatusWaitToCreateLeadResponse");
             try {
                 BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
-                if (clientService.getCreateLeadResult(item.getOpeningRequestId())) {
+                if (clientService.getCreateLeadResult(item)) {
                     item.setStatus(WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS);
                 }
             } catch (TimeOutException ex) {
@@ -260,27 +280,34 @@ public class LeadWorkerService {
         webhookStatisticService.getByStatus(WebhookStatus.TRY_TO_CREATE_LEAD_SUCCESS).ifPresent(item -> {
             BankClientService clientService = bankClientServiceFactory.getBankClientService(item.getBank());
             try {
-                CheckLeadResult result = clientService.getAllFromCheckLead(Collections.singletonList(item.getInn()), null);
+                CheckLeadResult result = clientService.getAllFromCheckLead(item, Collections.singletonList(item.getInn()), null);
                 //и проверям добавился лид или нет
                 if (item.getBank() == Bank.VTB_OPENING) {
                     item.setStatus(WebhookStatus.WAIT_CHECK_LEAD_AFTER_CREATE_RESPONSE);
                     item.setOpeningRequestId(result.getAdditionalInfo());
                 } else {
-                    //todo костыль, что если после создания лида его можно создать еще раз
+
+                    if (item.getBank() == Bank.ALFA && item.getBankProduct() == BankProduct.LP_RKO && item.getSuccessStatus().getProducts().stream()
+                            .anyMatch(bankProductEntity -> bankProductEntity.getCode() != BankProduct.LP_RKO)) {
+                        item.setStatus(FIXED);
+
+                    } else {
+                        //todo костыль, что если после создания лида его можно создать еще раз
                     /*if (result.getLeadResponse().stream().anyMatch(lead ->
                             lead.getInn().equals(item.getInn()) && lead.getResponseCode() != CheckLeadStatus.POSITIVE)) {*/
-                    log.debug("*** lead loaded in {} {} ", item.getBank(), item.getInn());
-                    item.setStatus(SUCCESS);
-                    eventPublisher.publishEvent(new NotificationEvent(this,
-                            String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
-                                    item.getInn(),
-                                    item.getCity(),
-                                    item.getName()),
-                            TelegramNotificationType.ALL,
-                            EventType.LOG_TG));
+                        log.debug("*** lead loaded in {} {} ", item.getBank(), item.getInn());
+                        item.setStatus(SUCCESS);
+                        eventPublisher.publishEvent(new NotificationEvent(this,
+                                String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
+                                        item.getInn(),
+                                        item.getCity(),
+                                        item.getName()),
+                                TelegramNotificationType.ALL,
+                                EventType.LOG_TG));
                     /*} else {
                         item.setStatus(WebhookStatus.ERROR);
                     }*/
+                    }
                 }
             } catch (TimeOutException ex) {
                 log.debug("*** FROM STATUS TRY TO CREATE LEAD TIMEOUT ERROR " + item.getInn());
@@ -381,9 +408,9 @@ public class LeadWorkerService {
         eventPublisher.publishEvent(new ImportEvent(this, "Читаю файл и разбиваю контакты по банкам",
                 EventType.FILE_PROCESS, fileInfo.getId()));
         Map<String, List<XlsxRecordDto>> records = getValidInnListFromFile(fileInfo);
-        saveNewContacts(records);
+        saveNewContacts(records, fileInfo);
         //запуск обработки по разным банкам
-        if (!fileInfo.getBankList().isEmpty()) {
+        if (!fileInfo.getBankList().isEmpty() && fileInfo.getAction() == ACTION_LEAD_DOWNLOAD) {
             contactDownloadInfoService.createDownloadByBanks(new ArrayList<>(records.keySet()), fileInfo.getBankList());
             fileInfo.getBankList().forEach(fileBank ->
                     fileInfoBankService.updateDownloadStatus(IN_QUEUE, fileBank.getId()));
@@ -411,27 +438,39 @@ public class LeadWorkerService {
                 .collect(groupingBy(XlsxRecordDto::getOrgInn));
     }
 
-    private void saveNewContacts(Map<String, List<XlsxRecordDto>> records) {
-        List<ContactNewEntity> contacts = records.values()
+    private void saveNewContacts(Map<String, List<XlsxRecordDto>> records, FileInfoEntity fileInfo) {
+        List<ContactNewEntity> contacts = new ArrayList<>();
+        records.values()
                 .stream()
                 .map(value -> value.get(0))
-                .filter(record -> !contactNewService.existsByInn(record.getOrgInn()))
-                .map(record -> {
-                    String[] fioSplit = record.getFio().split(" ");
-                    ContactNewEntity contact = new ContactNewEntity();
-                    contact.setCity(isNotBlank(record.getCity()) ? record.getCity() : record.getOrgCity());
-                    contact.setOrgName(record.getOrgName());
-                    contact.setInn(record.getOrgInn());
-                    contact.setRegion(isNotBlank(record.getRegion()) ? record.getRegion() : record.getOrgRegion());
-                    contact.setName(fioSplit.length >= 2 ? fioSplit[1] : null);
-                    contact.setSurname(fioSplit.length >= 1 ? fioSplit[0] : null);
-                    contact.setMiddleName(fioSplit.length >= 3 ? fioSplit[2] : null);
-                    contact.setOgrn(record.getOrgKpp());
-                    contact.setPhone(isNotBlank(record.getPhone()) ? record.getPhone() : record.getOrgPhone());
-                    contact.setCreateAt(record.getCreateAt());
-//                    contact.setBank(fileBank.getBank());
-                    return contact;
-                })
+                .forEach(record -> {
+                    Optional<ContactNewEntity> contactNewOptional = contactNewService.getByInn(record.getOrgInn());
+                    if (contactNewOptional.isPresent() && fileInfo.getAction() == ACTION_ALFA_SYSTEM_DOWNLOAD) {
+                        ContactNewEntity contactNewEntity = contactNewOptional.get();
+                        contactNewEntity.setAlfaCreateAt(record.getCreateAt() == null ? LocalDateTime.now() : record.getCreateAt());
+                        contacts.add(contactNewEntity);
+                    } else if (!contactNewOptional.isPresent()) {
+                        String[] fioSplit = record.getFio().split(" ");
+                        ContactNewEntity contact = new ContactNewEntity();
+                        contact.setCity(isNotBlank(record.getCity()) ? record.getCity() : record.getOrgCity());
+                        contact.setOrgName(record.getOrgName());
+                        contact.setInn(record.getOrgInn());
+                        contact.setRegion(isNotBlank(record.getRegion()) ? record.getRegion() : record.getOrgRegion());
+                        contact.setName(fioSplit.length >= 2 ? fioSplit[1] : null);
+                        contact.setSurname(fioSplit.length >= 1 ? fioSplit[0] : null);
+                        contact.setMiddleName(fioSplit.length >= 3 ? fioSplit[2] : null);
+                        contact.setOgrn(record.getOrgKpp());
+                        contact.setPhone(isNotBlank(record.getPhone()) ? record.getPhone() : record.getOrgPhone());
+                        contact.setCreateAt(record.getCreateAt());
+                        contact.setFileInfoId(fileInfo.getId());
+
+                        if (fileInfo.getAction() == ACTION_ALFA_SYSTEM_DOWNLOAD) {
+                            contact.setAlfaCreateAt(record.getCreateAt() == null ? LocalDateTime.now() : record.getCreateAt());
+                        }
+                        contacts.add(contact);
+                    }
+                });
+        contactNewService.save(contacts.stream()
                 .filter(contact -> checkLength(contact.getOrgName(), 1000)
                         && checkLength(contact.getName(), 100)
                         && checkLength(contact.getSurname(), 100)
@@ -441,9 +480,7 @@ public class LeadWorkerService {
                         && checkLength(contact.getOgrn(), 20)
                         && checkLength(contact.getRegion(), 500)
                         && checkLength(contact.getCity(), 1000))
-                .collect(Collectors.toList());
-        contactNewService.save(contacts);
-//        return contactService.filteredContacts(contacts, fileBank);
+                .collect(Collectors.toList()));
     }
 
     private boolean checkLength(String value, int length) {

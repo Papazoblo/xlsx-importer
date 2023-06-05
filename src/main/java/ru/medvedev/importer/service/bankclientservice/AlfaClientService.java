@@ -26,10 +26,7 @@ import ru.medvedev.importer.dto.response.OpeningResponse;
 import ru.medvedev.importer.entity.CityEntity;
 import ru.medvedev.importer.entity.ContactNewEntity;
 import ru.medvedev.importer.entity.WebhookStatisticEntity;
-import ru.medvedev.importer.enums.Bank;
-import ru.medvedev.importer.enums.EventType;
-import ru.medvedev.importer.enums.OpeningInnStatus;
-import ru.medvedev.importer.enums.OpeningRequestStatus;
+import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
@@ -82,17 +79,10 @@ public class AlfaClientService implements BankClientService {
         requestInfoDto.setComment(webhookLead.getComment());
         requestInfoDto.setCityCode(city.get().getAlfaId()); // код города
         request.setRequestInfo(requestInfoDto);
-        //добавить продукты
-        if (webhookLead.getProducts().isEmpty()) {
-            request.getProductInfo().add(new ProductInfoDto());
-        } else {
-            webhookLead.getProducts().forEach(item -> {
-                ProductInfoDto productInfoDto = new ProductInfoDto();
-                productInfoDto.setProductCode(item);
-                request.getProductInfo().add(productInfoDto);
-            });
-            request.getProductInfo().add(new ProductInfoDto());
-        }
+
+        ProductInfoDto productInfoDto = new ProductInfoDto();
+        productInfoDto.setProductCode(webhookLead.getProduct());
+        request.getProductInfo().add(productInfoDto);
 
         try {
             bankCountSendedRequestService.incCreateRequestCount(ALFA, 1);
@@ -105,16 +95,19 @@ public class AlfaClientService implements BankClientService {
                 log.debug("*** VtbOpening error create lead [{}]", response.getStatusCode());
                 return CreateLeadResult.of(false);
             }
-        } catch (TimeOutException | ErrorCreateLeadException ex) {
+        } catch (TimeOutException |
+                 ErrorCreateLeadException ex) {
             throw ex;
-        } catch (Exception ex) {
+        } catch (
+                Exception ex) {
             log.debug("*** ошибка добавления лида " + ex.getMessage(), ex);
             return CreateLeadResult.of(false);
         }
+
     }
 
     @Override
-    public CheckLeadResult getAllFromCheckLead(List<String> innList, Long fileId) {
+    public CheckLeadResult getAllFromCheckLead(WebhookStatisticEntity webhookStatisticEntity, List<String> innList, Long fileId) {
 
         log.debug("*** Check duplicate in Alfa");
         List<LeadInfoResponse> result = new ArrayList<>();
@@ -147,7 +140,9 @@ public class AlfaClientService implements BankClientService {
             } else {
 
                 CheckLeadInnDto request = new CheckLeadInnDto();
-                request.getProductInfo().add(new ProductInfoDto());
+                ProductInfoDto productInfoDto = new ProductInfoDto();
+                productInfoDto.setProductCode(webhookStatisticEntity == null ? BankProduct.LP_RKO : webhookStatisticEntity.getBankProduct());
+                request.getProductInfo().add(productInfoDto);
                 request.setOrganizationInfo(new OrganizationInfoDto(null, innList.get(0)));
                 LeadInfoResponse info = new LeadInfoResponse();
                 info.setInn(innList.get(0));
@@ -174,21 +169,19 @@ public class AlfaClientService implements BankClientService {
     }
 
     @Override
-    public boolean getCreateLeadResult(String id) {
+    public boolean getCreateLeadResult(WebhookStatisticEntity webhookStatisticEntity) {
 
         bankCountSendedRequestService.incResultCreateRequestCount(ALFA, 1);
-        ResponseEntity<RequestStatusResponseDto> response = client.getRequestStatus(id);
+        ResponseEntity<RequestStatusResponseDto> response = client.getRequestStatus(webhookStatisticEntity.getOpeningRequestId());
         if (response.getStatusCode() == HttpStatus.OK) {
             RequestStatusResponseDto result = response.getBody();
             if (result.getProductInfo() == null || result.getProductInfo().isEmpty()) {
                 throw new ErrorCreateLeadException(result.getStatus() + ". Отсутствует информация о продукте.", -1L);
             }
-
-            Optional<WebhookStatisticEntity> webhookStatisticEntity = webhookStatisticRepository.findAllByBankAndOpeningRequestId(ALFA, id);
-            if (webhookStatisticEntity.isPresent() && !response.getBody().getProductInfo().isEmpty()) {
+            if (!response.getBody().getProductInfo().isEmpty()) {
                 LeadInfoResponse leadInfo = new LeadInfoResponse();
-                leadInfo.setInn(webhookStatisticEntity.get().getInn());
-                if (response.getBody().getProductInfo().stream().anyMatch(item -> item.getState() == IN_PROGRESS)) {
+                leadInfo.setInn(webhookStatisticEntity.getInn());
+                if (response.getBody().getProductInfo().stream().anyMatch(item -> item.getState() == IN_PROGRESS && item.getProductCode().equals(webhookStatisticEntity.getBankProduct().name()))) {
                     return true;
                 } else if (response.getBody().getProductInfo().stream().anyMatch(item -> item.getState() == DECLINED || item.getState() == UNDEFINED)) {
                     throw new ErrorCreateLeadException(response.getBody().getProductInfo().get(0).getStatus() +

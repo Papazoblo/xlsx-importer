@@ -37,15 +37,11 @@ input[type=text], input[type=password] {
     background: aliceblue;
 }
 
-.hide-block {
-    display: none;
-}
-
 .btn3 {
     background-color: #cd050c !important;
 }
 
-.btn-2, .btn3, #btnLoadWebhook, #btnDeleteInn {
+.btn-2, .btn3, #btnLoadWebhook, #btnDeleteInn, #btnSystemLoad {
     display: inline-block;
     box-sizing: border-box;
     padding: 0 24px;
@@ -55,7 +51,7 @@ input[type=text], input[type=password] {
     border-radius: 3px;
     height: 37px;
     line-height: 37px;
-    font-size: 14px;
+    font-size: 12px;
     text-transform: uppercase;
     font-weight: normal;
     text-decoration: none;
@@ -68,14 +64,32 @@ input[type=text], input[type=password] {
     transition: box-shadow .18s ease-out, background .18s ease-out, color .18s ease-out;
 }
 
-#btnSendFile, #btnLoadWebhook, #btnDeleteInn {
+.hide-block {
+    display: none !important;
+}
+
+#btnDeleteInn {
     margin: 0 !important;
 }
 
-#btnLoadWebhook, #btnDeleteInn {
+#btnDeleteInn {
     background-color: #6a0909 !important;
     width: 75%;
     margin-top: 10px !important;
+}
+
+#btnLoadWebhook {
+    background-color: #6a0909 !important;
+    width: 33%;
+}
+
+#btnSendFile {
+    width: 33% !important;
+}
+
+#btnSystemLoad {
+    background-color: #114705 !important;
+    width: 49%;
 }
 
 .btn-2:focus-visible, .btn3:focus-visible {
@@ -115,11 +129,7 @@ label[for='enableWhatsAppLink'] {
 }
 
 #parseXlsx.btn-2 {
-    width: 55% !important;
-}
-
-#btnSendFile.btn-2 {
-    width: 75% !important;
+    width: 49% !important;
 }
 
 label[for=autoImport] {
