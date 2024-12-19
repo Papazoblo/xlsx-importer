@@ -19,4 +19,7 @@ public class InnRegionEntity {
 
     @Column(name = "name")
     private String name;
+
+    @Column(name = "administration_center")
+    private String administrationCenter;
 }

@@ -27,10 +27,6 @@ import javax.naming.OperationNotSupportedException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -183,13 +179,14 @@ public class LeadWorkerService {
                     Optional<BankProductEntity> bankProductOptional = item.getSuccessStatus().getProducts().stream()
                             .filter(bankProductEntity -> bankProductEntity.getCode() != BankProduct.LP_RKO)
                             .findFirst();
-                    if (!bankProductOptional.isPresent()) {
+                    if (bankProductOptional.isPresent()) {
                         item.setBankProduct(bankProductOptional.get().getCode());
-                    } else {
-                        item.setStatus(SUCCESS);
-                        webhookStatisticService.save(item);
-                        return;
                     }
+//                    else {
+//                        item.setStatus(SUCCESS);
+//                        webhookStatisticService.save(item);
+//                        return;
+//                    }
                 }
                 leadDto.setProduct(item.getBankProduct());
             }

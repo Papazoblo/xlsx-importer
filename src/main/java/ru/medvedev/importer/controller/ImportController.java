@@ -121,7 +121,7 @@ public class ImportController {
         }
     }
 
-    @PostMapping
+    @PostMapping("/skorozvon/webhook")
     @ResponseBody
     public void takeWebhook(@RequestBody WebhookDto input) {
         log.debug("*** Take a webhook {}", input);

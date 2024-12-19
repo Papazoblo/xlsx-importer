@@ -1,0 +1,66 @@
+directory:
+  upload-dir: D:/xlsx-storage
+
+spring:
+  datasource:
+    username: postgres
+#    username: xlsx_importer_user
+    password: 2x8c63tk
+    jdbc-url: jdbc:postgresql://127.0.0.1:5432/xlsx_collector
+#    jdbc-url: jdbc:postgresql://62.113.110.104:5432/xlsx_import_db_test
+    play-sound-ds:
+      jdbc-url: jdbc:postgresql://62.113.110.104:5432/sound_play_db
+      driver-class-name: org.postgresql.Driver
+      username: sound_play_user
+      password: 2x8c63tk
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+skorozvon:
+  url: https://app.skorozvon.ru
+  application-key: 172f48c27f7eb1c2322526b8f92d5b25dcc9cbc8785f137a428795b3f4a4cb2a
+  api-key: 2dbaf59dda46d13915dc8a4d9c2f416ebbde9a9c3bc5e7d23cada8588b814e01
+  application-id: 29055bf486467ffb99159edf3c21881d8ec4349ee1eb61c0b172364bbcc623b7
+  login: velisavsergey@gmail.com
+
+alfa:
+  api-key: c7e39a72-d8c1-472f-9216-fde719c1e60a
+
+vtb:
+  client-id: 'EXT.PPFB.a7ae72b0-4c4b-40e3-98f8-341c8ec1c988'
+  domen: '@ext.vtb.ru'
+  client-secret: 'L4cd7GLyL-bT"1v7'
+
+vtb-opening:
+  api-key: 34e8f6e4-c5e6-4359-afa1-b96fa8030cd9
+  url-add-request: /add
+  url-check-request-status: /status
+  url-check-inn: /getduplicates
+
+raiffeisen:
+  url: https://api.raiffeisen.ru/openapi-013-snd/corporate-leads-xs/app/
+  dict-url: https://api.raiffeisen.ru/dict-001-snd/dictionaries/cities/rko-sme
+  #Рефинансирование
+  hid: "9A5064BAAF5E75387EAEDB9945207072"
+  #На любые цели
+  hid_all: "572ADD4ADB124ED144874A828002F10A"
+
+telegram:
+  xlsx-collector:
+    token: 5453887520:AAHjc3J05rXIY3ulwhXdqMtUQ3KrIutyFdo
+    botName: Xlsx collector
+    reconnectTimer: 10000
+    scanningChatId: 420614133
+  notificator:
+    token: 5708855627:AAHuOZIzauJcTpaY67imXsUddVUYwqgNIr0
+    botName: Notificator
+    reconnectTimer: 10000
+
+cron:
+  webhook-statistic: '0 0 19 * * *'
+  raiffeisen-city-dictionary: '0 */10 * * * *'
+
+

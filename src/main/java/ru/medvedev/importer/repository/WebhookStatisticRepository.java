@@ -25,6 +25,10 @@ public interface WebhookStatisticRepository extends JpaRepository<WebhookStatist
     List<DailyContactStatistic> findByCreateAtLessThanEqualAndCreateAtGreaterThan(LocalDateTime dateTo,
                                                                                   LocalDateTime dateFrom);
 
+    @Modifying
+    @Transactional
+    void deleteAllByCreateAtLessThanEqual(LocalDateTime date);
+
     Optional<WebhookStatisticEntity> findAllByBankAndOpeningRequestId(Bank bank, String requestId);
 
     Optional<WebhookStatisticEntity> findFirstByStatusOrderByUpdateAtDesc(WebhookStatus status);

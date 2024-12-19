@@ -6,6 +6,7 @@ import ru.medvedev.importer.entity.InnRegionEntity;
 import ru.medvedev.importer.repository.InnRegionRepository;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -18,5 +19,9 @@ public class InnRegionService {
     public Map<String, InnRegionEntity> getAllMap() {
         return repository.findAll().stream()
                 .collect(toMap(InnRegionEntity::getCode, item -> item));
+    }
+
+    public Optional<InnRegionEntity> getByCode(String code) {
+        return repository.findByCode(code);
     }
 }

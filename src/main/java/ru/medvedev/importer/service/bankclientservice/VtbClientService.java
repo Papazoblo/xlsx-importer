@@ -15,6 +15,7 @@ import ru.medvedev.importer.dto.WebhookLeadDto;
 import ru.medvedev.importer.dto.request.LeadRequest;
 import ru.medvedev.importer.dto.response.CheckLeadBadRequestResponse;
 import ru.medvedev.importer.dto.response.CheckLeadResponse;
+import ru.medvedev.importer.entity.WebhookStatisticEntity;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
@@ -25,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static ru.medvedev.importer.enums.Bank.ALFA;
 import static ru.medvedev.importer.enums.Bank.VTB;
 
 @Service
@@ -63,7 +63,7 @@ public class VtbClientService implements BankClientService {
         }
     }
 
-    public CheckLeadResult getAllFromCheckLead(List<String> innList, Long fileId) {
+    public CheckLeadResult getAllFromCheckLead(WebhookStatisticEntity webhookStatisticEntity, List<String> innList, Long fileId) {
 
         log.debug("*** Check duplicate in Bank");
 

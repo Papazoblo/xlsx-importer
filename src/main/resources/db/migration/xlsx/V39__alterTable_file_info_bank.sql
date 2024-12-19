@@ -1,7 +1,7 @@
 alter table file_info_bank
-    drop column inn_filter;
+    drop column if exists inn_filter;
 alter table file_info_bank
-    drop column phone_filter;
+    drop column if exists phone_filter;
 
 
 alter table download_filter

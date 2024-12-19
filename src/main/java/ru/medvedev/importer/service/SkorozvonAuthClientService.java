@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.client.SkorozvonAuthClient;
@@ -26,7 +25,7 @@ public class SkorozvonAuthClientService {
     private String activeProfile;
 
     private String login() {
-        if (activeProfile != null && activeProfile.equals("dev")) {
+        if (activeProfile != null && activeProfile.equals("local")) {
             return "";
         }
         LoginRequest request = new LoginRequest();

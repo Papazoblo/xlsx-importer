@@ -1,6 +1,5 @@
 package ru.medvedev.importer.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -9,7 +8,6 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.hibernate.internal.util.StringHelper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -41,10 +39,10 @@ import static org.apache.logging.log4j.util.Strings.isBlank;
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import static ru.medvedev.importer.enums.Bank.*;
 import static ru.medvedev.importer.enums.FileInfoBankStatus.*;
-import static ru.medvedev.importer.enums.RequestStatus.*;
+import static ru.medvedev.
 import static ru.medvedev.importer.enums.RequestStatus.ERROR;
 import static ru.medvedev.importer.enums.RequestStatus.IN_QUEUE;
-
+importer.enums.RequestStatus.*;
 import static ru.medvedev.importer.service.BankCountSendedRequestService.DAY_RESERVE;
 import static ru.medvedev.importer.service.EventService.BANK_NAME_PATTERN;
 import static ru.medvedev.importer.service.EventService.STATISTIC_LINE_PATTERN;
@@ -151,7 +149,7 @@ public class BodyProcessingService {
         requestService.getFirstByStatusAndBank(CREATING, VTB).ifPresent(this::creatingRequest);
     }
 
-    @Scheduled(cron = "${cron.creating-request-opening}")
+    //@Scheduled(cron = "${cron.creating-request-opening}")
     public void creatingRequestOpening() {
         if (requestService.getCountByStatusAndBank(IN_QUEUE, VTB_OPENING) < 15) {
             requestService.getFirstByStatusAndBank(CREATING, VTB_OPENING).ifPresent(this::creatingRequest);
@@ -173,6 +171,7 @@ public class BodyProcessingService {
     private void creatingRequest(RequestEntity request) {
         FileInfoBankEntity fib = request.getFileInfoBank();
         try {
+            log.debug("CreatingRequest :: {} {}", fib.getBank(), request.getId());
             BankClientService bankClientService = bankClientServiceFactory.getBankClientService(fib.getBank());
 
             request.setStatus(IN_QUEUE);
@@ -241,6 +240,7 @@ public class BodyProcessingService {
         FileInfoBankEntity fib = request.getFileInfoBank();
 
         try {
+            log.debug("===> CheckRequestRequest {} {}", fib.getBank(), request.getId());
             BankClientService bankClientService = bankClientServiceFactory.getBankClientService(fib.getBank());
 
             if (fib.getBank() == VTB_OPENING) {

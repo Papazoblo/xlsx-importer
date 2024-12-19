@@ -8,33 +8,33 @@ server:
     enabled: false
   port: 8080
 
-
-
 feign:
   client:
     config:
       vtbOpeningApi:
-        loggerLevel: full
+        loggerLevel: NONE
       vtbAuth:
-        loggerLevel: full
+        loggerLevel: NONE
       vtbApi:
-        loggerLevel: full
+        loggerLevel: NONE
       alfaApi:
         loggerLevel: full
       raiffeisenApi:
-        loggerLevel: full
+        loggerLevel: NONE
       skorozvon:
-        loggerLevel: basic
+        loggerLevel: full
       skorozvonAuth:
         loggerLevel: basic
 
 logging:
   file:
-    name: /opt/xlsx-importer/logs/application.log
+    name: /var/log/${spring.application.name}/application.log
   level:
     ru.medvedev.importer: DEBUG
 
 spring:
+  application:
+    name: xlsx-importer
   profiles:
     active: default
   task:
@@ -47,31 +47,20 @@ spring:
       max-request-size: 10MB
   flyway:
     locations: 'classpath:db/migration/xlsx'
-  datasource:
-    xlsx-importer:
-      jdbc-url: jdbc:postgresql://127.0.0.1:5432/xlsx_importer_db
-      driver-class-name: org.postgresql.Driver
-    play-sound-ds:
-      jdbc-url: jdbc:postgresql://127.0.0.1:5432/sound_play_db
-      driver-class-name: org.postgresql.Driver
-  jpa:
-    properties:
-      hibernate:
-        enable_lazy_load_no_trans: true
   main:
     allow-bean-definition-overriding: true
   thymeleaf:
     cache: false
 
 directory:
-  upload-dir: /opt/xlsx-importer/storage
+  upload-dir: /opt/${spring.application.name}/storage
 
 cron:
   fixed-rate-update-token: 1200000
   fixed-rate-check-xlsx-exists: 900000
   launch-file-processing: '0 * * * * *'
   ending-file-processing: '30 * * * * *'
-  webhook-statistic: '0 20 18 * * *'
+  webhook-statistic: '0 0 19 * * *'
   tg-column-header-request: '*/3 * * * * *'
   tg-initialized-new-file: '*/3 * * * * *'
   tg-file-body-processor: '*/3 * * * * *'
@@ -87,11 +76,11 @@ cron:
   webhook-from-fixed-status: '17 */1 * * * *'
   webhook-from-try-to-create-status: '30 */1 * * * *'
   webhook-from-create-success-status: '45 */1 * * * *'
-  webhook-check-status: '20 */2 * * * *'
+  webhook-check-status: '*/40 * * * * *'
   auto-load: '0 0 3 * * *'
   logs-archive-delete: '0 0 2 * * *'
   first-load-lead-delete: '0 0 1 * * *'
-  raiffeisen-city-dictionary: '0 10 2 * * *'
+  raiffeisen-city-dictionary: '0 0 4 * * *'
   request-unpause: '0 10 0 * * *'
   request-18-30-unpause: '0 30 18 * * *'
   close-parts-load: '10 */2 * * * *'
@@ -105,7 +94,7 @@ telegram:
     reconnectTimer: 10000
 
 skorozvon:
-  url: https://app.skorozvon.ru
+  url: https://api.skorozvon.ru
 
 vtb:
   url: https://gw.api.vtb.ru:443/openapi/smb/lecs/lead-impers/v1
@@ -123,7 +112,6 @@ raiffeisen:
   partner-id: "000117"
 
 alfa:
-  api-key: 5d590b3b-3174-42ed-a080-241f4864f19f
   url: https://partner.alfabank.ru/public-api/v2
   url-add-request: /leads
   url-request-status: /leads/{id}

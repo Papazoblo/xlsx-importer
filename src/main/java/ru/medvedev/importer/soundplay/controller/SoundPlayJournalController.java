@@ -3,16 +3,13 @@ package ru.medvedev.importer.soundplay.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import ru.medvedev.importer.soundplay.dto.SoundPlayJournalDto;
 import ru.medvedev.importer.soundplay.service.SoundPlayJournalService;
 
-@RestController
+//@RestController
 @RequiredArgsConstructor
-@RequestMapping("/soundux")
+//@RequestMapping("/soundux")
 public class SoundPlayJournalController {
 
     private final SoundPlayJournalService service;

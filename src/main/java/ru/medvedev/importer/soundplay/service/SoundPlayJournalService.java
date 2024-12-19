@@ -1,12 +1,11 @@
 package ru.medvedev.importer.soundplay.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import ru.medvedev.importer.soundplay.dto.SoundPlayJournalDto;
 import ru.medvedev.importer.soundplay.entity.SoundPlayJournalEntity;
 import ru.medvedev.importer.soundplay.repository.SoundPlayJournalRepository;
 
-@Service
+//@Service
 @RequiredArgsConstructor
 public class SoundPlayJournalService {
 

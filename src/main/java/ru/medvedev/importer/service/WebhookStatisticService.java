@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.DailyContactStatistic;
 import ru.medvedev.importer.dto.WebhookDto;
 import ru.medvedev.importer.dto.WebhookSuccessFilter;
+import ru.medvedev.importer.entity.InnRegionEntity;
 import ru.medvedev.importer.entity.WebhookStatisticEntity;
 import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.WebhookStatus;
@@ -21,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
 
+import static feign.Util.isBlank;
 import static java.util.stream.Collectors.*;
 
 @Service
@@ -35,6 +37,7 @@ public class WebhookStatisticService {
 
     private final WebhookStatisticRepository repository;
     private final WebhookSuccessStatusService webhookSuccessStatusService;
+    private final InnRegionService innRegionService;
     private final TelegramPollingService telegramPollingService;
 
     @Scheduled(cron = "${cron.webhook-statistic}")
@@ -44,13 +47,16 @@ public class WebhookStatisticService {
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")),
                 getCountByPrevDay());
         telegramPollingService.sendMessage(message, null, null, scanningChatId, false);
+
+        LocalDateTime timeToDelete = LocalDateTime.now().minusDays(3);
+        repository.deleteAllByCreateAtLessThanEqual(timeToDelete);
     }
 
     public String getCountByPrevDay() {
         LocalTime time = LocalTime.of(19, 0);
         LocalDate date = LocalDate.now();
         return repository.findByCreateAtLessThanEqualAndCreateAtGreaterThan(
-                LocalDateTime.of(date, time), LocalDateTime.of(date.minusDays(1), time))
+                        LocalDateTime.of(date, time), LocalDateTime.of(date.minusDays(1), time))
                 .stream()
                 .collect(groupingBy(DailyContactStatistic::getBank))
                 .entrySet()
@@ -77,7 +83,16 @@ public class WebhookStatisticService {
         entity.setStatus(status);
         entity.setEmail(webhook.getLead().getEmails().isEmpty() ? null : webhook.getLead().getEmails().get(0));
         entity.setPhone(webhook.getLead().getPhones());
-        entity.setCity(webhook.getLead().getCity().trim());
+        entity.setCity(Optional.ofNullable(webhook.getLead().getCity())
+                .map(val -> val.replaceAll("г ", "")
+                        .replaceAll("г. ", ""))
+                .orElse("").trim());
+        if (isBlank(entity.getCity())) {
+            entity.setCity(innRegionService.getByCode(entity.getInn().substring(0, 2))
+                    .map(InnRegionEntity::getAdministrationCenter)
+                    .orElse(null));
+        }
+
         entity.setName(webhook.getLead().getName());
         entity.setSkorozvonCreateAt(webhook.getLead().getCreateAt());
         if (webhook.getContact() != null) {
