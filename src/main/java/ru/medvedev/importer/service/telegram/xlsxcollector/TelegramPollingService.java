@@ -83,10 +83,13 @@ public class TelegramPollingService extends TelegramLongPollingBot {
     @Override
     public void onUpdatesReceived(List<Update> updates) {
         updates.forEach(update -> {
+
             Message message = update.getMessage();
             if (message == null) {
                 message = update.getChannelPost();
             } else {
+
+                log.debug("TelegramPollingService receive message: {}", message.getText());
                 if (isNotBlank(message.getText())) {
                     String messageText = message.getText();
                     systemVariableService.getByCode(SystemVariable.CHAT_STATE).ifPresent(entity -> {

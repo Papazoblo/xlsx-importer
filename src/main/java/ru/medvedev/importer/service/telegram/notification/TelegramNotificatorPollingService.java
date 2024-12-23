@@ -61,6 +61,7 @@ public class TelegramNotificatorPollingService extends TelegramLongPollingBot {
                 message = update.getChannelPost();
             }
 
+            log.debug("TelegramNotificatorPollingService receive message: {}", message.getText());
             if (isNotBlank(message.getText()) && message.getText().startsWith("/start")) {
                 String[] splitText = message.getText().trim().split(" ");
                 if (splitText.length == 3) {

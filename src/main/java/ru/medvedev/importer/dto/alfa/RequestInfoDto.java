@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class RequestInfoDto {
 
-    private String advCode = "db_fab";
+    private String advCode;
     private String comment;
     private String cityCode;
 }
