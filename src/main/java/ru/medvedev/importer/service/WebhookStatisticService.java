@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.DailyContactStatistic;
 import ru.medvedev.importer.dto.WebhookDto;
 import ru.medvedev.importer.dto.WebhookSuccessFilter;
-import ru.medvedev.importer.entity.InnRegionEntity;
 import ru.medvedev.importer.entity.WebhookStatisticEntity;
 import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.WebhookStatus;
@@ -38,6 +37,8 @@ public class WebhookStatisticService {
     private final WebhookStatisticRepository repository;
     private final WebhookSuccessStatusService webhookSuccessStatusService;
     private final InnRegionService innRegionService;
+    private final ContactNewService contactNewService;
+    private final CityService cityService;
     private final TelegramPollingService telegramPollingService;
 
     @Scheduled(cron = "${cron.webhook-statistic}")
@@ -87,10 +88,17 @@ public class WebhookStatisticService {
                 .map(val -> val.replaceAll("г ", "")
                         .replaceAll("г. ", ""))
                 .orElse("").trim());
+
+        cityService.getByName(entity.getCity()).ifPresent(cityEntity ->
+                entity.setCityEntityId(cityEntity.getId()));
+
+        contactNewService.getByInn(entity.getInn()).ifPresent(contact ->
+                entity.setContactId(contact.getId()));
         if (isBlank(entity.getCity())) {
-            entity.setCity(innRegionService.getByCode(entity.getInn().substring(0, 2))
-                    .map(InnRegionEntity::getAdministrationCenter)
-                    .orElse(null));
+            innRegionService.getByCode(entity.getInn().substring(0, 2)).ifPresent(region -> {
+                entity.setCity(region.getAdministrationCenter());
+                entity.setRegionId(region.getId());
+            });
         }
 
         entity.setName(webhook.getLead().getName());

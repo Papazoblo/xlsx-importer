@@ -1,6 +1,5 @@
 package ru.medvedev.importer.service.bankclientservice;
 
-import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -9,24 +8,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.client.AlfaApiClient;
-import ru.medvedev.importer.client.OpeningApiClient;
 import ru.medvedev.importer.dto.CheckLeadResult;
 import ru.medvedev.importer.dto.CityDto;
 import ru.medvedev.importer.dto.CreateLeadResult;
 import ru.medvedev.importer.dto.WebhookLeadDto;
 import ru.medvedev.importer.dto.alfa.*;
 import ru.medvedev.importer.dto.events.ImportEvent;
-import ru.medvedev.importer.dto.raiffeisen.RaiffeisenCityResponseDto;
-import ru.medvedev.importer.dto.request.OpeningCheckInn;
-import ru.medvedev.importer.dto.request.OpeningCreateLead;
 import ru.medvedev.importer.dto.response.LeadInfoResponse;
-import ru.medvedev.importer.dto.response.OpeningCheckInnResponse;
-import ru.medvedev.importer.dto.response.OpeningCheckResultResponse;
 import ru.medvedev.importer.dto.response.OpeningResponse;
 import ru.medvedev.importer.entity.CityEntity;
-import ru.medvedev.importer.entity.ContactNewEntity;
 import ru.medvedev.importer.entity.WebhookStatisticEntity;
-import ru.medvedev.importer.enums.*;
+import ru.medvedev.importer.enums.BankProduct;
+import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
@@ -34,18 +27,18 @@ import ru.medvedev.importer.repository.WebhookStatisticRepository;
 import ru.medvedev.importer.service.BankCountSendedRequestService;
 import ru.medvedev.importer.service.CityService;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static feign.Util.isBlank;
-import static java.util.stream.Collectors.toList;
 import static ru.medvedev.importer.enums.AlfaProductStatus.*;
 import static ru.medvedev.importer.enums.Bank.ALFA;
-import static ru.medvedev.importer.enums.CheckLeadStatus.*;
-import static ru.medvedev.importer.enums.OpeningRequestStatus.created;
-import static ru.medvedev.importer.enums.OpeningRequestStatus.exported;
+import static ru.medvedev.importer.enums.CheckLeadStatus.NEGATIVE;
+import static ru.medvedev.importer.enums.CheckLeadStatus.POSITIVE;
 
 @Service
 @RequiredArgsConstructor
@@ -64,7 +57,7 @@ public class AlfaClientService implements BankClientService {
 
         Optional<CityEntity> city = cityService.getByName(webhookLead.getCity());
         if (!city.isPresent() || isBlank(city.get().getAlfaId())) {
-            log.debug("*** Alfa error create lead. Not fount city with name {}", webhookLead.getCity());
+            log.debug("*** Alfa error create lead. Not found city with name {}", webhookLead.getCity());
             throw new ErrorCreateLeadException("Ошибка добавления лида. Не найден город " + webhookLead.getCity(), -1L);
         }
 

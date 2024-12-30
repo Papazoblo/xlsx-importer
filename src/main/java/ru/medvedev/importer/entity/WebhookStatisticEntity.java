@@ -3,12 +3,10 @@ package ru.medvedev.importer.entity;
 import lombok.Data;
 import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.BankProduct;
-import ru.medvedev.importer.enums.PartsLoadStatus;
 import ru.medvedev.importer.enums.WebhookStatus;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Entity
 @Table(name = "webhook_statistic")
@@ -32,6 +30,27 @@ public class WebhookStatisticEntity {
 
     @Column(name = "city")
     private String city;
+
+    @ManyToOne
+    @JoinColumn(name = "region_id", insertable = false, updatable = false)
+    private InnRegionEntity region;
+
+    @Column(name = "region_id")
+    private Long regionId;
+
+    @ManyToOne
+    @JoinColumn(name = "contact_new_id", insertable = false, updatable = false)
+    private ContactNewEntity contact;
+
+    @Column(name = "contact_new_id")
+    private Long contactId;
+
+    @ManyToOne
+    @JoinColumn(name = "city_id", insertable = false, updatable = false)
+    private CityEntity cityEntity;
+
+    @Column(name = "city_id")
+    private Long cityEntityId;
 
     @Column(name = "name")
     private String name;

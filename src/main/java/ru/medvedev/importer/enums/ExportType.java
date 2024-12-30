@@ -22,6 +22,6 @@ public enum ExportType {
             case "XLSX":
                 return XLSX;
         }
-        throw new EntityNotFoundException("Not fount enum with code = " + string);
+        throw new EntityNotFoundException("Not found enum with code = " + string);
     }
 }

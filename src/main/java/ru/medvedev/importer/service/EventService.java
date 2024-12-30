@@ -31,9 +31,20 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class EventService {
+    /*"
 
+    Банк: Альфа
+    Статус: ошибка - There was no successful scoring check for this TIN
+
+    ИНН: 370205994331
+    Город: null, Ивановская область
+
+    Код города: 40c6863e-2a5f-4033-a377-3416533948bd
+    Имя: ТХАКОХОВ АРТУР ХАСАНОВИЧ - ип ТХАКОХОВ АРТУР ХАСАНОВИЧ
+
+    */
     public static final String BANK_NAME_PATTERN = "Банк: `%s`\n";
-    public static final String NOTIFICATION_PATTERN = BANK_NAME_PATTERN + "Статус: `%s`\n\nИНН: `%s`\nГород: `%s`\nИмя: `%s`";
+    public static final String NOTIFICATION_PATTERN = BANK_NAME_PATTERN + "Статус: `%s` - '%s'\n\nИНН: `%s`\nГород: `%s`, '%s'\nКод города: `%s`\nИмя: `%s'";
     public static final String STATISTIC_LINE_PATTERN = "%s: `%d`\n";
     public static final String STATISTIC_STRING_LINE_PATTERN = "%s: `%s`\n";
     private static final String MESSAGE_SIMPLE_PATTERN = "%s";

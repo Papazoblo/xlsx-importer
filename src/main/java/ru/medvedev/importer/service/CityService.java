@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static feign.Util.isBlank;
 import static java.util.stream.Collectors.toMap;
 
 
@@ -22,6 +23,9 @@ public class CityService {
     private final CityRepository repository;
 
     public Optional<CityEntity> getByName(String name) {
+        if(isBlank(name)) {
+            return Optional.empty();
+        }
         return repository.findByName(name);
     }
 

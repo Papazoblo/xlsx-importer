@@ -84,11 +84,13 @@ public class LeadWorkerService {
                         } else {
                             eventPublisher.publishEvent(new NotificationEvent(this,
                                     String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
-                                            String.format("Заявка отклонена (%s)", result.getLeadResponse().get(0)
-                                                    .getResponseCode()),
+                                            result.getLeadResponse().get(0).getResponseCode(),
+                                            result.getLeadResponse().get(0).getResponseCodeDescription(),
                                             item.getInn(),
                                             item.getCity(),
-                                            item.getName()),
+                                            Optional.ofNullable(item.getRegion()).map(InnRegionEntity::getName).orElse(""),
+                                            Optional.ofNullable(item.getCityEntity()).map(CityEntity::getAlfaId).orElse(""),
+                                            Optional.ofNullable(item.getContact()).map(ContactNewEntity::getOrgName).orElse(item.getName())),
                                     TelegramNotificationType.ALL,
                                     EventType.LOG_TG));
                             item.setStatus(WebhookStatus.REJECTED);
@@ -128,11 +130,13 @@ public class LeadWorkerService {
                     } else {
                         eventPublisher.publishEvent(new NotificationEvent(this,
                                 String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
-                                        String.format("Заявка отклонена (%s)", result.getLeadResponse().get(0)
-                                                .getResponseCode()),
+                                        result.getLeadResponse().get(0).getResponseCode(),
+                                        result.getLeadResponse().get(0).getResponseCodeDescription(),
                                         item.getInn(),
                                         item.getCity(),
-                                        item.getName()),
+                                        Optional.ofNullable(item.getRegion()).map(InnRegionEntity::getName).orElse(""),
+                                        Optional.ofNullable(item.getCityEntity()).map(CityEntity::getAlfaId).orElse(""),
+                                        Optional.ofNullable(item.getContact()).map(ContactNewEntity::getOrgName).orElse(item.getName())),
                                 TelegramNotificationType.ALL,
                                 EventType.LOG_TG));
                         item.setStatus(WebhookStatus.REJECTED);
@@ -148,10 +152,13 @@ public class LeadWorkerService {
                 log.debug("*** Error check duplicate: {} {}", ex.getMessage(), ex);
                 eventPublisher.publishEvent(new NotificationEvent(this,
                         String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
-                                String.format("Ошибка обработки заявки (%s)", ex.getMessage()),
+                                "Ошибка обработки заявки",
+                                ex.getMessage(),
                                 item.getInn(),
                                 item.getCity(),
-                                item.getName()),
+                                Optional.ofNullable(item.getRegion()).map(InnRegionEntity::getName).orElse(""),
+                                Optional.ofNullable(item.getCityEntity()).map(CityEntity::getAlfaId).orElse(""),
+                                Optional.ofNullable(item.getContact()).map(ContactNewEntity::getOrgName).orElse(item.getName())),
                         TelegramNotificationType.ADDING_ERROR,
                         EventType.LOG_TG));
                 item.setStatus(WebhookStatus.ERROR);
@@ -215,9 +222,14 @@ public class LeadWorkerService {
                     }
                 } else {
                     eventPublisher.publishEvent(new NotificationEvent(this,
-                            String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), isBlank(result.getAdditionalInfo())
-                                            ? "Непредвиденная ошибка" : result.getAdditionalInfo(), leadDto.getInn(),
-                                    leadDto.getCity(), leadDto.getName()),
+                            String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
+                                    isBlank(result.getAdditionalInfo()) ? "Непредвиденная ошибка" : result.getAdditionalInfo(),
+                                    "",
+                                    item.getInn(),
+                                    item.getCity(),
+                                    Optional.ofNullable(item.getRegion()).map(InnRegionEntity::getName).orElse(""),
+                                    Optional.ofNullable(item.getCityEntity()).map(CityEntity::getAlfaId).orElse(""),
+                                    Optional.ofNullable(item.getContact()).map(ContactNewEntity::getOrgName).orElse(item.getName())),
                             TelegramNotificationType.ADDING_ERROR,
                             EventType.LOG_TG));
                     item.setStatus(WebhookStatus.ERROR);
@@ -228,7 +240,13 @@ public class LeadWorkerService {
             } catch (ErrorCreateLeadException ex) {
                 eventPublisher.publishEvent(new NotificationEvent(this,
                         String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
-                                "Невозможно добавить. " + ex.getMessage(), leadDto.getInn(), leadDto.getCity(), leadDto.getName()),
+                                "Невозможно добавить",
+                                ex.getMessage(),
+                                item.getInn(),
+                                item.getCity(),
+                                Optional.ofNullable(item.getRegion()).map(InnRegionEntity::getName).orElse(""),
+                                Optional.ofNullable(item.getCityEntity()).map(CityEntity::getAlfaId).orElse(""),
+                                Optional.ofNullable(item.getContact()).map(ContactNewEntity::getOrgName).orElse(item.getName())),
                         TelegramNotificationType.ADDING_ERROR,
                         EventType.LOG_TG));
                 item.setStatus(WebhookStatus.ERROR);
@@ -259,10 +277,13 @@ public class LeadWorkerService {
             } catch (ErrorCreateLeadException ex) {
                 eventPublisher.publishEvent(new NotificationEvent(this,
                         String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
-                                "Невозможно добавить. " + ex.getMessage(),
+                                "Невозможно добавить",
+                                ex.getMessage(),
                                 item.getInn(),
                                 item.getCity(),
-                                item.getName()),
+                                Optional.ofNullable(item.getRegion()).map(InnRegionEntity::getName).orElse(""),
+                                Optional.ofNullable(item.getCityEntity()).map(CityEntity::getAlfaId).orElse(""),
+                                Optional.ofNullable(item.getContact()).map(ContactNewEntity::getOrgName).orElse(item.getName())),
                         TelegramNotificationType.ADDING_ERROR,
                         EventType.LOG_TG));
                 item.setStatus(WebhookStatus.ERROR);
@@ -295,10 +316,14 @@ public class LeadWorkerService {
                         log.debug("*** lead loaded in {} {} ", item.getBank(), item.getInn());
                         item.setStatus(SUCCESS);
                         eventPublisher.publishEvent(new NotificationEvent(this,
-                                String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
+                                String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
+                                        result.getLeadResponse().get(0).getResponseCode(),
+                                        result.getLeadResponse().get(0).getResponseCodeDescription(),
                                         item.getInn(),
                                         item.getCity(),
-                                        item.getName()),
+                                        Optional.ofNullable(item.getRegion()).map(InnRegionEntity::getName).orElse(""),
+                                        Optional.ofNullable(item.getCityEntity()).map(CityEntity::getAlfaId).orElse(""),
+                                        Optional.ofNullable(item.getContact()).map(ContactNewEntity::getOrgName).orElse(item.getName())),
                                 TelegramNotificationType.ALL,
                                 EventType.LOG_TG));
                     /*} else {
@@ -330,10 +355,14 @@ public class LeadWorkerService {
                     log.debug("*** lead loaded in {} {} ", item.getBank(), item.getInn());
                     item.setStatus(SUCCESS);
                     eventPublisher.publishEvent(new NotificationEvent(this,
-                            String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(), "Заявка успешно добавлена",
+                            String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
+                                    result.getLeadResponse().get(0).getResponseCode(),
+                                    result.getLeadResponse().get(0).getResponseCodeDescription(),
                                     item.getInn(),
                                     item.getCity(),
-                                    item.getName()),
+                                    Optional.ofNullable(item.getRegion()).map(InnRegionEntity::getName).orElse(""),
+                                    Optional.ofNullable(item.getCityEntity()).map(CityEntity::getAlfaId).orElse(""),
+                                    Optional.ofNullable(item.getContact()).map(ContactNewEntity::getOrgName).orElse(item.getName())),
                             TelegramNotificationType.ALL,
                             EventType.LOG_TG));
                 } else {
@@ -365,9 +394,12 @@ public class LeadWorkerService {
                     } else {
                         eventPublisher.publishEvent(new NotificationEvent(this,
                                 String.format(NOTIFICATION_PATTERN, successStatusOptional.get().getBank().getTitle(),
-                                        "Невозможно добавить. Некорректные данные. ",
+                                        "Невозможно добавить",
+                                        "Некорректные данные",
                                         webhookDto.getLead().getInn(),
                                         webhookDto.getLead().getCity(),
+                                        "",
+                                        "",
                                         webhookDto.getLead().getName()),
                                 TelegramNotificationType.ADDING_ERROR,
                                 EventType.LOG_TG));
