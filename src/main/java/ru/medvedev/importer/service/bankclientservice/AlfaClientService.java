@@ -18,6 +18,7 @@ import ru.medvedev.importer.dto.response.LeadInfoResponse;
 import ru.medvedev.importer.dto.response.OpeningResponse;
 import ru.medvedev.importer.entity.CityEntity;
 import ru.medvedev.importer.entity.WebhookStatisticEntity;
+import ru.medvedev.importer.entity.WebhookStatusEntity;
 import ru.medvedev.importer.enums.BankProduct;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
@@ -51,7 +52,7 @@ public class AlfaClientService implements BankClientService {
     private final ApplicationEventPublisher eventPublisher;
     private final BankCountSendedRequestService bankCountSendedRequestService;
 
-    public CreateLeadResult createLead(WebhookLeadDto webhookLead) {
+    public CreateLeadResult createLead(WebhookLeadDto webhookLead, WebhookStatusEntity webhookStatusEntity) {
 
         log.debug("*** Create lead in Alfa");
 
@@ -71,6 +72,7 @@ public class AlfaClientService implements BankClientService {
         RequestInfoDto requestInfoDto = new RequestInfoDto();
         requestInfoDto.setComment(webhookLead.getComment());
         requestInfoDto.setCityCode(city.get().getAlfaId()); // код города
+        requestInfoDto.setAdvCode(webhookStatusEntity.getAlfaAvdCode());
         request.setRequestInfo(requestInfoDto);
 
         ProductInfoDto productInfoDto = new ProductInfoDto();

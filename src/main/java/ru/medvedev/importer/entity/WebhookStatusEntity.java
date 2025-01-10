@@ -16,4 +16,7 @@ public class WebhookStatusEntity {
 
     @Column(name = "name")
     private String name;
+
+    @Column(name = "alfa_avd_code")
+    private String alfaAvdCode;
 }

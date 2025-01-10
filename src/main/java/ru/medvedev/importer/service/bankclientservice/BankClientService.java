@@ -4,16 +4,14 @@ import ru.medvedev.importer.dto.CheckLeadResult;
 import ru.medvedev.importer.dto.CreateLeadResult;
 import ru.medvedev.importer.dto.WebhookLeadDto;
 import ru.medvedev.importer.entity.WebhookStatisticEntity;
+import ru.medvedev.importer.entity.WebhookStatusEntity;
 
 import javax.naming.OperationNotSupportedException;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import static ru.medvedev.importer.enums.CheckLeadStatus.POSITIVE;
 
 public interface BankClientService {
 
-    default CreateLeadResult createLead(WebhookLeadDto webhookLead) throws OperationNotSupportedException {
+    default CreateLeadResult createLead(WebhookLeadDto webhookLead, WebhookStatusEntity webhookStatusEntity) throws OperationNotSupportedException {
         throw new OperationNotSupportedException();
     }
 

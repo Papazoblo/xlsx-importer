@@ -18,6 +18,7 @@ import ru.medvedev.importer.dto.response.OpeningCheckInnResponse;
 import ru.medvedev.importer.dto.response.OpeningCheckResultResponse;
 import ru.medvedev.importer.dto.response.OpeningResponse;
 import ru.medvedev.importer.entity.WebhookStatisticEntity;
+import ru.medvedev.importer.entity.WebhookStatusEntity;
 import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.enums.OpeningInnStatus;
 import ru.medvedev.importer.enums.OpeningRequestStatus;
@@ -42,7 +43,7 @@ public class OpeningClientService implements BankClientService {
     private final OpeningApiClient client;
     private final ApplicationEventPublisher eventPublisher;
 
-    public CreateLeadResult createLead(WebhookLeadDto webhookLead) {
+    public CreateLeadResult createLead(WebhookLeadDto webhookLead, WebhookStatusEntity webhookStatusEntity) {
 
         log.debug("*** Create lead in Opening");
 

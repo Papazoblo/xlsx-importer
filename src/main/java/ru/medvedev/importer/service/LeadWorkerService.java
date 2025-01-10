@@ -210,7 +210,7 @@ public class LeadWorkerService {
                 if (item.getBank() == Bank.VTB_OPENING || item.getBank() == Bank.ALFA) {
                     leadDto.setComment(item.getComment());
                 }
-                CreateLeadResult result = clientService.createLead(leadDto);
+                CreateLeadResult result = clientService.createLead(leadDto, item.getSuccessStatus().getWebhookStatusEntity());
                 if (result.getStatus()) {
                     if (item.getBank() == Bank.VTB_OPENING || item.getBank() == Bank.ALFA) {
                         item.setStatus(WebhookStatus.WAIT_CREATE_LEAD_RESPONSE);

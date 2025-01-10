@@ -4,13 +4,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.client.RaiffeisenDictionaryApiClient;
 import ru.medvedev.importer.client.RaiffeisenRequestApiClient;
-import ru.medvedev.importer.dto.*;
+import ru.medvedev.importer.dto.CityDto;
+import ru.medvedev.importer.dto.CreateLeadResult;
+import ru.medvedev.importer.dto.WebhookLeadDto;
 import ru.medvedev.importer.dto.raiffeisen.*;
 import ru.medvedev.importer.entity.CityEntity;
+import ru.medvedev.importer.entity.WebhookStatusEntity;
 import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.service.CityService;
 import ru.medvedev.importer.service.ContactNewService;
@@ -34,7 +36,7 @@ public class RaiffeisenClientService implements BankClientService {
     private final ContactNewService contactService;
 
 
-    public CreateLeadResult createLead(WebhookLeadDto webhookLead) {
+    public CreateLeadResult createLead(WebhookLeadDto webhookLead, WebhookStatusEntity webhookStatusEntity) {
         //todo добавить метаинформацию
         RaiffeisenRequestCreateLeadDto request = new RaiffeisenRequestCreateLeadDto();
         RaiffeisenCommunicationChannelsDto channelsDto = new RaiffeisenCommunicationChannelsDto();
