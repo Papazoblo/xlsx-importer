@@ -2,15 +2,18 @@ package ru.medvedev.importer.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.DailyContactStatistic;
 import ru.medvedev.importer.dto.WebhookDto;
+import ru.medvedev.importer.dto.events.NotificationEvent;
 import ru.medvedev.importer.entity.ContactNewEntity;
 import ru.medvedev.importer.entity.WebhookStatisticEntity;
 import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
+import ru.medvedev.importer.enums.EventType;
+import ru.medvedev.importer.enums.TelegramNotificationType;
 import ru.medvedev.importer.enums.WebhookStatus;
-import ru.medvedev.importer.exception.BadRequestException;
 import ru.medvedev.importer.repository.WebhookStatisticRepository;
 import ru.medvedev.importer.service.telegram.xlsxcollector.TelegramPollingService;
 
@@ -23,6 +26,7 @@ import java.util.Optional;
 
 import static feign.Util.isBlank;
 import static java.util.stream.Collectors.*;
+import static ru.medvedev.importer.service.EventService.LEAD_WITH_PHONE_NOT_FOUND;
 import static ru.medvedev.importer.utils.StringUtils.getFioStringFromContact;
 
 @Service
@@ -36,7 +40,7 @@ public class WebhookStatisticService {
     private Long scanningChatId;
 
     private final WebhookStatisticRepository repository;
-    private final WebhookSuccessStatusService webhookSuccessStatusService;
+    private final ApplicationEventPublisher eventPublisher;
     private final InnRegionService innRegionService;
     private final ContactNewService contactNewService;
     private final CityService cityService;
@@ -80,9 +84,17 @@ public class WebhookStatisticService {
 
     public void addStatistic(WebhookStatus status, WebhookDto webhook, WebhookSuccessStatusEntity successStatus) {
 
-        ContactNewEntity contact = contactNewService.getLastByPhones(webhook.getLead().getPhones())
-                .orElseThrow(() -> new BadRequestException("Lead by phone " + webhook.getLead().getPhones() + " not found"));
+        Optional<ContactNewEntity> contactOptional = contactNewService.getLastByPhones(webhook.getLead().getPhones());
+        if(contactOptional.isEmpty()) {
 
+            eventPublisher.publishEvent(new NotificationEvent(this,
+                    String.format(LEAD_WITH_PHONE_NOT_FOUND, webhook.getLead().getPhones()),
+                    TelegramNotificationType.ADDING_ERROR,
+                    EventType.LOG_TG));
+
+            return;
+        }
+        ContactNewEntity contact = contactOptional.get();
 
         WebhookStatisticEntity entity = new WebhookStatisticEntity();
         entity.setContactId(contact.getId());

@@ -108,8 +108,10 @@ public class ContactNewService {
     }
 
     public Optional<ContactNewEntity> getLastByPhones(String phone) {
-        phone = phone.split("\\|")[0].strip().trim().replace("+7", "8");
-        return repository.findFirstByPhoneOrderByIdDesc(phone);
+        List<String> phoneList = Arrays.stream(phone.split("\\|"))
+                .map(str -> str.strip().trim().replace("+7", "8"))
+                .collect(Collectors.toList());
+        return repository.findFirstByPhoneInOrderByIdDesc(phoneList);
     }
 
     public List<ContactNewEntity> getContactIdByInn(List<String> innList) {
