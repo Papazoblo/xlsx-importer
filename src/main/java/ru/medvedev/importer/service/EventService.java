@@ -44,7 +44,7 @@ public class EventService {
 
     */
     public static final String BANK_NAME_PATTERN = "Банк: `%s`\n";
-    public static final String NOTIFICATION_PATTERN = BANK_NAME_PATTERN + "Статус: `%s` - '%s'\n\nИНН: `%s`\nГород: `%s`, '%s'\nКод города: `%s`\nИмя: `%s'";
+    public static final String NOTIFICATION_PATTERN = BANK_NAME_PATTERN + "Статус: `%s` - `%s`\n\nИНН: `%s`\nГород: `%s`, `%s`\nКод города: `%s`\nИмя: `%s`";
     public static final String STATISTIC_LINE_PATTERN = "%s: `%d`\n";
     public static final String STATISTIC_STRING_LINE_PATTERN = "%s: `%s`\n";
     private static final String MESSAGE_SIMPLE_PATTERN = "%s";

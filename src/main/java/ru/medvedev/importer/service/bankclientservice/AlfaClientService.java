@@ -24,7 +24,6 @@ import ru.medvedev.importer.enums.EventType;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
-import ru.medvedev.importer.repository.WebhookStatisticRepository;
 import ru.medvedev.importer.service.BankCountSendedRequestService;
 import ru.medvedev.importer.service.CityService;
 
@@ -48,7 +47,6 @@ public class AlfaClientService implements BankClientService {
 
     private final AlfaApiClient client;
     private final CityService cityService;
-    private final WebhookStatisticRepository webhookStatisticRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final BankCountSendedRequestService bankCountSendedRequestService;
 

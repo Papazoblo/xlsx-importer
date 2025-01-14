@@ -128,4 +128,10 @@ public class ImportController {
         //leadWorkerService.processWebhook(new ObjectMapper().readValue(input, WebhookDto.class));
         leadWorkerService.processWebhook(input);
     }
+
+    @PostMapping(value = "/skorozvon/webhook/test", produces = MediaType.APPLICATION_FORM_URLENCODED_VALUE, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @ResponseBody
+    public void takeWebhook(@RequestParam("text") String text) {
+        leadWorkerService.sendTest(text);
+    }
 }

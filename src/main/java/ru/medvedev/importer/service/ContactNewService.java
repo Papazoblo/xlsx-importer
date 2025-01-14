@@ -18,7 +18,10 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import ru.medvedev.importer.dto.*;
-import ru.medvedev.importer.entity.*;
+import ru.medvedev.importer.entity.ContactBankActualityEntity;
+import ru.medvedev.importer.entity.ContactNewEntity;
+import ru.medvedev.importer.entity.WebhookStatusEntity;
+import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.*;
 import ru.medvedev.importer.repository.ContactBankActualityRepository;
 import ru.medvedev.importer.repository.ContactNewRepository;
@@ -102,6 +105,11 @@ public class ContactNewService {
 
     public Optional<ContactNewEntity> getByInn(String inn) {
         return repository.findFirstByInn(inn);
+    }
+
+    public Optional<ContactNewEntity> getLastByPhones(String phone) {
+        phone = phone.split("\\|")[0].strip().trim().replace("+7", "8");
+        return repository.findFirstByPhoneOrderByIdDesc(phone);
     }
 
     public List<ContactNewEntity> getContactIdByInn(List<String> innList) {

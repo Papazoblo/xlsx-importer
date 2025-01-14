@@ -317,8 +317,8 @@ public class LeadWorkerService {
                         item.setStatus(SUCCESS);
                         eventPublisher.publishEvent(new NotificationEvent(this,
                                 String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
-                                        result.getLeadResponse().get(0).getResponseCode(),
-                                        result.getLeadResponse().get(0).getResponseCodeDescription(),
+                                        item.getStatus(),
+                                        "Заявка успешно добавлена",
                                         item.getInn(),
                                         item.getCity(),
                                         Optional.ofNullable(item.getRegion()).map(InnRegionEntity::getName).orElse(""),
@@ -356,8 +356,8 @@ public class LeadWorkerService {
                     item.setStatus(SUCCESS);
                     eventPublisher.publishEvent(new NotificationEvent(this,
                             String.format(NOTIFICATION_PATTERN, item.getBank().getTitle(),
-                                    result.getLeadResponse().get(0).getResponseCode(),
-                                    result.getLeadResponse().get(0).getResponseCodeDescription(),
+                                    item.getStatus(),
+                                    "Заявка успешно добавлена",
                                     item.getInn(),
                                     item.getCity(),
                                     Optional.ofNullable(item.getRegion()).map(InnRegionEntity::getName).orElse(""),
@@ -378,18 +378,26 @@ public class LeadWorkerService {
         });
     }
 
+    public void sendTest(String text) {
+        eventPublisher.publishEvent(new NotificationEvent(this,
+                text,
+                TelegramNotificationType.ALL,
+                EventType.LOG_TG));
+    }
+
     public void processWebhook(WebhookDto webhookDto) {
         //если вебхук имеет тип call_result
         if (webhookDto.getType().equals("call_result")) {
             String resultName = webhookDto.getCallResult().getResultName();
             //если результат соответствует нашим ожиданиям
             if (isNotBlank(resultName)) {
+                resultName = resultName.trim().strip();
                 WebhookStatusEntity webhookStatus = webhookStatusService.creatIfNotExists(resultName);
 
                 //создаем заливку в банк
                 Optional<WebhookSuccessStatusEntity> successStatusOptional = webhookSuccessStatusService.getByNameAndStatus(resultName);
                 if (successStatusOptional.isPresent()) {
-                    if (isNotBlank(webhookDto.getLead().getInn())) {
+                    if (isNotBlank(webhookDto.getLead().getPhones())) {
                         webhookStatisticService.addStatistic(WebhookStatus.FIXED, webhookDto, successStatusOptional.get());
                     } else {
                         eventPublisher.publishEvent(new NotificationEvent(this,

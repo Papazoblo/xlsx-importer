@@ -42,6 +42,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/settings/webhook-success-statuses").hasAuthority("WEBHOOK_STATUS")
                 .antMatchers("/users").hasAuthority("USERS")
                 .antMatchers(HttpMethod.POST, "/skorozvon/webhook").permitAll()
+                .antMatchers(HttpMethod.POST, "/skorozvon/webhook/test").permitAll()
+                .antMatchers(HttpMethod.POST, "/promo-code/amo-crm/webhook").permitAll()
                 .antMatchers(HttpMethod.GET, "/test").permitAll()
                 .antMatchers("/soundux/*").permitAll()
                 .anyRequest().authenticated()

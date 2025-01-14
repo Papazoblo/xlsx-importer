@@ -6,11 +6,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.DailyContactStatistic;
 import ru.medvedev.importer.dto.WebhookDto;
-import ru.medvedev.importer.dto.WebhookSuccessFilter;
+import ru.medvedev.importer.entity.ContactNewEntity;
 import ru.medvedev.importer.entity.WebhookStatisticEntity;
 import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
 import ru.medvedev.importer.enums.WebhookStatus;
-import ru.medvedev.importer.enums.WebhookType;
+import ru.medvedev.importer.exception.BadRequestException;
 import ru.medvedev.importer.repository.WebhookStatisticRepository;
 import ru.medvedev.importer.service.telegram.xlsxcollector.TelegramPollingService;
 
@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import static feign.Util.isBlank;
 import static java.util.stream.Collectors.*;
+import static ru.medvedev.importer.utils.StringUtils.getFioStringFromContact;
 
 @Service
 @RequiredArgsConstructor
@@ -78,41 +79,40 @@ public class WebhookStatisticService {
     }
 
     public void addStatistic(WebhookStatus status, WebhookDto webhook, WebhookSuccessStatusEntity successStatus) {
+
+        ContactNewEntity contact = contactNewService.getLastByPhones(webhook.getLead().getPhones())
+                .orElseThrow(() -> new BadRequestException("Lead by phone " + webhook.getLead().getPhones() + " not found"));
+
+
         WebhookStatisticEntity entity = new WebhookStatisticEntity();
-        entity.setInn(webhook.getLead().getInn());
+        entity.setContactId(contact.getId());
+        entity.setInn(contact.getInn());
         entity.setBank(successStatus.getBank());
         entity.setStatus(status);
         entity.setEmail(webhook.getLead().getEmails().isEmpty() ? null : webhook.getLead().getEmails().get(0));
-        entity.setPhone(webhook.getLead().getPhones());
+        entity.setPhone(contact.getPhone());
         entity.setCity(Optional.ofNullable(webhook.getLead().getCity())
                 .map(val -> val.replaceAll("г ", "")
                         .replaceAll("г. ", ""))
                 .orElse("").trim());
 
-        cityService.getByName(entity.getCity()).ifPresent(cityEntity ->
-                entity.setCityEntityId(cityEntity.getId()));
-
-        contactNewService.getByInn(entity.getInn()).ifPresent(contact ->
-                entity.setContactId(contact.getId()));
         if (isBlank(entity.getCity())) {
-            innRegionService.getByCode(entity.getInn().substring(0, 2)).ifPresent(region -> {
+            innRegionService.getByCode(contact.getInn().substring(0, 2)).ifPresent(region -> {
                 entity.setCity(region.getAdministrationCenter());
                 entity.setRegionId(region.getId());
             });
         }
 
-        entity.setName(webhook.getLead().getName());
+        cityService.getByName(entity.getCity()).ifPresent(cityEntity ->
+                entity.setCityEntityId(cityEntity.getId()));
+
+        entity.setName(contact.getOrgName());
         entity.setSkorozvonCreateAt(webhook.getLead().getCreateAt());
-        if (webhook.getContact() != null) {
-            entity.setFullName(webhook.getContact().getName());
-        }
+        entity.setFullName(getFioStringFromContact(contact));
         if (webhook.getCallResult() != null) {
             entity.setComment(webhook.getCallResult().getComment());
         }
-        WebhookSuccessFilter filter = new WebhookSuccessFilter();
-        filter.setName(webhook.getCallResult().getResultName());
-        filter.setType(WebhookType.CREATE_REQUEST);
-        entity.setSuccessStatus(webhookSuccessStatusService.getByName(filter));
+        entity.setSuccessStatus(successStatus);
         repository.save(entity);
     }
 

@@ -36,7 +36,7 @@ public class WebhookSuccessSpecification implements Specification<WebhookSuccess
                 .orElseGet(() -> b.isNull(root.get("type"))));
 
         Optional.ofNullable(filter.getName()).ifPresent(value ->
-                predicates.add(b.equal(root.join("webhookStatusEntity").get("name"), value)));
+                predicates.add(b.equal(root.join("webhookStatusEntity").get("name"), value.strip().trim())));
 
         if(predicates.isEmpty()) {
             return b.and();

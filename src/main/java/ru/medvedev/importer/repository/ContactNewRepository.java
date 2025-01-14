@@ -21,6 +21,8 @@ public interface ContactNewRepository extends JpaRepository<ContactNewEntity, Lo
 
     Optional<ContactNewEntity> findFirstByInn(String inn);
 
+    Optional<ContactNewEntity> findFirstByPhoneOrderByIdDesc(String phone);
+
     boolean existsByInn(String inn);
 
     List<ContactNewEntity> findAllByAlfaCreateAtGreaterThanEqualAndAlfaCreateAtLessThanEqualOrderByCreateAt(LocalDateTime dateFrom,
