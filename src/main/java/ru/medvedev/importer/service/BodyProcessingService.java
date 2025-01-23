@@ -577,10 +577,13 @@ public class BodyProcessingService {
 
     private static CreateLeadDto xlsxRecordToLead(ContactNewEntity contact) {
         CreateLeadDto lead = new CreateLeadDto();
-        lead.setName(getFioStringFromContact(contact));
+//        lead.setName(getFioStringFromContact(contact));
         lead.setPhones(Collections.singletonList(contact.getPhone()));
-        lead.setCity(contact.getCity());
-        lead.setRegion(contact.getRegion());
+//        lead.setCity(contact.getCity());
+//        lead.setRegion(contact.getRegion());
+        lead.setName("ФИО");
+        lead.setCity("Город");
+        lead.setCity("Регион");
         return lead;
     }
 
@@ -588,15 +591,16 @@ public class BodyProcessingService {
                                                                   FileInfoEntity fileInfo) {
         CreateOrganizationDto organization = new CreateOrganizationDto();
         String fioStringFromContact = getFioStringFromContact(contact);
-        organization.setName(String.format("%s %s %s", bank.getTitle(), contact.getOrgName().contains(fioStringFromContact) ? "" : fioStringFromContact, contact.getOrgName()));
+//        organization.setName(String.format("%s %s %s", bank.getTitle(), contact.getOrgName().contains(fioStringFromContact) ? "" : fioStringFromContact, contact.getOrgName()));
+        organization.setName("Фамилия Имя Отчество");
         organization.setPhones(Collections.singletonList(contact.getPhone()));
         if (fileInfo.getEnableWhatsAppLink()) {
             organization.setHomepage(String.format("https://wa.me/%s", contact.getPhone()));
         }
-        organization.setCity(contact.getCity());
-        organization.setRegion(contact.getRegion());
-        organization.setInn(contact.getInn());
-        organization.setComment(contact.getOgrn());
+        organization.setCity("Город");
+//        organization.setRegion(contact.getRegion());
+//        organization.setInn(contact.getInn());
+//        organization.setComment(contact.getOgrn());
         return organization;
     }
 

@@ -385,6 +385,24 @@ public class LeadWorkerService {
                 EventType.LOG_TG));
     }
 
+    public Integer processWithCreateContact(List<ContactDto> contactList) {
+        List<ContactNewEntity> createdContacts = contactNewService.createAll(contactList);
+        createdContacts.forEach(contact -> {
+            WebhookDto webhookDto = new WebhookDto();
+            webhookDto.setType("call_result");
+            CallResultDto callResultDto = new CallResultDto();
+            callResultDto.setResultName("Заявка Тёплый");
+            webhookDto.setCallResult(callResultDto);
+            WebhookLeadDto leadDto = new WebhookLeadDto();
+            leadDto.setPhones(contact.getPhone());
+            webhookDto.setLead(leadDto);
+            CallDto callDto = new CallDto();
+            webhookDto.setCall(callDto);
+            processWebhook(webhookDto);
+        });
+        return createdContacts.size();
+    }
+
     public void processWebhook(WebhookDto webhookDto) {
         //если вебхук имеет тип call_result
         if (webhookDto.getType().equals("call_result")) {

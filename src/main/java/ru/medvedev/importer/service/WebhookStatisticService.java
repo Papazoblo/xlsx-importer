@@ -103,10 +103,6 @@ public class WebhookStatisticService {
         entity.setStatus(status);
         entity.setEmail(webhook.getLead().getEmails().isEmpty() ? null : webhook.getLead().getEmails().get(0));
         entity.setPhone(contact.getPhone());
-        entity.setCity(Optional.ofNullable(webhook.getLead().getCity())
-                .map(val -> val.replaceAll("г ", "")
-                        .replaceAll("г. ", ""))
-                .orElse("").trim());
 
         if (isBlank(entity.getCity())) {
             innRegionService.getByCode(contact.getInn().substring(0, 2)).ifPresent(region -> {

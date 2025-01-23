@@ -32,6 +32,7 @@ import ru.medvedev.importer.specification.ContactSpecification;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -97,6 +98,28 @@ public class ContactNewService {
                 contactBankActualityRepository.save(actualityEntity);
             }
         });
+    }
+
+    public List<ContactNewEntity> createAll(List<ContactDto> contactList) {
+        if (contactList == null || contactList.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return repository.saveAll(contactList.stream()
+                .map(dto -> getByInn(dto.getInn())
+                        .orElseGet(() -> {
+                            String[] fioSplit = dto.getFio().split(" ");
+
+                            ContactNewEntity contact = new ContactNewEntity();
+                            contact.setOrgName(dto.getOrgName());
+                            contact.setInn(dto.getInn());
+                            contact.setName(fioSplit.length >= 2 ? fioSplit[1] : null);
+                            contact.setSurname(fioSplit.length >= 1 ? fioSplit[0] : null);
+                            contact.setMiddleName(fioSplit.length >= 3 ? fioSplit[2] : null);
+                            contact.setPhone(dto.getPhone());
+                            contact.setCreateAt(LocalDateTime.now());
+                            return contact;
+                        })).collect(Collectors.toList()));
     }
 
     public boolean existsByInn(String inn) {

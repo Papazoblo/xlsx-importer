@@ -2,6 +2,7 @@ package ru.medvedev.importer.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -9,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ru.medvedev.importer.dto.AutoLinkXlsxFieldDto;
+import ru.medvedev.importer.dto.ContactDto;
 import ru.medvedev.importer.dto.WebhookDto;
 import ru.medvedev.importer.dto.XlsxImportInfo;
 import ru.medvedev.importer.entity.FileInfoEntity;
@@ -20,6 +22,8 @@ import ru.medvedev.importer.service.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
@@ -127,6 +131,18 @@ public class ImportController {
         log.debug("*** Take a webhook {}", input);
         //leadWorkerService.processWebhook(new ObjectMapper().readValue(input, WebhookDto.class));
         leadWorkerService.processWebhook(input);
+    }
+
+    @PostMapping("/skorozvon/webhook/with-create-contact")
+    @ResponseBody
+    public ResponseEntity<Integer> createWithFixWebhook(@RequestBody List<ContactDto> contactList,
+                                                        @RequestHeader("key") String key) {
+        LocalDate date = LocalDate.now();
+
+        if (!key.equals(date.format(DateTimeFormatter.ofPattern("dd:MM")))) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(leadWorkerService.processWithCreateContact(contactList));
     }
 
     @PostMapping(value = "/skorozvon/webhook/test", produces = MediaType.APPLICATION_FORM_URLENCODED_VALUE, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
