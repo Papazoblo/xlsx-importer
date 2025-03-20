@@ -4,14 +4,36 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
-import ru.medvedev.importer.dto.ColumnInfoDto;
-import ru.medvedev.importer.enums.*;
-
-import javax.persistence.*;
-import java.time.LocalDateTime;
-import java.util.*;
-
 import static org.hibernate.internal.util.StringHelper.isBlank;
+import ru.medvedev.importer.dto.ColumnInfoDto;
+import ru.medvedev.importer.enums.DownloadAction;
+import ru.medvedev.importer.enums.FileProcessingStep;
+import ru.medvedev.importer.enums.FileSource;
+import ru.medvedev.importer.enums.FileStatus;
+import ru.medvedev.importer.enums.SkorozvonField;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import javax.persistence.PrePersist;
+import javax.persistence.SequenceGenerator;
+import javax.persistence.Table;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 @Entity
 @Table(name = "file_info")
@@ -100,6 +122,9 @@ public class FileInfoEntity {
 
     @OneToMany(mappedBy = "fileInfo", fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
     private List<FileInfoBankEntity> bankList = new ArrayList<>();
+
+    @OneToMany(mappedBy = "fileInfo", fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
+    private List<CheckLeadInfoEntity> leadToCheckList = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

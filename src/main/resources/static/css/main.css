@@ -41,7 +41,7 @@ input[type=text], input[type=password] {
     background-color: #cd050c !important;
 }
 
-.btn-2, .btn3, #btnLoadWebhook, #btnDeleteInn, #btnSystemLoad {
+.btn-2, .btn3, #btnLoadWebhook, #btnDeleteInn, #btnSystemLoad, #btnLaunchCheck {
     display: inline-block;
     box-sizing: border-box;
     padding: 0 24px;
@@ -85,6 +85,10 @@ input[type=text], input[type=password] {
 
 #btnSendFile {
     width: 33% !important;
+}
+
+#btnLaunchCheck {
+    width: 40% !important;
 }
 
 #btnSystemLoad {

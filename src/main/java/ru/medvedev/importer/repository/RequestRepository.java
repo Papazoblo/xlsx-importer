@@ -3,6 +3,7 @@ package ru.medvedev.importer.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ru.medvedev.importer.dto.RequestStatisticProjection;
@@ -35,6 +36,13 @@ public interface RequestRepository extends JpaRepository<RequestEntity, Long> {
             "where fib.file_info_id = :fileId\n" +
             "group by (fib.bank, r.status)", nativeQuery = true)
     List<RequestStatisticProjection> getStatisticByFile(Long fileId);
+
+    @Query(value = "select count(r) > 0 " +
+            "from RequestEntity r " +
+            "where r.fileInfoBankId = :fibId " +
+            "and r.status not in (:status)")
+    boolean existsNotFinished(@Param("fibId") Long fibId,
+                              @Param("status") List<RequestStatus> statusList);
 
     @Modifying
     @Transactional

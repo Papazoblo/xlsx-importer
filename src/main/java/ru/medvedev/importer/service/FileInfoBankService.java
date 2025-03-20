@@ -1,5 +1,6 @@
 package ru.medvedev.importer.service;
 
+import static java.util.stream.Collectors.toMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.medvedev.importer.dto.ContactDownloadStatisticProjection;
@@ -13,8 +14,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static java.util.stream.Collectors.toMap;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +35,13 @@ public class FileInfoBankService {
 
     public Map<Bank, Integer> getDownloadStatistic(Long fileId) {
         return repository.getDownloadStatistic(fileId).stream()
+                .filter(item -> item.getStatus() == ContactStatus.DOWNLOADED)
+                .collect(toMap(ContactDownloadStatisticProjection::getBank,
+                        ContactDownloadStatisticProjection::getCount));
+    }
+
+    public Map<Bank, Integer> getCheckLeadStatistic(Long fileId) {
+        return repository.getCheckLeadStatistic(fileId).stream()
                 .filter(item -> item.getStatus() == ContactStatus.DOWNLOADED)
                 .collect(toMap(ContactDownloadStatisticProjection::getBank,
                         ContactDownloadStatisticProjection::getCount));

@@ -45,6 +45,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.POST, "/skorozvon/webhook/test").permitAll()
                 .antMatchers(HttpMethod.POST, "/skorozvon/webhook/with-create-contact").permitAll()
                 .antMatchers(HttpMethod.POST, "/promo-code/amo-crm/webhook").permitAll()
+                .antMatchers(HttpMethod.POST, "/bitrix24/webhook").permitAll()
                 .antMatchers(HttpMethod.GET, "/test").permitAll()
                 .antMatchers("/soundux/*").permitAll()
                 .anyRequest().authenticated()

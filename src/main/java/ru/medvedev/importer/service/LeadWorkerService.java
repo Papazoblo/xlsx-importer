@@ -1,7 +1,11 @@
 package ru.medvedev.importer.service;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import static org.apache.logging.log4j.util.Strings.isBlank;
+import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.util.XMLHelper;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
@@ -11,37 +15,56 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.xml.sax.XMLReader;
-import ru.medvedev.importer.dto.*;
+import ru.medvedev.importer.dto.CallDto;
+import ru.medvedev.importer.dto.CallResultDto;
+import ru.medvedev.importer.dto.CheckLeadResult;
+import ru.medvedev.importer.dto.ContactDto;
+import ru.medvedev.importer.dto.CreateLeadResult;
+import ru.medvedev.importer.dto.ScenarioDto;
+import ru.medvedev.importer.dto.WebhookDto;
+import ru.medvedev.importer.dto.WebhookLeadDto;
+import ru.medvedev.importer.dto.XlsxRecordDto;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.events.NotificationEvent;
-import ru.medvedev.importer.entity.*;
-import ru.medvedev.importer.enums.*;
+import ru.medvedev.importer.entity.BankProductEntity;
+import ru.medvedev.importer.entity.CheckLeadInfoEntity;
+import ru.medvedev.importer.entity.CityEntity;
+import ru.medvedev.importer.entity.ContactNewEntity;
+import ru.medvedev.importer.entity.FileInfoEntity;
+import ru.medvedev.importer.entity.InnRegionEntity;
+import ru.medvedev.importer.entity.WebhookStatusEntity;
+import ru.medvedev.importer.entity.WebhookSuccessStatusEntity;
+import ru.medvedev.importer.enums.Bank;
+import ru.medvedev.importer.enums.BankProduct;
+import ru.medvedev.importer.enums.CheckLeadStatus;
+import static ru.medvedev.importer.enums.DownloadAction.*;
+import ru.medvedev.importer.enums.EventType;
+import static ru.medvedev.importer.enums.FileInfoBankStatus.IN_QUEUE;
+import ru.medvedev.importer.enums.TelegramNotificationType;
+import ru.medvedev.importer.enums.WebhookStatus;
+import static ru.medvedev.importer.enums.WebhookStatus.FIXED;
+import static ru.medvedev.importer.enums.WebhookStatus.SUCCESS;
 import ru.medvedev.importer.exception.ErrorCheckLeadException;
 import ru.medvedev.importer.exception.ErrorCreateLeadException;
 import ru.medvedev.importer.exception.TimeOutException;
+import static ru.medvedev.importer.service.ContactNewService.readDataFromSheet;
+import static ru.medvedev.importer.service.EventService.NOTIFICATION_PATTERN;
 import ru.medvedev.importer.service.bankclientservice.BankClientService;
 import ru.medvedev.importer.service.bankclientservice.BankClientServiceFactory;
 import ru.medvedev.importer.service.sheethandler.WebhookSheetHandler;
+import static ru.medvedev.importer.utils.StringUtils.getFioStringFromContact;
 
 import javax.naming.OperationNotSupportedException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toMap;
-import static org.apache.logging.log4j.util.Strings.isBlank;
-import static org.apache.logging.log4j.util.Strings.isNotBlank;
-import static ru.medvedev.importer.enums.DownloadAction.ACTION_ALFA_SYSTEM_DOWNLOAD;
-import static ru.medvedev.importer.enums.DownloadAction.ACTION_LEAD_DOWNLOAD;
-import static ru.medvedev.importer.enums.FileInfoBankStatus.IN_QUEUE;
-import static ru.medvedev.importer.enums.WebhookStatus.FIXED;
-import static ru.medvedev.importer.enums.WebhookStatus.SUCCESS;
-import static ru.medvedev.importer.service.ContactNewService.readDataFromSheet;
-import static ru.medvedev.importer.service.EventService.NOTIFICATION_PATTERN;
-import static ru.medvedev.importer.utils.StringUtils.getFioStringFromContact;
 
 @Service
 @RequiredArgsConstructor
@@ -60,6 +83,7 @@ public class LeadWorkerService {
     private final FileInfoService fileInfoService;
     private final EnabledScenarioService enabledScenarioService;
     private final SkorozvonClientService skorozvonClientService;
+    private final CheckLeadInfoService checkLeadInfoService;
 
     @Scheduled(cron = "${cron.webhook-from-fixed-status}")
     public void fromStatusFixed() {
@@ -463,16 +487,22 @@ public class LeadWorkerService {
         eventPublisher.publishEvent(new ImportEvent(this, "Читаю файл и разбиваю контакты по банкам",
                 EventType.FILE_PROCESS, fileInfo.getId()));
         Map<String, List<XlsxRecordDto>> records = getValidInnListFromFile(fileInfo);
-        saveNewContacts(records, fileInfo);
-        //запуск обработки по разным банкам
-        if (!fileInfo.getBankList().isEmpty() && fileInfo.getAction() == ACTION_LEAD_DOWNLOAD) {
-            contactDownloadInfoService.createDownloadByBanks(new ArrayList<>(records.keySet()), fileInfo.getBankList());
+        if (fileInfo.getAction() == ACTION_LEAD_BANK_CHECK) {
+            saveNewLeadCheck(records, fileInfo);
             fileInfo.getBankList().forEach(fileBank ->
                     fileInfoBankService.updateDownloadStatus(IN_QUEUE, fileBank.getId()));
+        } else {
+            saveNewContacts(records, fileInfo);
+            //запуск обработки по разным банкам
+            if (!fileInfo.getBankList().isEmpty() && fileInfo.getAction() == ACTION_LEAD_DOWNLOAD) {
+                contactDownloadInfoService.createDownloadByBanks(new ArrayList<>(records.keySet()), fileInfo.getBankList());
+                fileInfo.getBankList().forEach(fileBank ->
+                        fileInfoBankService.updateDownloadStatus(IN_QUEUE, fileBank.getId()));
+            }
         }
     }
 
-    public void processXlsxRecords(FileInfoEntity fileInfo, Set<String> innList) throws IOException {
+    public void processXlsxRecords(FileInfoEntity fileInfo, Set<String> innList) {
 
         eventPublisher.publishEvent(new ImportEvent(this, "Читаю файл и разбиваю контакты по банкам",
                 EventType.FILE_PROCESS, fileInfo.getId()));
@@ -536,6 +566,17 @@ public class LeadWorkerService {
                         && checkLength(contact.getRegion(), 500)
                         && checkLength(contact.getCity(), 1000))
                 .collect(Collectors.toList()));
+    }
+
+    private void saveNewLeadCheck(Map<String, List<XlsxRecordDto>> records, FileInfoEntity fileInfo) {
+        List<CheckLeadInfoEntity> checkLeadInfoList = new ArrayList<>();
+        records.forEach((key, value) -> {
+            CheckLeadInfoEntity leadCheck = new CheckLeadInfoEntity();
+            leadCheck.setInn(key);
+            leadCheck.setFileInfoId(fileInfo.getId());
+            checkLeadInfoList.add(leadCheck);
+        });
+        checkLeadInfoService.saveInBatch(checkLeadInfoList, fileInfo.getBankList());
     }
 
     private boolean checkLength(String value, int length) {

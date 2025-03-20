@@ -1,8 +1,10 @@
 package ru.medvedev.importer.service;
 
+import static java.util.stream.Collectors.toMap;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
@@ -17,28 +19,33 @@ import ru.medvedev.importer.dto.events.CompleteFileEvent;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.dto.events.InvalidFileEvent;
 import ru.medvedev.importer.dto.events.SaveMessageIdEvent;
+import ru.medvedev.importer.dto.events.SendResultCheckExportEvent;
 import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
-import ru.medvedev.importer.enums.*;
+import ru.medvedev.importer.enums.Bank;
+import ru.medvedev.importer.enums.DownloadAction;
+import ru.medvedev.importer.enums.EventType;
+import ru.medvedev.importer.enums.FileProcessingStep;
+import static ru.medvedev.importer.enums.FileProcessingStep.*;
+import ru.medvedev.importer.enums.FileSource;
+import static ru.medvedev.importer.enums.FileSource.TELEGRAM;
+import static ru.medvedev.importer.enums.FileSource.UI;
+import ru.medvedev.importer.enums.FileStatus;
 import ru.medvedev.importer.exception.BadRequestException;
-import ru.medvedev.importer.repository.ContactDownloadInfoRepository;
-import ru.medvedev.importer.repository.FileInfoBankRepository;
 import ru.medvedev.importer.repository.FileInfoRepository;
-import ru.medvedev.importer.repository.RequestRepository;
 
 import javax.persistence.EntityNotFoundException;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toMap;
-import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
-import static ru.medvedev.importer.enums.FileProcessingStep.*;
-import static ru.medvedev.importer.enums.FileSource.TELEGRAM;
-import static ru.medvedev.importer.enums.FileSource.UI;
 
 @Service
 @RequiredArgsConstructor
@@ -90,6 +97,10 @@ public class FileInfoService {
 
     public Optional<FileInfoEntity> getTgFileToSetProjectCode() {
         return repository.findFirstByStatusAndSourceAndProcessingStep(FileStatus.IN_PROCESS, TELEGRAM, BANK_INITIALIZED);
+    }
+
+    public Optional<FileInfoEntity> getByFileStatusAndAction(FileStatus status, DownloadAction action) {
+        return repository.findFirstByStatusAndSourceAndProcessingStepAndAction(status, UI, INITIALIZE, action);
     }
 
     public Optional<FileInfoEntity> getNewFileToProcessing() {
@@ -160,12 +171,12 @@ public class FileInfoService {
         entity.setPath(file.getPath());
         entity.setChatId(chatId);
         entity.setSource(source);
-            entity.setProcessingStep(INITIALIZE);
-            entity = repository.save(entity);
-            eventPublisher.publishEvent(new ImportEvent(this, "Добавлен в систему и ждет своей очереди",
-                    EventType.FILE_PROCESS, entity.getId()));
-            log.debug("*** create file with hash {}", hash);
-            return entity;
+        entity.setProcessingStep(INITIALIZE);
+        entity = repository.save(entity);
+        eventPublisher.publishEvent(new ImportEvent(this, "Добавлен в систему и ждет своей очереди",
+                EventType.FILE_PROCESS, entity.getId()));
+        log.debug("*** create file with hash {}", hash);
+        return entity;
 //        }
     }
 
@@ -193,11 +204,11 @@ public class FileInfoService {
         entity.setProcessingStep(IN_QUEUE);
         entity.setAction(downloadAction);
         entity = repository.save(entity);
-            eventPublisher.publishEvent(new ImportEvent(this, source == UI ? "Добавлен в систему и ждет указания столбцов для дальнейшей обратки"
-                    : "Добавлен в систему",
-                    EventType.FILE_PROCESS, entity.getId()));
-            log.debug("*** create file with hash {}", hash);
-            return entity;
+        eventPublisher.publishEvent(new ImportEvent(this, source == UI ? "Добавлен в систему и ждет указания столбцов для дальнейшей обратки"
+                : "Добавлен в систему",
+                EventType.FILE_PROCESS, entity.getId()));
+        log.debug("*** create file with hash {}", hash);
+        return entity;
 //        }
     }
 
@@ -276,8 +287,13 @@ public class FileInfoService {
 
     @EventListener(CompleteFileEvent.class)
     public void completeFileEventListener(CompleteFileEvent event) {
+        FileInfoEntity fileInfo = getById(event.getFileId());
         repository.changeStatus(event.getFileId(), FileStatus.SUCCESS);
         deleteFile(event.getFileId());
+
+        if (fileInfo.getAction() == DownloadAction.ACTION_LEAD_BANK_CHECK) {
+            eventPublisher.publishEvent(new SendResultCheckExportEvent(this, fileInfo));
+        }
     }
 
     @EventListener(SaveMessageIdEvent.class)

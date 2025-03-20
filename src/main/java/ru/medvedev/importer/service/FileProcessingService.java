@@ -12,13 +12,18 @@ import ru.medvedev.importer.dto.XlsxImportInfo;
 import ru.medvedev.importer.dto.events.ImportEvent;
 import ru.medvedev.importer.entity.FileInfoBankEntity;
 import ru.medvedev.importer.entity.FileInfoEntity;
-import ru.medvedev.importer.enums.*;
+import ru.medvedev.importer.enums.DownloadAction;
+import ru.medvedev.importer.enums.EventType;
+import ru.medvedev.importer.enums.FileSource;
+import ru.medvedev.importer.enums.FileStatus;
+import ru.medvedev.importer.enums.XlsxRequireField;
 import ru.medvedev.importer.exception.ColumnNamesNotFoundException;
 import ru.medvedev.importer.exception.FileProcessingException;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -52,7 +57,7 @@ public class FileProcessingService {
             try {
                 if (entity.getSource() == FileSource.UI) {
                     leadWorkerService.processXlsxRecords(entity);
-                    fileInfoService.changeStatus(entity, entity.getAction() == DownloadAction.ACTION_LEAD_DOWNLOAD ? FileStatus.WAITING : FileStatus.WAITING_CHECK);
+                    fileInfoService.changeStatus(entity, Arrays.asList(DownloadAction.ACTION_LEAD_DOWNLOAD, DownloadAction.ACTION_LEAD_BANK_CHECK).contains(entity.getAction()) ? FileStatus.WAITING : FileStatus.WAITING_CHECK);
                 } else {
                     launchProcessTelegramFile(entity);
                 }

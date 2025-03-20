@@ -1,7 +1,10 @@
 package ru.medvedev.importer.service;
 
+import static java.util.stream.Collectors.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import static org.apache.logging.log4j.util.Strings.isBlank;
+import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -11,17 +14,50 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import ru.medvedev.importer.dto.*;
+import ru.medvedev.importer.dto.CheckLeadResult;
+import ru.medvedev.importer.dto.CreateLeadDto;
+import ru.medvedev.importer.dto.CreateOrganizationDto;
+import ru.medvedev.importer.dto.FieldPositionDto;
+import ru.medvedev.importer.dto.HeaderDto;
+import ru.medvedev.importer.dto.TrashColumnDto;
 import ru.medvedev.importer.dto.events.ImportEvent;
-import ru.medvedev.importer.entity.*;
-import ru.medvedev.importer.enums.*;
+import ru.medvedev.importer.entity.BankCountSendedRequestEntity;
+import ru.medvedev.importer.entity.CheckLeadInfoEntity;
+import ru.medvedev.importer.entity.ContactDownloadInfoEntity;
+import ru.medvedev.importer.entity.ContactNewEntity;
+import ru.medvedev.importer.entity.FileInfoBankEntity;
+import ru.medvedev.importer.entity.FileInfoEntity;
+import ru.medvedev.importer.entity.InnRegionEntity;
+import ru.medvedev.importer.entity.RequestEntity;
+import ru.medvedev.importer.entity.SystemVariableEntity;
+import ru.medvedev.importer.enums.Bank;
+import static ru.medvedev.importer.enums.Bank.*;
+import ru.medvedev.importer.enums.CheckLeadStatus;
+import ru.medvedev.importer.enums.ContactStatus;
+import ru.medvedev.importer.enums.DownloadAction;
+import ru.medvedev.importer.enums.EventType;
+import ru.medvedev.importer.enums.FileInfoBankStatus;
+import static ru.medvedev.importer.enums.FileInfoBankStatus.*;
+import ru.medvedev.importer.enums.FileProcessingStep;
+import ru.medvedev.importer.enums.FileStatus;
+import ru.medvedev.importer.enums.RequestStatus;
+import static ru.medvedev.
+import static ru.medvedev.importer.enums.RequestStatus.ERROR;
+import static ru.medvedev.importer.enums.RequestStatus.IN_QUEUE;
+importer.enums.RequestStatus.*;
+import ru.medvedev.importer.enums.SystemVariable;
+import ru.medvedev.importer.enums.XlsxRequireField;
 import ru.medvedev.importer.exception.FileProcessingException;
 import ru.medvedev.importer.exception.IllegalCellTypeException;
 import ru.medvedev.importer.exception.NumberProjectNotFoundException;
 import ru.medvedev.importer.exception.TimeOutException;
 import ru.medvedev.importer.repository.ContactNewRepository;
+import static ru.medvedev.importer.service.BankCountSendedRequestService.DAY_RESERVE;
+import static ru.medvedev.importer.service.EventService.BANK_NAME_PATTERN;
+import static ru.medvedev.importer.service.EventService.STATISTIC_LINE_PATTERN;
 import ru.medvedev.importer.service.bankclientservice.BankClientService;
 import ru.medvedev.importer.service.bankclientservice.BankClientServiceFactory;
+import static ru.medvedev.importer.utils.StringUtils.*;
 
 import javax.naming.OperationNotSupportedException;
 import java.io.File;
@@ -29,24 +65,17 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.*;
-import static org.apache.logging.log4j.util.Strings.isBlank;
-import static org.apache.logging.log4j.util.Strings.isNotBlank;
-import static ru.medvedev.importer.enums.Bank.*;
-import static ru.medvedev.importer.enums.FileInfoBankStatus.*;
-import static ru.medvedev.
-import static ru.medvedev.importer.enums.RequestStatus.ERROR;
-import static ru.medvedev.importer.enums.RequestStatus.IN_QUEUE;
-importer.enums.RequestStatus.*;
-import static ru.medvedev.importer.service.BankCountSendedRequestService.DAY_RESERVE;
-import static ru.medvedev.importer.service.EventService.BANK_NAME_PATTERN;
-import static ru.medvedev.importer.service.EventService.STATISTIC_LINE_PATTERN;
-import static ru.medvedev.importer.utils.StringUtils.*;
 
 @Service
 @RequiredArgsConstructor
@@ -68,6 +97,7 @@ public class BodyProcessingService {
     private final SystemVariableService systemVariableService;
     private final BankCountSendedRequestService bankCountSendedRequestService;
     private final ContactNewRepository contactNewRepository;
+    private final CheckLeadInfoService checkLeadInfoService;
 
     private final Set<String> regionCodes = new HashSet<>();
 
@@ -114,18 +144,12 @@ public class BodyProcessingService {
                     fib.getBank().getTitle() + "`",
                     EventType.FILE_PROCESS, fib.getFileInfoId()));
             try {
-                fileInfoBankService.updateDownloadStatus(FileInfoBankStatus.INN_CHECK, fib.getId());
-                List<ContactDownloadInfoEntity> contacts = fib.getContactDownloadList();
-                for (int i = 0; i < contacts.size(); i = i + fib.getBank().getBatchSize()) {
-                    List<ContactDownloadInfoEntity> contactSublist = contacts.subList(i, Math.min(i + fib.getBank().getBatchSize(), contacts.size()));
 
-                    RequestEntity openingRequest = new RequestEntity();
-                    openingRequest.setFileInfoBank(fib);
-                    openingRequest = requestService.save(openingRequest);
-                    for (ContactDownloadInfoEntity info : contactSublist) {
-                        info.setRequestId(openingRequest.getId());
-                    }
-                    contactDownloadInfoService.save(contactSublist);
+                fileInfoBankService.updateDownloadStatus(FileInfoBankStatus.INN_CHECK, fib.getId());
+                if (fib.getFileInfo().getAction() == DownloadAction.ACTION_LEAD_BANK_CHECK) {
+                    processFileByCheckLead(fib);
+                } else {
+                    processFileByContact(fib);
                 }
                 fib.setDownloadStatus(WAIT_CHECK_FINISH);
                 fileInfoBankService.save(fib);
@@ -142,6 +166,36 @@ public class BodyProcessingService {
                         fib.getFileInfoId()));
             }
         });
+    }
+
+    private void processFileByContact(FileInfoBankEntity fib) {
+        List<ContactDownloadInfoEntity> contacts = fib.getContactDownloadList();
+        for (int i = 0; i < contacts.size(); i = i + fib.getBank().getBatchSize()) {
+            List<ContactDownloadInfoEntity> contactSublist = contacts.subList(i, Math.min(i + fib.getBank().getBatchSize(), contacts.size()));
+
+            RequestEntity openingRequest = new RequestEntity();
+            openingRequest.setFileInfoBank(fib);
+            openingRequest = requestService.save(openingRequest);
+            for (ContactDownloadInfoEntity info : contactSublist) {
+                info.setRequestId(openingRequest.getId());
+            }
+            contactDownloadInfoService.save(contactSublist);
+        }
+    }
+
+    private void processFileByCheckLead(FileInfoBankEntity fib) {
+        List<CheckLeadInfoEntity> checkLeadList = fib.getCheckLeadList();
+        for (int i = 0; i < checkLeadList.size(); i = i + fib.getBank().getBatchSize()) {
+            List<CheckLeadInfoEntity> checkLeadSubList = checkLeadList.subList(i, Math.min(i + fib.getBank().getBatchSize(), checkLeadList.size()));
+
+            RequestEntity openingRequest = new RequestEntity();
+            openingRequest.setFileInfoBank(fib);
+            openingRequest = requestService.save(openingRequest);
+            for (CheckLeadInfoEntity checkLead : checkLeadSubList) {
+                checkLead.setRequestId(openingRequest.getId());
+            }
+            checkLeadInfoService.save(checkLeadSubList);
+        }
     }
 
     @Scheduled(cron = "${cron.creating-request-vtb}")
@@ -260,23 +314,42 @@ public class BodyProcessingService {
                 if (!validateRequestLimit(ALFA)) {
                     return;
                 }
-                CheckLeadResult result = bankClientService.getAllFromCheckLead(null, request.getContactDownloadInfo().stream()
-                        .map(ContactDownloadInfoEntity::getContact)
-                        .map(ContactNewEntity::getInn)
-                        .collect(toList()), fib.getFileInfoId());
-                request.getContactDownloadInfo().forEach(contact -> result.getLeadResponse().forEach(lead -> {
-                    if (contact.getContact().getInn().equals(lead.getInn())) {
-                        contact.setCheckStatus(lead.getResponseCode() == CheckLeadStatus.POSITIVE
-                                ? ContactStatus.DOWNLOADED : ContactStatus.REJECTED);
+                if (fib.getFileInfo().getAction() == DownloadAction.ACTION_LEAD_BANK_CHECK) {
+                    CheckLeadResult result = bankClientService.getAllFromCheckLead(null, request.getLeadCheckInfoList().stream()
+                            .map(CheckLeadInfoEntity::getInn)
+                            .collect(toList()), fib.getFileInfoId());
+                    request.getLeadCheckInfoList().forEach(checkLead -> result.getLeadResponse().forEach(lead -> {
+                        if (checkLead.getInn().equals(lead.getInn())) {
+                            checkLead.setCheckStatus(lead.getResponseCode() == CheckLeadStatus.POSITIVE
+                                    ? ContactStatus.DOWNLOADED : ContactStatus.REJECTED);
 
-                        if (fib.getBank() == VTB &&
-                                fib.getFileInfo().getIsFirstVtbLoadLead() &&
-                                contact.getCheckStatus() == ContactStatus.REJECTED) {
-                            firstLoadLeadService.create(lead.getInn());
+//                            if (fib.getBank() == VTB &&
+//                                    fib.getFileInfo().getIsFirstVtbLoadLead() &&
+//                                    checkLead.getCheckStatus() == ContactStatus.REJECTED) {
+//                                firstLoadLeadService.create(lead.getInn());
+//                            }
                         }
-                    }
-                }));
-                request.setStatus(SUCCESS_CHECK);
+                    }));
+                    request.setStatus(DOWNLOADED);
+                } else {
+                    CheckLeadResult result = bankClientService.getAllFromCheckLead(null, request.getContactDownloadInfo().stream()
+                            .map(ContactDownloadInfoEntity::getContact)
+                            .map(ContactNewEntity::getInn)
+                            .collect(toList()), fib.getFileInfoId());
+                    request.getContactDownloadInfo().forEach(contact -> result.getLeadResponse().forEach(lead -> {
+                        if (contact.getContact().getInn().equals(lead.getInn())) {
+                            contact.setCheckStatus(lead.getResponseCode() == CheckLeadStatus.POSITIVE
+                                    ? ContactStatus.DOWNLOADED : ContactStatus.REJECTED);
+
+                            if (fib.getBank() == VTB &&
+                                    fib.getFileInfo().getIsFirstVtbLoadLead() &&
+                                    contact.getCheckStatus() == ContactStatus.REJECTED) {
+                                firstLoadLeadService.create(lead.getInn());
+                            }
+                        }
+                    }));
+                    request.setStatus(SUCCESS_CHECK);
+                }
             }
 
         } catch (TimeOutException ex) {
@@ -379,7 +452,11 @@ public class BodyProcessingService {
             file.getBankList().forEach(fib -> {
                 if (Stream.of(WAIT_CHECK_FINISH, SEND_TO_SKOROZVON, CHECK_FINISH)
                         .anyMatch(status -> status == fib.getDownloadStatus())) {
-                    if (fib.getContactDownloadList().stream()
+                    if (file.getAction() == DownloadAction.ACTION_LEAD_BANK_CHECK) {
+                        if (!requestService.existsNotFinished(fib.getId())) {
+                            fib.setDownloadStatus(SUCCESS);
+                        }
+                    } else if (fib.getContactDownloadList().stream()
                             .map(ContactDownloadInfoEntity::getRequest)
                             .distinct()
                             .collect(toList()).stream()
@@ -406,6 +483,12 @@ public class BodyProcessingService {
                 } else if (file.getAction() == DownloadAction.ACTION_SYSTEM_DOWNLOAD) {
                     eventPublisher.publishEvent(new ImportEvent(this, "Обработка завершена\nЗагружено новых: " +
                             contactNewRepository.countByFileInfoId(file.getId()),
+                            EventType.SUCCESS, file.getId()));
+                } else if (file.getAction() == DownloadAction.ACTION_LEAD_BANK_CHECK) {
+                    eventPublisher.publishEvent(new ImportEvent(this, "Проверка завершена\n" +
+                            fileInfoBankService.getCheckLeadStatistic(file.getId()).entrySet().stream()
+                                    .map(entry -> entry.getKey().getTitle() + ": " + entry.getValue() + " успешных")
+                                    .collect(Collectors.joining("\n")),
                             EventType.SUCCESS, file.getId()));
                 }
             }
@@ -594,9 +677,9 @@ public class BodyProcessingService {
 //        organization.setName(String.format("%s %s %s", bank.getTitle(), contact.getOrgName().contains(fioStringFromContact) ? "" : fioStringFromContact, contact.getOrgName()));
         organization.setName("Фамилия Имя Отчество");
         organization.setPhones(Collections.singletonList(contact.getPhone()));
-        if (fileInfo.getEnableWhatsAppLink()) {
-            organization.setHomepage(String.format("https://wa.me/%s", contact.getPhone()));
-        }
+//        if (fileInfo.getEnableWhatsAppLink()) {
+//            organization.setHomepage(String.format("https://wa.me/%s", contact.getPhone()));
+//        }
         organization.setCity("Город");
 //        organization.setRegion(contact.getRegion());
 //        organization.setInn(contact.getInn());
@@ -627,7 +710,7 @@ public class BodyProcessingService {
                         .orElseGet(() -> {
                             SystemVariableEntity entity = new SystemVariableEntity();
                             entity.setName(SystemVariable.HALF_CHECK_LIMIT_ALFA);
-                            entity.setValue(String.valueOf(Integer.parseInt(alfaLimit.get().getValue()) * 0.85));
+                            entity.setValue(String.valueOf((int) (Integer.parseInt(alfaLimit.get().getValue()) * 0.85)));
                             return entity;
                         });
 

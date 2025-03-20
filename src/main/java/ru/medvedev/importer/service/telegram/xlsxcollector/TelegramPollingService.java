@@ -2,6 +2,7 @@ package ru.medvedev.importer.service.telegram.xlsxcollector;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import static org.apache.logging.log4j.util.Strings.isNotBlank;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -10,9 +11,11 @@ import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Document;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
@@ -29,20 +32,24 @@ import ru.medvedev.importer.dto.events.ProjectCodeResponseEvent;
 import ru.medvedev.importer.dto.events.SaveMessageIdEvent;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.ChatState;
+import static ru.medvedev.importer.enums.ChatState.BANK_SELECT;
+import static ru.medvedev.importer.enums.ChatState.PROJECT_CODE;
 import ru.medvedev.importer.enums.FileSource;
 import ru.medvedev.importer.enums.SystemVariable;
 import ru.medvedev.importer.enums.XlsxRequireField;
 import ru.medvedev.importer.service.FileInfoService;
 import ru.medvedev.importer.service.SystemVariableService;
+import static ru.medvedev.importer.utils.StringUtils.transformTgMessage;
 
 import java.io.File;
-import java.util.*;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static org.apache.logging.log4j.util.Strings.isNotBlank;
-import static ru.medvedev.importer.enums.ChatState.BANK_SELECT;
-import static ru.medvedev.importer.enums.ChatState.PROJECT_CODE;
-import static ru.medvedev.importer.utils.StringUtils.transformTgMessage;
 
 
 @RequiredArgsConstructor
@@ -125,6 +132,20 @@ public class TelegramPollingService extends TelegramLongPollingBot {
                 .text(message)
                 .build();
         executeAnyCommand(method);
+    }
+
+    public void sendDocument(InputStream inputStream, String fileCaption, String chatId, Integer replyMessageId) {
+        try {
+            execute(SendDocument.builder()
+                    .chatId(chatId)
+                    .replyToMessageId(replyMessageId)
+                    .caption("Проверка завершена")
+                    .document(new InputFile(inputStream, fileCaption))
+                    .build());
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+            log.debug(e);
+        }
     }
 
     private void downloadFile(Document document, Long chatId) {
@@ -314,7 +335,7 @@ public class TelegramPollingService extends TelegramLongPollingBot {
             public void onResult(BotApiMethod<Message> method, Message response) {
                 Optional.ofNullable(fileId).ifPresent(id ->
                         eventPublisher.publishEvent(new SaveMessageIdEvent(this,
-                        response.getMessageId(), fileId)));
+                                response.getMessageId(), fileId)));
             }
 
             @Override

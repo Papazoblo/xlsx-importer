@@ -62,5 +62,6 @@ telegram:
 cron:
   webhook-statistic: '0 0 19 * * *'
   raiffeisen-city-dictionary: '0 */10 * * * *'
+  ending-file-processing: '30 * * * * *'
 
 

@@ -5,7 +5,21 @@ import lombok.ToString;
 import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.FileInfoBankStatus;
 
-import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.PrePersist;
+import javax.persistence.SequenceGenerator;
+import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +54,9 @@ public class FileInfoBankEntity {
 
     @OneToMany(mappedBy = "fileInfoBank", fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
     private List<ContactDownloadInfoEntity> contactDownloadList = new ArrayList<>();
+
+    @OneToMany(mappedBy = "fileInfoBank", fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
+    private List<CheckLeadInfoEntity> checkLeadList = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

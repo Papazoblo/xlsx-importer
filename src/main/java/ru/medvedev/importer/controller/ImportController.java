@@ -7,7 +7,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import ru.medvedev.importer.dto.AutoLinkXlsxFieldDto;
 import ru.medvedev.importer.dto.ContactDto;
@@ -16,17 +23,28 @@ import ru.medvedev.importer.dto.XlsxImportInfo;
 import ru.medvedev.importer.entity.FileInfoEntity;
 import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.DownloadAction;
+import static ru.medvedev.importer.enums.DownloadAction.ACTION_LEAD_BANK_CHECK;
 import ru.medvedev.importer.enums.SkorozvonField;
 import ru.medvedev.importer.exception.BadRequestException;
-import ru.medvedev.importer.service.*;
+import ru.medvedev.importer.service.AutoLinkXlsxFieldService;
+import ru.medvedev.importer.service.FileInfoService;
+import ru.medvedev.importer.service.LeadWorkerService;
+import ru.medvedev.importer.service.XlsxParserService;
+import ru.medvedev.importer.service.XlsxStorageService;
+import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
 
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
-
-import static ru.medvedev.importer.utils.SecurityUtils.getAuthorityList;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 @Controller
 @RequiredArgsConstructor
@@ -83,9 +101,12 @@ public class ImportController {
             model.addAttribute("headers", Collections.emptyList());
         }
         model.addAttribute("authority", getAuthorityList());
-        model.addAttribute("fields", SkorozvonField.values());
+        model.addAttribute("fields", downloadAction == ACTION_LEAD_BANK_CHECK
+                ? Arrays.asList(SkorozvonField.ORG_INN, SkorozvonField.ORG_PHONE)
+                : SkorozvonField.values());
 
-        if (downloadAction != DownloadAction.ACTION_ALFA_SYSTEM_DOWNLOAD) {
+        if (downloadAction != DownloadAction.ACTION_ALFA_SYSTEM_DOWNLOAD
+                && downloadAction != ACTION_LEAD_BANK_CHECK) {
             List<List<Bank>> banks = new ArrayList<>();
             Bank[] bankArray = Bank.valuesNotExclude();
             for (int i = 0; i < bankArray.length; i += 3) {
@@ -99,13 +120,18 @@ public class ImportController {
             }
             model.addAttribute("banks", banks);
         }
-        return downloadAction != DownloadAction.ACTION_ALFA_SYSTEM_DOWNLOAD ? "main" : "alfa_main";
+        return downloadAction.getTemplate();
     }
 
     @PostMapping("/xlsx/import/{downloadAction}")
     @ResponseBody
     public void startImport(@PathVariable("downloadAction") DownloadAction downloadAction,
                             @RequestBody XlsxImportInfo importInfo) {
+
+        if (downloadAction == ACTION_LEAD_BANK_CHECK) {
+            importInfo.getBanksProject().put(Bank.ALFA, 777L);
+        }
+
         fileInfoService.addUiColumnInfo(downloadAction, importInfo);
     }
 

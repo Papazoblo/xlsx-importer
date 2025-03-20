@@ -9,7 +9,12 @@ import ru.medvedev.importer.enums.Bank;
 import ru.medvedev.importer.enums.RequestStatus;
 import ru.medvedev.importer.repository.RequestRepository;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,6 +65,10 @@ public class RequestService {
                         .collect(Collectors.toMap(RequestStatisticProjection::getStatus,
                                 RequestStatisticProjection::getCount))));
         return result;
+    }
+
+    public boolean existsNotFinished(Long fibId) {
+        return repository.existsNotFinished(fibId, Arrays.asList(RequestStatus.ERROR, RequestStatus.DOWNLOADED));
     }
 
     public void deleteByFibId(Set<Long> fibId) {

@@ -25,6 +25,13 @@ public interface FileInfoBankRepository extends JpaRepository<FileInfoBankEntity
             "group by (cdi.check_status, fib.bank)", nativeQuery = true)
     List<ContactDownloadStatisticProjection> getDownloadStatistic(Long fileId);
 
+    @Query(value = "select lci.check_status as status, fib.bank as bank, count(lci.id) as count\n" +
+            "from file_info_bank fib\n" +
+            "         join lead_check_info lci on lci.file_info_bank_id = fib.id\n" +
+            "where fib.file_info_id = :fileId\n" +
+            "group by (lci.check_status, fib.bank)", nativeQuery = true)
+    List<ContactDownloadStatisticProjection> getCheckLeadStatistic(Long fileId);
+
     @Modifying
     @Transactional
     @Query("update FileInfoBankEntity fib " +

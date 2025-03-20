@@ -59,7 +59,7 @@ cron:
   fixed-rate-update-token: 1200000
   fixed-rate-check-xlsx-exists: 900000
   launch-file-processing: '0 * * * * *'
-  ending-file-processing: '30 * * * * *'
+  ending-file-processing: '30 */5 * * * *'
   webhook-statistic: '0 0 19 * * *'
   tg-column-header-request: '*/3 * * * * *'
   tg-initialized-new-file: '*/3 * * * * *'
